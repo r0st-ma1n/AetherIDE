@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OurNewIDE</title>
+    <style>
+        body { margin: 0; padding: 0; display: flex; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; overflow: hidden; }
+
+        /* Left Sidebar */
+        #left-sidebar { width: 280px; min-width: 200px; background-color: #252526; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        
+        /* File Explorer */
+        #file-explorer { flex: 1; padding: 10px; border-bottom: 1px solid #333; overflow-y: auto; }
+        .section-header { margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; color: #ccc; letter-spacing: 0.5px; }
+        .file-tree-item { cursor: pointer; padding: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; font-size: 13px; }
+        .file-tree-item:hover { background-color: #2a2d2e; }
+        .folder { color: #dcb67a; font-weight: bold; }
+        .file { color: #cccccc; padding-left: 15px; }
+
+        /* Toolbox / Components */
+        #toolbox { padding: 10px; flex: 0 0 auto; max-height: 40%; overflow-y: auto; }
+        .component { background-color: #333; padding: 6px 10px; margin-bottom: 6px; cursor: grab; text-align: left; border-radius: 4px; border: 1px solid #444; font-size: 13px; display: flex; align-items: center; }
+        .component:active { cursor: grabbing; }
+        .component::before { content: '▤'; margin-right: 8px; color: #007acc; }
+
+        /* Center Panel */
+        #center-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: #1e1e1e; }
+        
+        /* Tabs */
+        #tabs { display: flex; background-color: #2d2d2d; border-bottom: 1px solid #1e1e1e; }
+        .tab-btn { background: none; border: none; color: #969696; padding: 10px 20px; cursor: pointer; font-size: 13px; outline: none; border-top: 2px solid transparent; }
+        .tab-btn:hover { color: #d4d4d4; }
+        .tab-btn.active { color: #ffffff; background-color: #1e1e1e; border-top: 2px solid #007acc; }
+
+        /* Tab Content Container */
+        #tab-content { flex: 1; position: relative; display: flex; flex-direction: column; }
+        .tab-pane { display: none; flex: 1; width: 100%; height: 100%; }
+        .tab-pane.active { display: flex; flex-direction: column; }
+
+        /* Canvas */
+        #canvas { position: relative; background-color: #1e1e1e; background-image: radial-gradient(#333 1px, transparent 0); background-size: 20px 20px; overflow: hidden; }
+        .canvas-label { color: #666; position: absolute; top: 10px; left: 10px; user-select: none; font-size: 14px; }
+        .dropped-component { position: absolute; background-color: #007acc; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; font-size: 13px; border: 1px solid #005999; }
+        .dropped-component:hover { border-color: #55b3ff; }
+
+        /* Editor */
+        #editor-container { flex: 1; }
+        #editor { width: 100%; height: 100%; }
+
+        /* Right Sidebar */
+        #right-sidebar { width: 250px; min-width: 200px; background-color: #252526; border-left: 1px solid #333; display: flex; flex-direction: column; }
+        .panel-header { padding: 10px; font-size: 12px; text-transform: uppercase; color: #ccc; letter-spacing: 0.5px; border-bottom: 1px solid #333; background-color: #252526; }
+        .panel-content { padding: 10px; flex: 1; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="left-sidebar">
+        <div id="file-explorer">
+            <h3 class="section-header">Explorer</h3>
+            <div id="file-tree"></div>
+        </div>
+        <div id="toolbox">
+            <h3 class="section-header">Components</h3>
+            <div class="component" draggable="true" data-type="Knob">Dial / Knob</div>
+            <div class="component" draggable="true" data-type="Slider">Fader / Slider</div>
+            <div class="component" draggable="true" data-type="Button">Toggle Button</div>
+        </div>
+    </div>
+    
+    <div id="center-panel">
+        <div id="tabs">
+            <button class="tab-btn active" onclick="switchTab('designer')">UI Designer</button>
+            <button class="tab-btn" onclick="switchTab('editor')">Code Editor</button>
+        </div>
+        <div id="tab-content">
+            <div id="canvas" class="tab-pane active">
+                <!-- <div class="canvas-label">UI Canvas (Drag here)</div> -->
+            </div>
+            <div id="editor-container" class="tab-pane">
+                <div id="editor"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="right-sidebar">
+        <div class="panel-header">Properties / Inspector</div>
+        <div class="panel-content">
+            <p style="color: #666; font-size: 12px; text-align: center; margin-top: 20px;">Select a component to view properties</p>
+        </div>
+    </div>
+
+    <!-- Load Monaco Editor -->
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            if (tabId === 'designer') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'designer\')"]').classList.add('active');
+                document.getElementById('canvas').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn[onclick="switchTab(\'editor\')"]').classList.add('active');
+                document.getElementById('editor-container').classList.add('active');
+            }
+            
+            // Re-layout monaco editor when it becomes visible
+            if (tabId === 'editor' && typeof editor !== 'undefined' && editor) {
+                editor.layout();
+            }
+        }
+
+        // Use Node.js require inside Electron renderer to load Monaco via AMD
+        const path = require('path');
+        const amdLoader = require('monaco-editor/min/vs/loader.js');
+        const amdRequire = amdLoader.require;
+        const amdDefine = amdLoader.require.define;
+        
+        function uriFromPath(_path) {
+            let pathName = path.resolve(_path).replace(/\\/g, '/');
+            if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+                pathName = '/' + pathName;
+            }
+            return encodeURI('file://' + pathName);
+        }
+
+        amdRequire.config({
+            baseUrl: uriFromPath(path.join(__dirname, 'node_modules/monaco-editor/min'))
+        });
+
+        // workaround monaco-css not understanding the environment
+        self.module = undefined;
+
+        let editor;
+
+        amdRequire(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: [
+                    '#include "GainPlugin.h"',
+                    '',
+                    'void GainPlugin::processBlock(apf::AudioBuffer& buffer)',
+                    '{',
+                    '    // Audio processing logic here',
+                    '}',
+                    '',
+                    '// UI Generation will appear here:',
+                    'void GainPlugin::setupUI()',
+                    '{',
+                    '    ',
+                    '}'
+                ].join('\n'),
+                language: 'cpp',
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
+            
+            // Add Save Action (Ctrl+S / Cmd+S)
+            editor.addAction({
+                id: 'save-file',
+                label: 'Save File',
+                keybindings: [
+                    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS
+                ],
+                run: function(ed) {
+                    if (ed.currentFilePath) {
+                        try {
+                            const fs = require('fs');
+                            fs.writeFileSync(ed.currentFilePath, ed.getValue(), 'utf-8');
+                            
+                            // Visual Toast Notification
+                            const toast = document.createElement('div');
+                            toast.innerText = 'Saved ' + require('path').basename(ed.currentFilePath);
+                            toast.style.position = 'absolute';
+                            toast.style.bottom = '20px';
+                            toast.style.right = '20px';
+                            toast.style.backgroundColor = '#007acc';
+                            toast.style.color = 'white';
+                            toast.style.padding = '8px 16px';
+                            toast.style.borderRadius = '4px';
+                            toast.style.zIndex = '1000';
+                            toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+                            toast.style.transition = 'opacity 0.3s';
+                            document.body.appendChild(toast);
+                            
+                            setTimeout(() => {
+                                toast.style.opacity = '0';
+                                setTimeout(() => toast.remove(), 300);
+                            }, 1500);
+
+                        } catch (err) {
+                            console.error('Failed to save file:', err);
+                            alert('Error saving file!');
+                        }
+                    } else {
+                        console.warn('No file opened to save.');
+                    }
+                }
+            });
+
+            editor.onDidChangeModelContent(() => {
+                updateCanvasFromCode(editor.getValue());
+            });
+
+            setupDragAndDrop();
+            setupFileExplorer();
+            
+            // Initial sync
+            updateCanvasFromCode(editor.getValue());
+        });
+
+        // File Explorer Logic
+        const fs = require('fs');
+
+        function setupFileExplorer() {
+            const projectRoot = path.join(__dirname, '..');
+            const treeContainer = document.getElementById('file-tree');
+
+            function buildTree(dir, parentElement) {
+                try {
+                    const items = fs.readdirSync(dir, { withFileTypes: true });
+                    
+                    // Sort folders first, then files
+                    items.sort((a, b) => {
+                        if (a.isDirectory() && !b.isDirectory()) return -1;
+                        if (!a.isDirectory() && b.isDirectory()) return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    items.forEach(item => {
+                        if (item.name === 'node_modules' || item.name === 'build' || item.name.startsWith('.')) return; // Ignore some folders
+
+                        const fullPath = path.join(dir, item.name);
+                        const el = document.createElement('div');
+                        el.className = 'file-tree-item';
+                        
+                        if (item.isDirectory()) {
+                            el.classList.add('folder');
+                            el.innerHTML = '📁 ' + item.name;
+                            
+                            const childrenContainer = document.createElement('div');
+                            childrenContainer.style.display = 'none'; // Collapsed by default
+                            childrenContainer.style.paddingLeft = '10px';
+                            
+                            el.onclick = (e) => {
+                                e.stopPropagation();
+                                const isHidden = childrenContainer.style.display === 'none';
+                                childrenContainer.style.display = isHidden ? 'block' : 'none';
+                                el.innerHTML = (isHidden ? '📂 ' : '📁 ') + item.name;
+                                
+                                // Lazy load children
+                                if (childrenContainer.childNodes.length === 0) {
+                                    buildTree(fullPath, childrenContainer);
+                                }
+                            };
+                            
+                            parentElement.appendChild(el);
+                            parentElement.appendChild(childrenContainer);
+                        } else {
+                            el.classList.add('file');
+                            el.innerHTML = '📄 ' + item.name;
+                            el.onclick = (e) => {
+                                e.stopPropagation();
+                                openFileInEditor(fullPath);
+                            };
+                            parentElement.appendChild(el);
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error reading directory:", err);
+                }
+            }
+
+            buildTree(projectRoot, treeContainer);
+        }
+
+        function openFileInEditor(filePath) {
+            try {
+                const content = fs.readFileSync(filePath, 'utf-8');
+                editor.setValue(content);
+                
+                // Try to detect language based on extension
+                const ext = path.extname(filePath).toLowerCase();
+                let lang = 'cpp';
+                if (ext === '.js' || ext === '.ts') lang = 'javascript';
+                else if (ext === '.html') lang = 'html';
+                else if (ext === '.css') lang = 'css';
+                else if (ext === '.json') lang = 'json';
+                else if (ext === '.md') lang = 'markdown';
+                else if (ext === '.txt' || ext === '.cmake' || path.basename(filePath) === 'CMakeLists.txt') lang = 'plaintext';
+                
+                monaco.editor.setModelLanguage(editor.getModel(), lang);
+                
+                // Store current opened file path somewhere if needed for saving later
+                editor.currentFilePath = filePath;
+            } catch (err) {
+                console.error("Error reading file:", err);
+            }
+        }
+
+        // Basic Drag and Drop Logic
+        function setupDragAndDrop() {
+            const components = document.querySelectorAll('.component');
+            const canvas = document.getElementById('canvas');
+            
+            let draggedType = null;
+
+            components.forEach(comp => {
+                comp.addEventListener('dragstart', (e) => {
+                    draggedType = e.target.getAttribute('data-type');
+                    e.dataTransfer.setData('text/plain', draggedType);
+                });
+            });
+
+            // Handle component dragging on canvas
+            canvas.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Allow drop
+            });
+            
+            canvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                
+                // Check if we're moving existing component or creating new one
+                const componentId = e.dataTransfer.getData('componentId');
+                
+                if (componentId) {
+                    // Moving existing component
+                    const el = document.getElementById(componentId);
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left - 40;
+                    const y = e.clientY - rect.top - 20;
+                    
+                    el.style.left = x + 'px';
+                    el.style.top = y + 'px';
+                    
+                    // Update code with new position
+                    updateCodeFromPosition(componentId, 
+                        Math.round(e.clientX - rect.left), 
+                        Math.round(e.clientY - rect.top));
+                } else if (!draggedType) {
+                    return;
+                } else {
+                    // Creating new component
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const id = draggedType + '_' + Math.floor(Math.random() * 1000);
+                    
+                    // Create visual element
+                    const el = document.createElement('div');
+                    el.id = id;
+                    el.className = 'dropped-component';
+                    el.innerText = draggedType;
+                    el.style.left = (x - 40) + 'px';
+                    el.style.top = (y - 20) + 'px';
+                    el.draggable = true;
+                    
+                    // Setup drag events
+                    el.addEventListener('dragstart', (dragE) => {
+                        dragE.dataTransfer.setData('componentId', id);
+                        setTimeout(() => el.style.opacity = '0.4', 0);
+                    });
+                    
+                    el.addEventListener('dragend', (e) => {
+                        e.preventDefault();
+                        el.style.opacity = '1';
+                        const rect = canvas.getBoundingClientRect();
+                        updateCodeFromPosition(id, 
+                            Math.round(parseInt(el.style.left) + 40), 
+                            Math.round(parseInt(el.style.top) + 20));
+                    });
+                    
+                    canvas.appendChild(el);
+                    
+                    // Update code
+                    updateCodeFromPosition(id, Math.round(x), Math.round(y));
+                    
+                    draggedType = null;
+                }
+            });
+        }
+
+        // Helper function to update code from position
+        function updateCodeFromPosition(id, x, y) {
+            const type = id.split('_')[0];
+            const currentCode = editor.getValue();
+            const lines = currentCode.split('\n');
+            
+            // Find and update or insert line
+            const lineIndex = lines.findIndex(l => l.includes(`auto* ${id} =`));
+            const newCode = `    auto* ${id} = new ${type}(${Math.round(x)}, ${Math.round(y)});`;
+            
+            if (lineIndex >= 0) {
+                lines[lineIndex] = newCode;
+            } else {
+                // Find where to insert (inside setupUI)
+                const insertIndex = lines.findIndex(l => l.includes('void GainPlugin::setupUI()')) + 2;
+                if (insertIndex > 1) lines.splice(insertIndex, 0, newCode);
+            }
+            
+            editor.setValue(lines.join('\n'));
+
+            // Call the C++ backend
+            const { execFile } = require('child_process');
+            const backendExe = path.join(__dirname, '..', 'build', 'ide', 'backend', 'Debug', 'ide_backend.exe');
+            const targetFile = path.join(__dirname, '..', 'framework', 'core', 'examples', 'gain', 'GainPlugin.cpp');
+            
+            execFile(backendExe, ['generate', type, Math.round(x).toString(), Math.round(y).toString(), targetFile]);
+        }
+
+        // Two-way synchronization logic
+        function updateCanvasFromCode(code) {
+            const canvas = document.getElementById('canvas');
+            // Regex to match: auto* ID = new TYPE(X, Y);
+            const regex = /auto\*\s+([a-zA-Z0-9_]+)\s*=\s*new\s+([a-zA-Z0-9_]+)\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\);/g;
+            
+            const foundElements = new Set();
+            let match;
+            
+            while ((match = regex.exec(code)) !== null) {
+                const id = match[1];
+                const type = match[2];
+                const x = parseInt(match[3], 10);
+                const y = parseInt(match[4], 10);
+                
+                foundElements.add(id);
+                
+                let el = document.getElementById(id);
+                if (el) {
+                    // Update existing element
+                    el.style.left = (x - 40) + 'px';
+                    el.style.top = (y - 20) + 'px';
+                    if (el.innerText !== type) {
+                        el.innerText = type;
+                    }
+                } else {
+                    // Create new element
+                    el = document.createElement('div');
+                    el.id = id;
+                    el.className = 'dropped-component';
+                    el.innerText = type;
+                    el.style.left = (x - 40) + 'px';
+                    el.style.top = (y - 20) + 'px';
+                    el.draggable = true;
+                    
+                    // Make component draggable (will be moved later)
+                    el.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('componentId', id);
+                        setTimeout(() => el.style.opacity = '0.4', 0);
+                    });
+
+                    el.addEventListener('dragend', (e) => {
+                        e.preventDefault();
+                        el.style.opacity = '1';
+                        const rect = canvas.getBoundingClientRect();
+                        updateCodeFromPosition(id, 
+                            Math.round(parseInt(el.style.left) + 40), 
+                            Math.round(parseInt(el.style.top) + 20));
+                    });
+                    
+                    canvas.appendChild(el);
+                }
+            }
+            
+            // Remove elements that are no longer in the code
+            const existing = canvas.querySelectorAll('.dropped-component');
+            existing.forEach(el => {
+                if (!foundElements.has(el.id)) {
+                    el.remove();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
