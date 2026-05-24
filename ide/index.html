@@ -1,394 +1,598 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>OurNewIDE</title>
     <style>
-        body { margin: 0; padding: 0; display: flex; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; overflow: hidden; }
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        overflow: hidden;
+      }
 
-        /* Left Sidebar */
-        #left-sidebar { width: 280px; min-width: 200px; background-color: #252526; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
-        
-        /* File Explorer */
-        #file-explorer { flex: 1; padding: 10px; border-bottom: 1px solid #2d2d2d; overflow-y: auto; }
-        .section-header { margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.8px; }
-        .file-tree-item { cursor: pointer; padding: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; font-size: 13px; }
-        .file-tree-item:hover { background-color: #2a2d2e; }
-        .folder { color: #dcb67a; font-weight: bold; }
-        .file { color: #cccccc; padding-left: 15px; }
+      /* Left Sidebar */
+      #left-sidebar {
+        width: 280px;
+        min-width: 200px;
+        background-color: #252526;
+        border-right: 1px solid #2d2d2d;
+        display: flex;
+        flex-direction: column;
+      }
 
-        /* Toolbox / Components */
-        #toolbox { padding: 10px; flex: 0 0 auto; max-height: 40%; overflow-y: auto; }
-        .component { background-color: #2a2d2e; padding: 8px 12px; margin-bottom: 6px; cursor: grab; text-align: left; border-radius: 4px; border: 1px solid #3c3c3c; font-size: 12px; display: flex; align-items: center; }
-        .component:active { cursor: grabbing; background-color: #3c3c3c; }
-        .component::before { content: '▤'; margin-right: 8px; color: #808080; }
+      /* File Explorer */
+      #file-explorer {
+        flex: 1;
+        padding: 10px;
+        border-bottom: 1px solid #2d2d2d;
+        overflow-y: auto;
+      }
+      .section-header {
+        margin: 0 0 10px 0;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 0.8px;
+      }
+      .file-tree-item {
+        cursor: pointer;
+        padding: 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        user-select: none;
+        font-size: 13px;
+      }
+      .file-tree-item:hover {
+        background-color: #2a2d2e;
+      }
+      .folder {
+        color: #dcb67a;
+        font-weight: bold;
+      }
+      .file {
+        color: #cccccc;
+        padding-left: 15px;
+      }
 
-        /* Center Panel */
-        #center-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; background-color: #1e1e1e; }
-        
-        /* Tabs */
-        #tabs { display: flex; background-color: #2d2d2d; border-bottom: 1px solid #1e1e1e; flex-shrink: 0; }
-        .tab-btn { background: none; border: none; color: #969696; padding: 10px 15px; cursor: pointer; font-size: 13px; outline: none; border-top: 2px solid transparent; display: flex; align-items: center; }
-        .tab-btn:hover { background-color: #3c3c3c; color: #d4d4d4; }
-        .tab-btn.active { color: #ffffff; background-color: #1e1e1e; border-top: 2px solid #007acc; }
-        .close-tab-btn { background: none; border: none; color: #969696; cursor: pointer; padding: 0 5px; margin-left: 10px; font-size: 14px; line-height: 1; }
-        .close-tab-btn:hover { color: #fff; background-color: #4a4a4a; }
+      /* Toolbox / Components */
+      #toolbox {
+        padding: 10px;
+        flex: 0 0 auto;
+        max-height: 40%;
+        overflow-y: auto;
+      }
+      .component {
+        background-color: #2a2d2e;
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        cursor: grab;
+        text-align: left;
+        border-radius: 4px;
+        border: 1px solid #3c3c3c;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+      }
+      .component:active {
+        cursor: grabbing;
+        background-color: #3c3c3c;
+      }
+      .component::before {
+        content: '▤';
+        margin-right: 8px;
+        color: #808080;
+      }
 
-        /* Tab Content Container */
-        #tab-content { flex: 1; position: relative; display: flex; flex-direction: column; }
-        .tab-pane { display: none; flex: 1; width: 100%; height: 100%; }
-        .tab-pane.active { display: flex; flex-direction: column; }
+      /* Center Panel */
+      #center-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background-color: #1e1e1e;
+      }
 
-        /* Canvas */
-        #canvas { align-items: center; justify-content: center; background-color: #1a1a1a; background-image: radial-gradient(#2a2a2a 1px, transparent 0); background-size: 20px 20px; }
-        #plugin-container { width: 600px; height: 400px; background-color: #252526; border: 1px solid #3c3c3c; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .dropped-component { position: absolute; background-color: #007acc; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; font-size: 13px; border: 1px solid #005999; }
-        .dropped-component:hover { border-color: #55b3ff; }
-        .dropped-component.selected { border: 2px solid #55b3ff; box-shadow: 0 0 10px rgba(85, 179, 255, 0.5); }
+      /* Tabs */
+      #tabs {
+        display: flex;
+        background-color: #2d2d2d;
+        border-bottom: 1px solid #1e1e1e;
+        flex-shrink: 0;
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        color: #969696;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 13px;
+        outline: none;
+        border-top: 2px solid transparent;
+        display: flex;
+        align-items: center;
+      }
+      .tab-btn:hover {
+        background-color: #3c3c3c;
+        color: #d4d4d4;
+      }
+      .tab-btn.active {
+        color: #ffffff;
+        background-color: #1e1e1e;
+        border-top: 2px solid #007acc;
+      }
+      .close-tab-btn {
+        background: none;
+        border: none;
+        color: #969696;
+        cursor: pointer;
+        padding: 0 5px;
+        margin-left: 10px;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .close-tab-btn:hover {
+        color: #fff;
+        background-color: #4a4a4a;
+      }
 
-        /* Editor */
-        #editor-container { flex: 1; }
-        #editor { width: 100%; height: 100%; }
+      /* Tab Content Container */
+      #tab-content {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .tab-pane {
+        display: none;
+        flex: 1;
+        width: 100%;
+        height: 100%;
+      }
+      .tab-pane.active {
+        display: flex;
+        flex-direction: column;
+      }
 
-        /* Right Sidebar */
-        #right-sidebar { width: 250px; min-width: 200px; background-color: #252526; border-left: 1px solid #2d2d2d; display: flex; flex-direction: column; }
-        .panel-header { padding: 10px; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.8px; border-bottom: 1px solid #2d2d2d; background-color: #252526; }
-        .panel-content { padding: 10px; flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; }
-        .panel-content p { color: rgba(204, 204, 204, 0.5); font-size: 12px; text-align: center; margin: 0; }
+      /* Canvas */
+      #canvas {
+        align-items: center;
+        justify-content: center;
+        background-color: #1a1a1a;
+        background-image: radial-gradient(#2a2a2a 1px, transparent 0);
+        background-size: 20px 20px;
+      }
+      #plugin-container {
+        width: 600px;
+        height: 400px;
+        background-color: #252526;
+        border: 1px solid #3c3c3c;
+        position: relative;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+      .dropped-component {
+        position: absolute;
+        background-color: #007acc;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        user-select: none;
+        font-size: 13px;
+        border: 1px solid #005999;
+      }
+      .dropped-component:hover {
+        border-color: #55b3ff;
+      }
+      .dropped-component.selected {
+        border: 2px solid #55b3ff;
+        box-shadow: 0 0 10px rgba(85, 179, 255, 0.5);
+      }
+
+      /* Editor */
+      #editor-container {
+        flex: 1;
+      }
+      #editor {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Right Sidebar */
+      #right-sidebar {
+        width: 250px;
+        min-width: 200px;
+        background-color: #252526;
+        border-left: 1px solid #2d2d2d;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-header {
+        padding: 10px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 0.8px;
+        border-bottom: 1px solid #2d2d2d;
+        background-color: #252526;
+      }
+      .panel-content {
+        padding: 10px;
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .panel-content p {
+        color: rgba(204, 204, 204, 0.5);
+        font-size: 12px;
+        text-align: center;
+        margin: 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="left-sidebar">
-        <div id="file-explorer">
-            <h3 class="section-header">Explorer</h3>
-            <div id="file-tree"></div>
+      <div id="file-explorer">
+        <h3 class="section-header">Explorer</h3>
+        <div id="file-tree"></div>
+      </div>
+      <div id="toolbox">
+        <h3 class="section-header">Components</h3>
+        <div class="component" draggable="true" data-type="Knob">
+          Dial / Knob
         </div>
-        <div id="toolbox">
-            <h3 class="section-header">Components</h3>
-            <div class="component" draggable="true" data-type="Knob">Dial / Knob</div>
-            <div class="component" draggable="true" data-type="Slider">Fader / Slider</div>
-            <div class="component" draggable="true" data-type="Button">Toggle Button</div>
+        <div class="component" draggable="true" data-type="Slider">
+          Fader / Slider
         </div>
+        <div class="component" draggable="true" data-type="Button">
+          Toggle Button
+        </div>
+      </div>
     </div>
-    
+
     <div id="center-panel">
-        <div id="tabs">
-            <!-- Tabs will be dynamically inserted here -->
+      <div id="tabs">
+        <!-- Tabs will be dynamically inserted here -->
+      </div>
+      <div id="tab-content">
+        <div id="canvas" class="tab-pane">
+          <div id="plugin-container"></div>
         </div>
-        <div id="tab-content">
-            <div id="canvas" class="tab-pane">
-                <div id="plugin-container"></div>
-            </div>
-            <div id="editor-container" class="tab-pane">
-                <div id="editor"></div>
-            </div>
+        <div id="editor-container" class="tab-pane">
+          <div id="editor"></div>
         </div>
+      </div>
     </div>
 
     <div id="right-sidebar">
-        <div class="panel-header">Properties / Inspector</div>
-        <div class="panel-content">
-            <p>Select a component to view properties</p>
-        </div>
+      <div class="panel-header">Properties / Inspector</div>
+      <div class="panel-content">
+        <p>Select a component to view properties</p>
+      </div>
     </div>
 
     <!-- Load Monaco Editor -->
     <script>
-        const fs = require('fs');
-        const path = require('path');
+      const fs = require('fs');
+      const path = require('path');
 
-        // --- Globals --- 
-        let editor;
-        let openTabs = []; // {path: string, type: 'code' | 'ui'}[]
-        let activeTabPath = null;
+      // --- Globals ---
+      let editor;
+      let openTabs = []; // {path: string, type: 'code' | 'ui'}[]
+      let activeTabPath = null;
 
-        // --- Monaco Editor Setup ---
-        const amdLoader = require('monaco-editor/min/vs/loader.js');
-        const amdRequire = amdLoader.require;
-        const amdDefine = amdLoader.require.define;
-        
-        function uriFromPath(_path) {
-            let pathName = path.resolve(_path).replace(/\\/g, '/');
-            if (pathName.length > 0 && pathName.charAt(0) !== '/') {
-                pathName = '/' + pathName;
-            }
-            return encodeURI('file://' + pathName);
+      // --- Monaco Editor Setup ---
+      const amdLoader = require('monaco-editor/min/vs/loader.js');
+      const amdRequire = amdLoader.require;
+      const amdDefine = amdLoader.require.define;
+
+      function uriFromPath(_path) {
+        let pathName = path.resolve(_path).replace(/\\/g, '/');
+        if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+          pathName = '/' + pathName;
         }
+        return encodeURI('file://' + pathName);
+      }
 
-        amdRequire.config({
-            baseUrl: uriFromPath(path.join(__dirname, 'node_modules/monaco-editor/min'))
+      amdRequire.config({
+        baseUrl: uriFromPath(
+          path.join(__dirname, 'node_modules/monaco-editor/min')
+        ),
+      });
+
+      self.module = undefined; // workaround for monaco-css
+
+      amdRequire(['vs/editor/editor.main'], function () {
+        const editorContainer = document.getElementById('editor');
+        if (!editorContainer) {
+          console.error('Editor container not found');
+          return;
+        }
+        editor = monaco.editor.create(editorContainer, {
+          value: '// Open a file from the explorer to start editing',
+          language: 'plaintext',
+          theme: 'vs-dark',
+          automaticLayout: true,
         });
 
-        self.module = undefined; // workaround for monaco-css
-
-        amdRequire(['vs/editor/editor.main'], function () {
-            const editorContainer = document.getElementById('editor');
-            if (!editorContainer) {
-                console.error("Editor container not found");
-                return;
-            }
-            editor = monaco.editor.create(editorContainer, {
-                value: '// Open a file from the explorer to start editing',
-                language: 'plaintext',
-                theme: 'vs-dark',
-                automaticLayout: true
-            });
-
-            // Add Save Action (Ctrl+S / Cmd+S)
-            editor.addAction({
-                id: 'save-file',
-                label: 'Save File',
-                keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS ],
-                run: function(ed) {
-                    if (activeTabPath) {
-                        try {
-                            fs.writeFileSync(activeTabPath, ed.getValue(), 'utf-8');
-                            showToast(`Saved ${path.basename(activeTabPath)}`);
-                        } catch (err) {
-                            console.error('Failed to save file:', err);
-                            alert('Error saving file!');
-                        }
-                    } else {
-                        console.warn('No active file to save.');
-                    }
-                }
-            });
-
-            // --- App Initialization ---
-            setupFileExplorer();
-            setupDragAndDrop();
-            // No initial file open, wait for user action
-        });
-
-        // --- File & Tab Management ---
-        function openFile(filePath) {
-            const existingTab = openTabs.find(t => t.path === filePath);
-            if (existingTab) {
-                switchTab(filePath);
-                return;
-            }
-
-            const fileExtension = path.extname(filePath).toLowerCase();
-            const isUIDesigner = fileExtension === '.ui';
-            const tabData = { path: filePath, type: isUIDesigner ? 'ui' : 'code' };
-            openTabs.push(tabData);
-
-            createTab(filePath);
-            switchTab(filePath);
-        }
-
-        function createTab(filePath) {
-            const tabsContainer = document.getElementById('tabs');
-            const tabBtn = document.createElement('button');
-            tabBtn.className = 'tab-btn';
-            tabBtn.setAttribute('data-path', filePath);
-            tabBtn.innerText = path.basename(filePath);
-            tabBtn.onclick = () => switchTab(filePath);
-
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'close-tab-btn';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                closeTab(filePath);
-            };
-
-            tabBtn.appendChild(closeBtn);
-            tabsContainer.appendChild(tabBtn);
-        }
-
-        function switchTab(filePath) {
-            activeTabPath = filePath;
-            const tabData = openTabs.find(t => t.path === filePath);
-
-            // Update tab buttons UI
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-path') === filePath);
-            });
-
-            // Update content panes
-            const canvasPane = document.getElementById('canvas');
-            const editorPane = document.getElementById('editor-container');
-
-            if (tabData.type === 'ui') {
-                canvasPane.classList.add('active');
-                editorPane.classList.remove('active');
-                // Future: Load UI file content and render components
-                // For now, it just shows the empty plugin window
-                updateCanvasFromCode(''); // Clear canvas for now
+        // Add Save Action (Ctrl+S / Cmd+S)
+        editor.addAction({
+          id: 'save-file',
+          label: 'Save File',
+          keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+          run: function (ed) {
+            if (activeTabPath) {
+              try {
+                fs.writeFileSync(activeTabPath, ed.getValue(), 'utf-8');
+                showToast(`Saved ${path.basename(activeTabPath)}`);
+              } catch (err) {
+                console.error('Failed to save file:', err);
+                alert('Error saving file!');
+              }
             } else {
-                canvasPane.classList.remove('active');
-                editorPane.classList.add('active');
-                try {
-                    const content = fs.readFileSync(filePath, 'utf-8');
-                    const lang = getLanguageFromPath(filePath);
-                    editor.setValue(content);
-                    monaco.editor.setModelLanguage(editor.getModel(), lang);
-                    editor.layout(); // Ensure editor is resized correctly
-                } catch (err) {
-                    console.error(`Error reading file ${filePath}:`, err);
-                    editor.setValue(`// Error loading file: ${filePath}`);
-                }
+              console.warn('No active file to save.');
             }
-            updateInspector(); // Clear or update inspector on tab switch
+          },
+        });
+
+        // --- App Initialization ---
+        setupFileExplorer();
+        setupDragAndDrop();
+        // No initial file open, wait for user action
+      });
+
+      // --- File & Tab Management ---
+      function openFile(filePath) {
+        const existingTab = openTabs.find((t) => t.path === filePath);
+        if (existingTab) {
+          switchTab(filePath);
+          return;
         }
 
-        function closeTab(filePath) {
-            openTabs = openTabs.filter(t => t.path !== filePath);
-            const tabBtn = document.querySelector(`.tab-btn[data-path="${filePath}"]`);
-            if (tabBtn) {
-                tabBtn.remove();
-            }
+        const fileExtension = path.extname(filePath).toLowerCase();
+        const isUIDesigner = fileExtension === '.ui';
+        const tabData = { path: filePath, type: isUIDesigner ? 'ui' : 'code' };
+        openTabs.push(tabData);
 
-            if (activeTabPath === filePath) {
-                activeTabPath = null;
-                // If there are other tabs, switch to the last one. Otherwise, show empty state.
-                if (openTabs.length > 0) {
-                    switchTab(openTabs[openTabs.length - 1].path);
-                } else {
-                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                    updateInspector(); // Clear inspector
-                }
-            }
+        createTab(filePath);
+        switchTab(filePath);
+      }
+
+      function createTab(filePath) {
+        const tabsContainer = document.getElementById('tabs');
+        const tabBtn = document.createElement('button');
+        tabBtn.className = 'tab-btn';
+        tabBtn.setAttribute('data-path', filePath);
+        tabBtn.innerText = path.basename(filePath);
+        tabBtn.onclick = () => switchTab(filePath);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-tab-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeTab(filePath);
+        };
+
+        tabBtn.appendChild(closeBtn);
+        tabsContainer.appendChild(tabBtn);
+      }
+
+      function switchTab(filePath) {
+        activeTabPath = filePath;
+        const tabData = openTabs.find((t) => t.path === filePath);
+
+        // Update tab buttons UI
+        document.querySelectorAll('.tab-btn').forEach((btn) => {
+          btn.classList.toggle(
+            'active',
+            btn.getAttribute('data-path') === filePath
+          );
+        });
+
+        // Update content panes
+        const canvasPane = document.getElementById('canvas');
+        const editorPane = document.getElementById('editor-container');
+
+        if (tabData.type === 'ui') {
+          canvasPane.classList.add('active');
+          editorPane.classList.remove('active');
+          // Future: Load UI file content and render components
+          // For now, it just shows the empty plugin window
+          updateCanvasFromCode(''); // Clear canvas for now
+        } else {
+          canvasPane.classList.remove('active');
+          editorPane.classList.add('active');
+          try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lang = getLanguageFromPath(filePath);
+            editor.setValue(content);
+            monaco.editor.setModelLanguage(editor.getModel(), lang);
+            editor.layout(); // Ensure editor is resized correctly
+          } catch (err) {
+            console.error(`Error reading file ${filePath}:`, err);
+            editor.setValue(`// Error loading file: ${filePath}`);
+          }
+        }
+        updateInspector(); // Clear or update inspector on tab switch
+      }
+
+      function closeTab(filePath) {
+        openTabs = openTabs.filter((t) => t.path !== filePath);
+        const tabBtn = document.querySelector(
+          `.tab-btn[data-path="${filePath}"]`
+        );
+        if (tabBtn) {
+          tabBtn.remove();
         }
 
-        // --- File Explorer ---
-        function setupFileExplorer() {
-            const projectRoot = path.join(__dirname, '..');
-            const treeContainer = document.getElementById('file-tree');
-
-            function buildTree(dir, parentElement) {
-                try {
-                    const items = fs.readdirSync(dir, { withFileTypes: true });
-                    items.sort((a, b) => {
-                        if (a.isDirectory() && !b.isDirectory()) return -1;
-                        if (!a.isDirectory() && b.isDirectory()) return 1;
-                        return a.name.localeCompare(b.name);
-                    });
-
-                    items.forEach(item => {
-                        if (item.name === 'node_modules' || item.name === 'build' || item.name.startsWith('.')) return;
-
-                        const fullPath = path.join(dir, item.name);
-                        const el = document.createElement('div');
-                        el.className = 'file-tree-item';
-                        
-                        if (item.isDirectory()) {
-                            el.classList.add('folder');
-                            el.innerHTML = `📁 ${item.name}`;
-                            const childrenContainer = document.createElement('div');
-                            childrenContainer.style.display = 'none';
-                            childrenContainer.style.paddingLeft = '10px';
-                            
-                            el.onclick = (e) => {
-                                e.stopPropagation();
-                                const isHidden = childrenContainer.style.display === 'none';
-                                childrenContainer.style.display = isHidden ? 'block' : 'none';
-                                el.innerHTML = `${isHidden ? '📂' : '📁'} ${item.name}`;
-                                if (childrenContainer.childNodes.length === 0) {
-                                    buildTree(fullPath, childrenContainer);
-                                }
-                            };
-                            parentElement.appendChild(el);
-                            parentElement.appendChild(childrenContainer);
-                        } else {
-                            el.classList.add('file');
-                            el.innerHTML = `📄 ${item.name}`;
-                            el.onclick = (e) => {
-                                e.stopPropagation();
-                                // For this refactor, we'll treat all non-ui files as code
-                                // and invent a .ui file for the designer.
-                                if (path.extname(item.name).toLowerCase() === '.ui') {
-                                    openFile(fullPath);
-                                } else {
-                                    openFile(fullPath);
-                                }
-                            };
-                            parentElement.appendChild(el);
-                        }
-                    });
-                } catch (err) {
-                    console.error("Error reading directory:", err);
-                }
-            }
-            buildTree(projectRoot, treeContainer);
+        if (activeTabPath === filePath) {
+          activeTabPath = null;
+          // If there are other tabs, switch to the last one. Otherwise, show empty state.
+          if (openTabs.length > 0) {
+            switchTab(openTabs[openTabs.length - 1].path);
+          } else {
+            document
+              .querySelectorAll('.tab-pane')
+              .forEach((p) => p.classList.remove('active'));
+            updateInspector(); // Clear inspector
+          }
         }
+      }
 
-        // --- Drag and Drop ---
-        function setupDragAndDrop() {
-            const components = document.querySelectorAll('.component');
-            const pluginContainer = document.getElementById('plugin-container');
-            
-            let draggedType = null;
+      // --- File Explorer ---
+      function setupFileExplorer() {
+        const projectRoot = path.join(__dirname, '..');
+        const treeContainer = document.getElementById('file-tree');
 
-            components.forEach(comp => {
-                comp.addEventListener('dragstart', (e) => {
-                    draggedType = e.target.getAttribute('data-type');
-                    e.dataTransfer.setData('text/plain', draggedType);
-                });
+        function buildTree(dir, parentElement) {
+          try {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            items.sort((a, b) => {
+              if (a.isDirectory() && !b.isDirectory()) return -1;
+              if (!a.isDirectory() && b.isDirectory()) return 1;
+              return a.name.localeCompare(b.name);
             });
 
-            pluginContainer.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Allow drop
-            });
-            
-            pluginContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (!draggedType) return;
-
-                const rect = pluginContainer.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const id = `${draggedType}_${Date.now()}`;
-                
-                const el = document.createElement('div');
-                el.id = id;
-                el.className = 'dropped-component';
-                el.innerText = draggedType;
-                el.style.left = (x - 40) + 'px'; // Adjust for visual center
-                el.style.top = (y - 20) + 'px';
-                el.draggable = true;
-                
-                // Add listeners for selection and dragging existing components
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectComponent(el);
-                });
-
-                pluginContainer.appendChild(el);
-                selectComponent(el); // Select new component by default
-                draggedType = null;
-            });
-        }
-
-        // --- Inspector / Properties ---
-        function selectComponent(element) {
-            // Remove selection from others
-            const selected = document.querySelector('.dropped-component.selected');
-            if (selected) {
-                selected.classList.remove('selected');
-            }
-
-            if (element) {
-                element.classList.add('selected');
-            }
-            updateInspector(element);
-        }
-
-        function updateInspector(element) {
-            const inspector = document.querySelector('#right-sidebar .panel-content');
-            if (!element) {
-                inspector.innerHTML = '<p>Select a component to view properties</p>';
+            items.forEach((item) => {
+              if (
+                item.name === 'node_modules' ||
+                item.name === 'build' ||
+                item.name.startsWith('.')
+              )
                 return;
-            }
 
-            const id = element.id;
-            const type = id.split('_')[0];
-            const left = element.style.left;
-            const top = element.style.top;
+              const fullPath = path.join(dir, item.name);
+              const el = document.createElement('div');
+              el.className = 'file-tree-item';
 
-            inspector.innerHTML = `
+              if (item.isDirectory()) {
+                el.classList.add('folder');
+                el.innerHTML = `📁 ${item.name}`;
+                const childrenContainer = document.createElement('div');
+                childrenContainer.style.display = 'none';
+                childrenContainer.style.paddingLeft = '10px';
+
+                el.onclick = (e) => {
+                  e.stopPropagation();
+                  const isHidden = childrenContainer.style.display === 'none';
+                  childrenContainer.style.display = isHidden ? 'block' : 'none';
+                  el.innerHTML = `${isHidden ? '📂' : '📁'} ${item.name}`;
+                  if (childrenContainer.childNodes.length === 0) {
+                    buildTree(fullPath, childrenContainer);
+                  }
+                };
+                parentElement.appendChild(el);
+                parentElement.appendChild(childrenContainer);
+              } else {
+                el.classList.add('file');
+                el.innerHTML = `📄 ${item.name}`;
+                el.onclick = (e) => {
+                  e.stopPropagation();
+                  // For this refactor, we'll treat all non-ui files as code
+                  // and invent a .ui file for the designer.
+                  if (path.extname(item.name).toLowerCase() === '.ui') {
+                    openFile(fullPath);
+                  } else {
+                    openFile(fullPath);
+                  }
+                };
+                parentElement.appendChild(el);
+              }
+            });
+          } catch (err) {
+            console.error('Error reading directory:', err);
+          }
+        }
+        buildTree(projectRoot, treeContainer);
+      }
+
+      // --- Drag and Drop ---
+      function setupDragAndDrop() {
+        const components = document.querySelectorAll('.component');
+        const pluginContainer = document.getElementById('plugin-container');
+
+        let draggedType = null;
+
+        components.forEach((comp) => {
+          comp.addEventListener('dragstart', (e) => {
+            draggedType = e.target.getAttribute('data-type');
+            e.dataTransfer.setData('text/plain', draggedType);
+          });
+        });
+
+        pluginContainer.addEventListener('dragover', (e) => {
+          e.preventDefault(); // Allow drop
+        });
+
+        pluginContainer.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (!draggedType) return;
+
+          const rect = pluginContainer.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const id = `${draggedType}_${Date.now()}`;
+
+          const el = document.createElement('div');
+          el.id = id;
+          el.className = 'dropped-component';
+          el.innerText = draggedType;
+          el.style.left = x - 40 + 'px'; // Adjust for visual center
+          el.style.top = y - 20 + 'px';
+          el.draggable = true;
+
+          // Add listeners for selection and dragging existing components
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectComponent(el);
+          });
+
+          pluginContainer.appendChild(el);
+          selectComponent(el); // Select new component by default
+          draggedType = null;
+        });
+      }
+
+      // --- Inspector / Properties ---
+      function selectComponent(element) {
+        // Remove selection from others
+        const selected = document.querySelector('.dropped-component.selected');
+        if (selected) {
+          selected.classList.remove('selected');
+        }
+
+        if (element) {
+          element.classList.add('selected');
+        }
+        updateInspector(element);
+      }
+
+      function updateInspector(element) {
+        const inspector = document.querySelector(
+          '#right-sidebar .panel-content'
+        );
+        if (!element) {
+          inspector.innerHTML = '<p>Select a component to view properties</p>';
+          return;
+        }
+
+        const id = element.id;
+        const type = id.split('_')[0];
+        const left = element.style.left;
+        const top = element.style.top;
+
+        inspector.innerHTML = `
                 <div style="width: 100%; text-align: left; font-size: 12px;">
                     <p style="margin-bottom: 10px;"><strong>ID:</strong> ${id}</p>
                     <p style="margin-bottom: 10px;"><strong>Type:</strong> ${type}</p>
@@ -396,44 +600,64 @@
                     <p style="margin-bottom: 10px;"><strong>Top:</strong> ${top}</p>
                 </div>
             `;
-        }
+      }
 
-        // --- Utility Functions ---
-        function getLanguageFromPath(filePath) {
-            const ext = path.extname(filePath).toLowerCase();
-            const langMap = {
-                '.js': 'javascript', '.ts': 'javascript', '.html': 'html',
-                '.css': 'css', '.json': 'json', '.md': 'markdown',
-                '.cpp': 'cpp', '.h': 'cpp', '.c': 'c',
-                '.cmake': 'plaintext', 'cmakelists.txt': 'plaintext'
-            };
-            return langMap[ext] || (path.basename(filePath).toLowerCase() === 'cmakelists.txt' ? 'plaintext' : 'plaintext');
-        }
+      // --- Utility Functions ---
+      function getLanguageFromPath(filePath) {
+        const ext = path.extname(filePath).toLowerCase();
+        const langMap = {
+          '.js': 'javascript',
+          '.ts': 'javascript',
+          '.html': 'html',
+          '.css': 'css',
+          '.json': 'json',
+          '.md': 'markdown',
+          '.cpp': 'cpp',
+          '.h': 'cpp',
+          '.c': 'c',
+          '.cmake': 'plaintext',
+          'cmakelists.txt': 'plaintext',
+        };
+        return (
+          langMap[ext] ||
+          (path.basename(filePath).toLowerCase() === 'cmakelists.txt'
+            ? 'plaintext'
+            : 'plaintext')
+        );
+      }
 
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.innerText = message;
-            Object.assign(toast.style, {
-                position: 'absolute', bottom: '20px', right: '20px', 
-                backgroundColor: '#007acc', color: 'white', padding: '8px 16px',
-                borderRadius: '4px', zIndex: '1000', boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                transition: 'opacity 0.3s', opacity: '1'
-            });
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
-        }
+      function showToast(message) {
+        const toast = document.createElement('div');
+        toast.innerText = message;
+        Object.assign(toast.style, {
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#007acc',
+          color: 'white',
+          padding: '8px 16px',
+          borderRadius: '4px',
+          zIndex: '1000',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          transition: 'opacity 0.3s',
+          opacity: '1',
+        });
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 2000);
+      }
 
-        // Deprecated functions - will be removed or refactored
-        function updateCanvasFromCode(code) { /* Logic to be refactored to load from .ui files */ 
-            const pluginContainer = document.getElementById('plugin-container');
-            pluginContainer.innerHTML = ''; // Clear for now
-        }
-        function updateCodeFromPosition(id, x, y) { /* Logic to be refactored to save to .ui files */ }
-
+      // Deprecated functions - will be removed or refactored
+      function updateCanvasFromCode(code) {
+        /* Logic to be refactored to load from .ui files */
+        const pluginContainer = document.getElementById('plugin-container');
+        pluginContainer.innerHTML = ''; // Clear for now
+      }
+      function updateCodeFromPosition(id, x, y) {
+        /* Logic to be refactored to save to .ui files */
+      }
     </script>
-</body>
+  </body>
 </html>
-
