@@ -11,7 +11,9 @@
       >
         {{ tab.name }}
         <span v-if="tab.isDirty" class="dirty-indicator">*</span>
-        <span class="close-btn" @click.stop="store.closeTab(tab.id)">&times;</span>
+        <span class="close-btn" @click.stop="store.closeTab(tab.id)"
+          >&times;</span
+        >
       </button>
     </div>
 
@@ -19,18 +21,16 @@
     <div class="tab-content" v-if="activeTab">
       <!-- Используем KeepAlive (опционально), чтобы сохранять состояние компонентов при переключении -->
       <KeepAlive>
-        <component 
-          :is="activeTab.type === 'code' ? CodeEditor : FormDesigner" 
-          :key="activeTab.id" 
-          :fileId="activeTab.id" 
+        <component
+          :is="activeTab.type === 'code' ? CodeEditor : FormDesigner"
+          :key="activeTab.id"
+          :fileId="activeTab.id"
         />
       </KeepAlive>
     </div>
-    
+
     <!-- Пустое состояние -->
-    <div class="empty-state" v-else>
-      Open a file to start editing
-    </div>
+    <div class="empty-state" v-else>Open a file to start editing</div>
   </div>
 </template>
 
@@ -45,7 +45,7 @@ import FormDesigner from './FormDesigner.vue';
 const store = useEditorStore();
 
 // Вычисляемое свойство для быстрого доступа к данным активной вкладки
-const activeTab = computed(() => 
+const activeTab = computed(() =>
   store.tabs.find((tab: Tab) => tab.id === store.activeTabId)
 );
 </script>

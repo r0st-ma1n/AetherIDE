@@ -12,11 +12,11 @@ export const useEditorStore = defineStore('editor', () => {
   const tabs = ref<Tab[]>([]);
   const activeTabId = ref<string | null>(null);
 
-  // Если в будущем name будет просто названием ('GainPlugin.cpp'), 
+  // Если в будущем name будет просто названием ('GainPlugin.cpp'),
   // в эту функцию лучше передавать отдельный параметр id (например, полный путь к файлу).
   function openFile(id: string, name: string, type: 'code' | 'designer') {
     const existingTab = tabs.value.find((tab) => tab.id === id);
-    
+
     if (!existingTab) {
       tabs.value.push({
         id,
@@ -25,7 +25,7 @@ export const useEditorStore = defineStore('editor', () => {
         isDirty: false,
       });
     }
-    
+
     activeTabId.value = id;
   }
 
