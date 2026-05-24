@@ -34,6 +34,26 @@ void GainPlugin::process(apf::ProcessContext& context) {
 
 void GainPlugin::setupUI() {
 {
+    auto* Button_1 = new Button(357, 472);
+{
+    auto* Slider_1 = new Slider(193, 501);
+{
+    auto* Knob_1 = new Knob(235, 316);
+{
+    auto* Knob_1 = new Knob(273, 302);
+{
+    auto* Knob_1 = new Knob(273, 302);
+{
+    auto* Knob_1 = new Knob(284, 265);
+{
+    auto* Knob_1 = new Knob(284, 265);
+{
+    auto* Knob_1 = new Knob(239, 220);
+{
+    auto* Knob_1 = new Knob(239, 220);
+{
+    auto* Knob_1 = new Knob(199, 287);
+{
     auto* Knob_1 = new Knob(260, 195);
 {
     auto* Knob_1 = new Knob(211, 302);
