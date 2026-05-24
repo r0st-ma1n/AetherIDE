@@ -27,7 +27,6 @@ void addComponentToCode(const std::string& componentType, int x, int y, const st
         newLines.push_back(l);
         if (l.find("void GainPlugin::setupUI()") != std::string::npos) {
             foundSetupUI = true;
-            newLines.push_back("{");
             // Generate a unique ID (very naive approach for prototype)
             static int id_counter = 0;
             id_counter++;
@@ -43,8 +42,6 @@ void addComponentToCode(const std::string& componentType, int x, int y, const st
 
     std::ofstream fileOut(filePath);
     for (const auto& l : newLines) {
-        // Skip the duplicate '{' we added if it already had one on the next line
-        // This is extremely hacky for demonstration, ideally we use proper parsing.
         fileOut << l << std::endl;
     }
     

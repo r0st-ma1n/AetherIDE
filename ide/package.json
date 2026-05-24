@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "electron": "^42.2.0",
-    "monaco-editor": "^0.55.1"
+    "monaco-editor": "^0.55.1",
+    "vue": "^3.5.34"
   }
 }

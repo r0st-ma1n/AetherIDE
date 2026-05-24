@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title>OurNewIDE</title>
     <style>
-        body { margin: 0; padding: 0; display: flex; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; overflow: hidden; }
+        body { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; overflow: hidden; }
+        #root { display: flex; width: 100%; height: 100%; }
 
         /* Left Sidebar */
         #left-sidebar { width: 280px; min-width: 200px; background-color: #252526; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
@@ -56,384 +57,389 @@
         .panel-content { padding: 10px; flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; }
         .panel-content p { color: rgba(204, 204, 204, 0.5); font-size: 12px; text-align: center; margin: 0; }
     </style>
+    
+    <!-- Load React, ReactDOM, and Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-    <div id="left-sidebar">
-        <div id="file-explorer">
-            <h3 class="section-header">Explorer</h3>
-            <div id="file-tree"></div>
-        </div>
-        <div id="toolbox">
-            <h3 class="section-header">Components</h3>
-            <div class="component" draggable="true" data-type="Knob">Dial / Knob</div>
-            <div class="component" draggable="true" data-type="Slider">Fader / Slider</div>
-            <div class="component" draggable="true" data-type="Button">Toggle Button</div>
-        </div>
-    </div>
-    
-    <div id="center-panel">
-        <div id="tabs">
-            <!-- Tabs will be dynamically inserted here -->
-        </div>
-        <div id="tab-content">
-            <div id="canvas" class="tab-pane">
-                <div id="plugin-container"></div>
-            </div>
-            <div id="editor-container" class="tab-pane">
-                <div id="editor"></div>
-            </div>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <div id="right-sidebar">
-        <div class="panel-header">Properties / Inspector</div>
-        <div class="panel-content">
-            <p>Select a component to view properties</p>
-        </div>
-    </div>
-
-    <!-- Load Monaco Editor -->
-    <script>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
         const fs = require('fs');
         const path = require('path');
 
-        // --- Globals --- 
-        let editor;
-        let openTabs = []; // {path: string, type: 'code' | 'ui'}[]
-        let activeTabPath = null;
-
-        // --- Monaco Editor Setup ---
+        // --- Monaco Editor Global Setup ---
         const amdLoader = require('monaco-editor/min/vs/loader.js');
         const amdRequire = amdLoader.require;
-        const amdDefine = amdLoader.require.define;
-        
         function uriFromPath(_path) {
             let pathName = path.resolve(_path).replace(/\\/g, '/');
-            if (pathName.length > 0 && pathName.charAt(0) !== '/') {
-                pathName = '/' + pathName;
-            }
+            if (pathName.length > 0 && pathName.charAt(0) !== '/') pathName = '/' + pathName;
             return encodeURI('file://' + pathName);
         }
+        amdRequire.config({ baseUrl: uriFromPath(path.join(__dirname, 'node_modules/monaco-editor/min')) });
+        self.module = undefined;
+        window.amdRequire = amdRequire; // Делаем доступным для React
 
-        amdRequire.config({
-            baseUrl: uriFromPath(path.join(__dirname, 'node_modules/monaco-editor/min'))
-        });
-
-        self.module = undefined; // workaround for monaco-css
-
-        amdRequire(['vs/editor/editor.main'], function () {
-            const editorContainer = document.getElementById('editor');
-            if (!editorContainer) {
-                console.error("Editor container not found");
-                return;
-            }
-            editor = monaco.editor.create(editorContainer, {
-                value: '// Open a file from the explorer to start editing',
-                language: 'plaintext',
-                theme: 'vs-dark',
-                automaticLayout: true
+        // --- Utility Code Gen ---
+        function generateCppFromUI(components, className) {
+            let code = `// GENERATED CODE - DO NOT MODIFY COMMENTS\n#pragma once\n\n#include "apf/PluginProcessor.h"\n\nclass ${className}UI {\npublic:\n    void setup() {\n`;
+            components.forEach(comp => {
+                const x = parseInt(comp.left) || 0, y = parseInt(comp.top) || 0;
+                const safeId = comp.id.replace(/[^a-zA-Z0-9_]/g, '');
+                code += `        // COMPONENT: ${comp.id} | TYPE: ${comp.type}\n        ${safeId}.setBounds(${x}, ${y}, 100, 40);\n`;
             });
+            code += `    }\n\nprivate:\n`;
+            components.forEach(comp => {
+                const safeId = comp.id.replace(/[^a-zA-Z0-9_]/g, '');
+                code += `        apf::${comp.type} ${safeId};\n`;
+            });
+            code += `};\n`;
+            return code;
+        }
 
-            // Add Save Action (Ctrl+S / Cmd+S)
-            editor.addAction({
-                id: 'save-file',
-                label: 'Save File',
-                keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS ],
-                run: function(ed) {
-                    if (activeTabPath) {
+        function parseUIFromCpp(cppCode) {
+            const components = [];
+            const lines = cppCode.split('\n');
+            let currentId = null, currentType = null;
+            for (let line of lines) {
+                const commentMatch = line.match(/\/\/\s*COMPONENT:\s*(.*?)\s*\|\s*TYPE:\s*(.*)/);
+                if (commentMatch) { currentId = commentMatch[1]; currentType = commentMatch[2]; continue; }
+                const boundsMatch = line.match(/\.setBounds\(\s*(\d+)\s*,\s*(\d+)/);
+                if (boundsMatch && currentId) {
+                    components.push({ id: currentId, type: currentType, left: boundsMatch[1] + 'px', top: boundsMatch[2] + 'px' });
+                    currentId = null;
+                }
+            }
+            return components;
+        }
+
+        // --- React Components ---
+
+        function FileNode({ itemPath, isDirectory, name, onOpenFile }) {
+            const [isOpen, setIsOpen] = useState(false);
+            const [children, setChildren] = useState([]);
+
+            const handleClick = (e) => {
+                e.stopPropagation();
+                if (isDirectory) {
+                    if (!isOpen) {
                         try {
-                            fs.writeFileSync(activeTabPath, ed.getValue(), 'utf-8');
-                            showToast(`Saved ${path.basename(activeTabPath)}`);
-                        } catch (err) {
-                            console.error('Failed to save file:', err);
-                            alert('Error saving file!');
+                            const items = fs.readdirSync(itemPath, { withFileTypes: true })
+                                .filter(i => !['node_modules', 'build'].includes(i.name) && !i.name.startsWith('.'))
+                                .sort((a, b) => {
+                                    if (a.isDirectory() && !b.isDirectory()) return -1;
+                                    if (!a.isDirectory() && b.isDirectory()) return 1;
+                                    return a.name.localeCompare(b.name);
+                                });
+                            setChildren(items);
+                        } catch(err) { console.error(err); }
+                    }
+                    setIsOpen(!isOpen);
+                } else {
+                    onOpenFile(itemPath);
+                }
+            };
+
+            return (
+                <div>
+                    <div className={`file-tree-item ${isDirectory ? 'folder' : 'file'}`} onClick={handleClick}>
+                        {isDirectory ? (isOpen ? '📂 ' : '📁 ') : '📄 '} {name}
+                    </div>
+                    {isOpen && isDirectory && (
+                        <div style={{ paddingLeft: '10px' }}>
+                            {children.map(child => (
+                                <FileNode key={child.name} itemPath={path.join(itemPath, child.name)} 
+                                          isDirectory={child.isDirectory()} name={child.name} onOpenFile={onOpenFile} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function CodeEditor({ filePath, onDirty, onSaveRef }) {
+            const editorContainer = useRef(null);
+            const editorInstance = useRef(null);
+
+            useEffect(() => {
+                if (!editorContainer.current) return;
+                let content = '';
+                try { content = fs.readFileSync(filePath, 'utf-8'); } catch(e) {}
+                
+                const ext = path.extname(filePath).toLowerCase();
+                const lang = ext === '.cpp' || ext === '.h' ? 'cpp' : (ext === '.json' ? 'json' : 'plaintext');
+
+                window.amdRequire(['vs/editor/editor.main'], function () {
+                    editorInstance.current = monaco.editor.create(editorContainer.current, {
+                        value: content, language: lang, theme: 'vs-dark', automaticLayout: true
+                    });
+                    editorInstance.current.onDidChangeModelContent(() => onDirty(true));
+                });
+
+                return () => { if (editorInstance.current) editorInstance.current.dispose(); };
+            }, [filePath]);
+
+            useEffect(() => {
+                onSaveRef.current = () => {
+                    if (editorInstance.current) {
+                        const val = editorInstance.current.getValue();
+                        fs.writeFileSync(filePath, val, 'utf-8');
+                        onDirty(false);
+                        return val;
+                    }
+                    return null;
+                };
+            }, [filePath, onDirty]);
+
+            return <div ref={editorContainer} style={{ width: '100%', height: '100%' }} />;
+        }
+
+        function UIDesigner({ filePath, onDirty, onSaveRef, onSelectComponent }) {
+            const [components, setComponents] = useState([]);
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                try {
+                    if (fs.existsSync(filePath)) {
+                        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                        if (data && data.components) setComponents(data.components);
+                    }
+                } catch(e) {}
+            }, [filePath]);
+
+            useEffect(() => {
+                onSaveRef.current = () => {
+                    fs.writeFileSync(filePath, JSON.stringify({ components }, null, 4), 'utf-8');
+                    onDirty(false);
+                    return components;
+                };
+            }, [filePath, components, onDirty]);
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                const type = e.dataTransfer.getData('text/plain');
+                if (!type) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const newComp = {
+                    id: `${type}_${Date.now()}`, type,
+                    left: (e.clientX - rect.left - 40) + 'px', top: (e.clientY - rect.top - 20) + 'px'
+                };
+                setComponents(prev => [...prev, newComp]);
+                onSelectComponent(newComp);
+                onDirty(true);
+            };
+
+            const handleMouseDown = (e, comp) => {
+                e.stopPropagation();
+                onSelectComponent(comp);
+                const el = e.currentTarget;
+                const startX = e.clientX - el.getBoundingClientRect().left;
+                const startY = e.clientY - el.getBoundingClientRect().top;
+                
+                const onMouseMove = (moveEvent) => {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const newLeft = (moveEvent.clientX - startX - rect.left) + 'px';
+                    const newTop = (moveEvent.clientY - startY - rect.top) + 'px';
+                    
+                    setComponents(prev => {
+                        const next = prev.map(c => c.id === comp.id ? { ...c, left: newLeft, top: newTop } : c);
+                        onSelectComponent(next.find(c => c.id === comp.id));
+                        return next;
+                    });
+                    onDirty(true);
+                };
+                
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+
+            return (
+                <div id="plugin-container" ref={containerRef} onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
+                    {components.map(comp => (
+                        <div key={comp.id} id={comp.id} className="dropped-component"
+                             style={{ left: comp.left, top: comp.top }}
+                             onMouseDown={(e) => handleMouseDown(e, comp)}>
+                            {comp.type}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function App() {
+            const [tabs, setTabs] = useState([]); // Структура вкладок
+            const [activeTabPath, setActiveTabPath] = useState(null);
+            const [selectedComponent, setSelectedComponent] = useState(null);
+            const [toast, setToast] = useState(null);
+            
+            const [projectRoot] = useState(() => path.join(__dirname, '..'));
+            const [rootDirs, setRootDirs] = useState([]);
+            
+            const saveHandlers = useRef({}); // Храним методы сохранения для открытых файлов
+
+            useEffect(() => {
+                try {
+                    const items = fs.readdirSync(projectRoot, { withFileTypes: true })
+                        .filter(i => !['node_modules', 'build'].includes(i.name) && !i.name.startsWith('.'));
+                    setRootDirs(items);
+                } catch (err) {}
+            }, [projectRoot]);
+
+            const showToast = (msg) => {
+                setToast(msg);
+                setTimeout(() => setToast(null), 2000);
+            };
+
+            const openFile = (filePath) => {
+                const isUIDesigner = filePath.endsWith('.ui');
+                if (!tabs.find(t => t.path === filePath)) {
+                    setTabs(prev => [...prev, { id: `tab_${Date.now()}`, path: filePath, type: isUIDesigner ? 'ui' : 'code', isDirty: false }]);
+                }
+                setActiveTabPath(filePath);
+                setSelectedComponent(null);
+            };
+
+            const closeTab = (e, filePath) => {
+                e.stopPropagation();
+                setTabs(prev => {
+                    const newTabs = prev.filter(t => t.path !== filePath);
+                    if (activeTabPath === filePath) {
+                        setActiveTabPath(newTabs.length > 0 ? newTabs[newTabs.length - 1].path : null);
+                    }
+                    return newTabs;
+                });
+                delete saveHandlers.current[filePath];
+            };
+
+            const handleSave = useCallback(() => {
+                if (!activeTabPath || !saveHandlers.current[activeTabPath]) return;
+                
+                const tab = tabs.find(t => t.path === activeTabPath);
+                const data = saveHandlers.current[activeTabPath](); 
+                
+                const baseDir = path.dirname(activeTabPath);
+                const baseName = path.basename(activeTabPath, path.extname(activeTabPath));
+
+                if (tab.type === 'ui') {
+                    const cppPath = path.join(baseDir, baseName + '.h');
+                    const cppCode = generateCppFromUI(data, baseName);
+                    fs.writeFileSync(cppPath, cppCode, 'utf-8');
+                } else if (activeTabPath.endsWith('.h')) {
+                    const uiPath = path.join(baseDir, baseName + '.ui');
+                    if (fs.existsSync(uiPath)) {
+                        const comps = parseUIFromCpp(data);
+                        if (comps && comps.length > 0) {
+                            fs.writeFileSync(uiPath, JSON.stringify({ components: comps }, null, 4), 'utf-8');
                         }
-                    } else {
-                        console.warn('No active file to save.');
                     }
                 }
-            });
+                showToast(`Saved ${path.basename(activeTabPath)}`);
+            }, [activeTabPath, tabs]);
 
-            // --- App Initialization ---
-            setupFileExplorer();
-            setupDragAndDrop();
-            // No initial file open, wait for user action
-        });
+            useEffect(() => {
+                const onKeyDown = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                };
+                window.addEventListener('keydown', onKeyDown);
+                return () => window.removeEventListener('keydown', onKeyDown);
+            }, [handleSave]);
 
-        // --- File & Tab Management ---
-        function openFile(filePath) {
-            const existingTab = openTabs.find(t => t.path === filePath);
-            if (existingTab) {
-                switchTab(filePath);
-                return;
-            }
+            const activeTab = tabs.find(t => t.path === activeTabPath);
 
-            const fileExtension = path.extname(filePath).toLowerCase();
-            const isUIDesigner = fileExtension === '.ui';
-            const tabData = { path: filePath, type: isUIDesigner ? 'ui' : 'code' };
-            openTabs.push(tabData);
+            return (
+                <>
+                    <div id="left-sidebar">
+                        <div id="file-explorer">
+                            <h3 className="section-header">Explorer</h3>
+                            <div id="file-tree">
+                                {rootDirs.map(child => (
+                                    <FileNode key={child.name} itemPath={path.join(projectRoot, child.name)} 
+                                              isDirectory={child.isDirectory()} name={child.name} onOpenFile={openFile} />
+                                ))}
+                            </div>
+                        </div>
+                        <div id="toolbox">
+                            <h3 className="section-header">Components</h3>
+                            <div className="component" draggable onDragStart={e => e.dataTransfer.setData('text/plain', 'Knob')}>Dial / Knob</div>
+                            <div className="component" draggable onDragStart={e => e.dataTransfer.setData('text/plain', 'Slider')}>Fader / Slider</div>
+                            <div className="component" draggable onDragStart={e => e.dataTransfer.setData('text/plain', 'Button')}>Toggle Button</div>
+                        </div>
+                    </div>
+                    
+                    <div id="center-panel">
+                        <div id="tabs">
+                            {tabs.map(tab => (
+                                <button key={tab.path} className={`tab-btn ${activeTabPath === tab.path ? 'active' : ''}`} onClick={() => setActiveTabPath(tab.path)}>
+                                    {path.basename(tab.path)} {tab.isDirty && '*'}
+                                    <span className="close-tab-btn" onClick={(e) => closeTab(e, tab.path)}>&times;</span>
+                                </button>
+                            ))}
+                        </div>
+                        <div id="tab-content">
+                            {activeTab ? (
+                                activeTab.type === 'ui' ? (
+                                    <div id="canvas" className="tab-pane active" style={{ display: 'flex' }}>
+                                        <UIDesigner 
+                                            filePath={activeTab.path} 
+                                            onDirty={(d) => setTabs(prev => prev.map(t => t.path === activeTab.path ? { ...t, isDirty: d } : t))}
+                                            onSaveRef={{ current: (fn) => saveHandlers.current[activeTab.path] = fn }}
+                                            onSelectComponent={setSelectedComponent}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div id="editor-container" className="tab-pane active" style={{ display: 'flex' }}>
+                                        <CodeEditor 
+                                            filePath={activeTab.path}
+                                            onDirty={(d) => setTabs(prev => prev.map(t => t.path === activeTab.path ? { ...t, isDirty: d } : t))}
+                                            onSaveRef={{ current: (fn) => saveHandlers.current[activeTab.path] = fn }}
+                                        />
+                                    </div>
+                                )
+                            ) : (
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
+                                    Open a file from the explorer
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-            createTab(filePath);
-            switchTab(filePath);
+                    <div id="right-sidebar">
+                        <div className="panel-header">Properties / Inspector</div>
+                        <div className="panel-content">
+                            {selectedComponent ? (
+                                <div style={{ width: '100%', textAlign: 'left', fontSize: '12px' }}>
+                                    <p style={{ marginBottom: '10px' }}><strong>ID:</strong> {selectedComponent.id}</p>
+                                    <p style={{ marginBottom: '10px' }}><strong>Type:</strong> {selectedComponent.type}</p>
+                                    <p style={{ marginBottom: '10px' }}><strong>Left:</strong> {selectedComponent.left}</p>
+                                    <p style={{ marginBottom: '10px' }}><strong>Top:</strong> {selectedComponent.top}</p>
+                                </div>
+                            ) : (
+                                <p>Select a component to view properties</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {toast && (
+                        <div style={{ position: 'absolute', bottom: 20, right: 20, backgroundColor: '#007acc', color: 'white', padding: '8px 16px', borderRadius: '4px', zIndex: 1000, boxShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                            {toast}
+                        </div>
+                    )}
+                </>
+            );
         }
 
-        function createTab(filePath) {
-            const tabsContainer = document.getElementById('tabs');
-            const tabBtn = document.createElement('button');
-            tabBtn.className = 'tab-btn';
-            tabBtn.setAttribute('data-path', filePath);
-            tabBtn.innerText = path.basename(filePath);
-            tabBtn.onclick = () => switchTab(filePath);
-
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'close-tab-btn';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                closeTab(filePath);
-            };
-
-            tabBtn.appendChild(closeBtn);
-            tabsContainer.appendChild(tabBtn);
-        }
-
-        function switchTab(filePath) {
-            activeTabPath = filePath;
-            const tabData = openTabs.find(t => t.path === filePath);
-
-            // Update tab buttons UI
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-path') === filePath);
-            });
-
-            // Update content panes
-            const canvasPane = document.getElementById('canvas');
-            const editorPane = document.getElementById('editor-container');
-
-            if (tabData.type === 'ui') {
-                canvasPane.classList.add('active');
-                editorPane.classList.remove('active');
-                // Future: Load UI file content and render components
-                // For now, it just shows the empty plugin window
-                updateCanvasFromCode(''); // Clear canvas for now
-            } else {
-                canvasPane.classList.remove('active');
-                editorPane.classList.add('active');
-                try {
-                    const content = fs.readFileSync(filePath, 'utf-8');
-                    const lang = getLanguageFromPath(filePath);
-                    editor.setValue(content);
-                    monaco.editor.setModelLanguage(editor.getModel(), lang);
-                    editor.layout(); // Ensure editor is resized correctly
-                } catch (err) {
-                    console.error(`Error reading file ${filePath}:`, err);
-                    editor.setValue(`// Error loading file: ${filePath}`);
-                }
-            }
-            updateInspector(); // Clear or update inspector on tab switch
-        }
-
-        function closeTab(filePath) {
-            openTabs = openTabs.filter(t => t.path !== filePath);
-            const tabBtn = document.querySelector(`.tab-btn[data-path="${filePath}"]`);
-            if (tabBtn) {
-                tabBtn.remove();
-            }
-
-            if (activeTabPath === filePath) {
-                activeTabPath = null;
-                // If there are other tabs, switch to the last one. Otherwise, show empty state.
-                if (openTabs.length > 0) {
-                    switchTab(openTabs[openTabs.length - 1].path);
-                } else {
-                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                    updateInspector(); // Clear inspector
-                }
-            }
-        }
-
-        // --- File Explorer ---
-        function setupFileExplorer() {
-            const projectRoot = path.join(__dirname, '..');
-            const treeContainer = document.getElementById('file-tree');
-
-            function buildTree(dir, parentElement) {
-                try {
-                    const items = fs.readdirSync(dir, { withFileTypes: true });
-                    items.sort((a, b) => {
-                        if (a.isDirectory() && !b.isDirectory()) return -1;
-                        if (!a.isDirectory() && b.isDirectory()) return 1;
-                        return a.name.localeCompare(b.name);
-                    });
-
-                    items.forEach(item => {
-                        if (item.name === 'node_modules' || item.name === 'build' || item.name.startsWith('.')) return;
-
-                        const fullPath = path.join(dir, item.name);
-                        const el = document.createElement('div');
-                        el.className = 'file-tree-item';
-                        
-                        if (item.isDirectory()) {
-                            el.classList.add('folder');
-                            el.innerHTML = `📁 ${item.name}`;
-                            const childrenContainer = document.createElement('div');
-                            childrenContainer.style.display = 'none';
-                            childrenContainer.style.paddingLeft = '10px';
-                            
-                            el.onclick = (e) => {
-                                e.stopPropagation();
-                                const isHidden = childrenContainer.style.display === 'none';
-                                childrenContainer.style.display = isHidden ? 'block' : 'none';
-                                el.innerHTML = `${isHidden ? '📂' : '📁'} ${item.name}`;
-                                if (childrenContainer.childNodes.length === 0) {
-                                    buildTree(fullPath, childrenContainer);
-                                }
-                            };
-                            parentElement.appendChild(el);
-                            parentElement.appendChild(childrenContainer);
-                        } else {
-                            el.classList.add('file');
-                            el.innerHTML = `📄 ${item.name}`;
-                            el.onclick = (e) => {
-                                e.stopPropagation();
-                                // For this refactor, we'll treat all non-ui files as code
-                                // and invent a .ui file for the designer.
-                                if (path.extname(item.name).toLowerCase() === '.ui') {
-                                    openFile(fullPath);
-                                } else {
-                                    openFile(fullPath);
-                                }
-                            };
-                            parentElement.appendChild(el);
-                        }
-                    });
-                } catch (err) {
-                    console.error("Error reading directory:", err);
-                }
-            }
-            buildTree(projectRoot, treeContainer);
-        }
-
-        // --- Drag and Drop ---
-        function setupDragAndDrop() {
-            const components = document.querySelectorAll('.component');
-            const pluginContainer = document.getElementById('plugin-container');
-            
-            let draggedType = null;
-
-            components.forEach(comp => {
-                comp.addEventListener('dragstart', (e) => {
-                    draggedType = e.target.getAttribute('data-type');
-                    e.dataTransfer.setData('text/plain', draggedType);
-                });
-            });
-
-            pluginContainer.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Allow drop
-            });
-            
-            pluginContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (!draggedType) return;
-
-                const rect = pluginContainer.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const id = `${draggedType}_${Date.now()}`;
-                
-                const el = document.createElement('div');
-                el.id = id;
-                el.className = 'dropped-component';
-                el.innerText = draggedType;
-                el.style.left = (x - 40) + 'px'; // Adjust for visual center
-                el.style.top = (y - 20) + 'px';
-                el.draggable = true;
-                
-                // Add listeners for selection and dragging existing components
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectComponent(el);
-                });
-
-                pluginContainer.appendChild(el);
-                selectComponent(el); // Select new component by default
-                draggedType = null;
-            });
-        }
-
-        // --- Inspector / Properties ---
-        function selectComponent(element) {
-            // Remove selection from others
-            const selected = document.querySelector('.dropped-component.selected');
-            if (selected) {
-                selected.classList.remove('selected');
-            }
-
-            if (element) {
-                element.classList.add('selected');
-            }
-            updateInspector(element);
-        }
-
-        function updateInspector(element) {
-            const inspector = document.querySelector('#right-sidebar .panel-content');
-            if (!element) {
-                inspector.innerHTML = '<p>Select a component to view properties</p>';
-                return;
-            }
-
-            const id = element.id;
-            const type = id.split('_')[0];
-            const left = element.style.left;
-            const top = element.style.top;
-
-            inspector.innerHTML = `
-                <div style="width: 100%; text-align: left; font-size: 12px;">
-                    <p style="margin-bottom: 10px;"><strong>ID:</strong> ${id}</p>
-                    <p style="margin-bottom: 10px;"><strong>Type:</strong> ${type}</p>
-                    <p style="margin-bottom: 10px;"><strong>Left:</strong> ${left}</p>
-                    <p style="margin-bottom: 10px;"><strong>Top:</strong> ${top}</p>
-                </div>
-            `;
-        }
-
-        // --- Utility Functions ---
-        function getLanguageFromPath(filePath) {
-            const ext = path.extname(filePath).toLowerCase();
-            const langMap = {
-                '.js': 'javascript', '.ts': 'javascript', '.html': 'html',
-                '.css': 'css', '.json': 'json', '.md': 'markdown',
-                '.cpp': 'cpp', '.h': 'cpp', '.c': 'c',
-                '.cmake': 'plaintext', 'cmakelists.txt': 'plaintext'
-            };
-            return langMap[ext] || (path.basename(filePath).toLowerCase() === 'cmakelists.txt' ? 'plaintext' : 'plaintext');
-        }
-
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.innerText = message;
-            Object.assign(toast.style, {
-                position: 'absolute', bottom: '20px', right: '20px', 
-                backgroundColor: '#007acc', color: 'white', padding: '8px 16px',
-                borderRadius: '4px', zIndex: '1000', boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                transition: 'opacity 0.3s', opacity: '1'
-            });
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
-        }
-
-        // Deprecated functions - will be removed or refactored
-        function updateCanvasFromCode(code) { /* Logic to be refactored to load from .ui files */ 
-            const pluginContainer = document.getElementById('plugin-container');
-            pluginContainer.innerHTML = ''; // Clear for now
-        }
-        function updateCodeFromPosition(id, x, y) { /* Logic to be refactored to save to .ui files */ }
-
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
-
