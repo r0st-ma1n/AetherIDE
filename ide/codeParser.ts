@@ -11,7 +11,7 @@ import { CodeParsingResult, UIComponent, ComponentType } from './types';
  */
 export function parseUIFromCpp(
   sourceCode: string,
-  filePath: string,
+  filePath: string
 ): CodeParsingResult {
   const components: UIComponent[] = [];
   const errors: string[] = [];
@@ -33,7 +33,7 @@ export function parseUIFromCpp(
       });
     } catch (e) {
       errors.push(
-        `Failed to parse component definition at index ${match.index}`,
+        `Failed to parse component definition at index ${match.index}`
       );
     }
   }

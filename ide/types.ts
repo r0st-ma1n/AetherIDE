@@ -61,12 +61,12 @@ export interface CodeParsingResult {
 export interface IBackendAPI {
   // Запрос на парсинг кода (в будущем - вызов Tree-sitter AST парсера)
   parseCode(filePath: string, sourceCode: string): Promise<CodeParsingResult>;
-  
+
   // Запрос на генерацию кода бэкендом (безопасная модификация AST)
   generateCode(
-    payload: CodeGenerationPayload,
+    payload: CodeGenerationPayload
   ): Promise<{ success: boolean; newCode?: string; error?: string }>;
-  
+
   // Вызов компиляции плагина (CMake)
   buildProject(buildDir: string): Promise<{ success: boolean; logs: string }>;
 }
