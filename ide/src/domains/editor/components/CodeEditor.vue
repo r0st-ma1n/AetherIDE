@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { monaco } from '@/domains/editor/lib/monaco';
+import { useEditorStore } from '@/domains/editor/stores/editorStore';
 import { parseGeneratedCode } from '@/domains/ui-designer/lib/codeParser';
 import { serializeUiDocument } from '@/domains/ui-designer/lib/uiDocument';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
@@ -22,51 +23,23 @@ const props = defineProps<{
   tab: WorkspaceTab;
 }>();
 
+const editorStore = useEditorStore();
 const workspaceStore = useWorkspaceStore();
 const editorElement = ref<HTMLElement | null>(null);
 const editor = ref<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-function detectLanguage(filePath: string) {
-  if (filePath.endsWith('.json')) {
-    return 'json';
-  }
-
-  if (filePath.endsWith('.ts')) {
-    return 'typescript';
-  }
-
-  if (filePath.endsWith('.js')) {
-    return 'javascript';
-  }
-
-  if (filePath.endsWith('.vue')) {
-    return 'html';
-  }
-
-  if (
-    filePath.endsWith('.cpp') ||
-    filePath.endsWith('.c') ||
-    filePath.endsWith('.h')
-  ) {
-    return 'cpp';
-  }
-
-  if (filePath.endsWith('.md')) {
-    return 'markdown';
-  }
-
-  return 'plaintext';
-}
-
 async function loadFile() {
   const content = await window.prototypeIDE.readFile(props.tab.filePath);
+  editorStore.setActiveFile(props.tab.filePath);
+  editorStore.setDocumentContent(props.tab.filePath, content);
 
   if (editor.value) {
     const model = editor.value.getModel();
+    const language = editorStore.getDocumentLanguage(props.tab.filePath);
 
     if (model) {
       model.setValue(content);
-      monaco.editor.setModelLanguage(model, detectLanguage(props.tab.filePath));
+      monaco.editor.setModelLanguage(model, language);
     } else {
       editor.value.setValue(content);
     }
@@ -81,6 +54,7 @@ async function saveFile() {
   }
 
   const content = editor.value.getValue();
+  editorStore.setDocumentContent(props.tab.filePath, content);
   await window.prototypeIDE.writeFile(props.tab.filePath, content);
 
   if (props.tab.filePath.endsWith('.h')) {
@@ -122,7 +96,7 @@ onMounted(async () => {
 
   editor.value = monaco.editor.create(editorElement.value, {
     value: '',
-    language: detectLanguage(props.tab.filePath),
+    language: editorStore.getDocumentLanguage(props.tab.filePath),
     automaticLayout: true,
     minimap: {
       enabled: false,
@@ -134,6 +108,10 @@ onMounted(async () => {
   });
 
   editor.value.onDidChangeModelContent(() => {
+    editorStore.setDocumentContent(
+      props.tab.filePath,
+      editor.value?.getValue() ?? ''
+    );
     workspaceStore.markDirty(props.tab.id, true);
   });
 
