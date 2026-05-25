@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { generateHeaderFromUi } from '@/domains/ui-designer/lib/codeGenerator';
+import { generatePluginCode } from '@/domains/ui-designer/lib/codeGenerator';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import {
@@ -62,9 +62,25 @@ async function saveDocument() {
   const baseDir = dirname(props.tab.filePath);
   const baseName = basenameWithoutExt(props.tab.filePath);
   const headerPath = joinPath(baseDir, `${baseName}.h`);
-  const headerCode = generateHeaderFromUi(designerStore.components, baseName);
+  const cppPath = joinPath(baseDir, `${baseName}.cpp`);
+
+  let existingHeader = '';
+  let existingCpp = '';
+
+  // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
+  try {
+    if (window.prototypeIDE.readFile) {
+      existingHeader = (await window.prototypeIDE.readFile(headerPath)) || '';
+      existingCpp = (await window.prototypeIDE.readFile(cppPath)) || '';
+    }
+  } catch (err) {
+    // Игнорируем ошибку (например, если файлы генерируются впервые)
+  }
+
+  const { headerCode, cppCode } = generatePluginCode(designerStore.components, baseName, existingHeader, existingCpp);
 
   await window.prototypeIDE.writeFile(headerPath, headerCode);
+  await window.prototypeIDE.writeFile(cppPath, cppCode);
   workspaceStore.markDirty(props.tab.id, false);
   workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
 }
