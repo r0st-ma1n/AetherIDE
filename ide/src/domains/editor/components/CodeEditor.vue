@@ -1,12 +1,16 @@
 <template>
   <section class="code-editor">
-    <div ref="editorElement" class="code-editor__body"></div>
+    <textarea
+      v-model="content"
+      class="code-editor__textarea"
+      spellcheck="false"
+      @input="handleInput"
+    ></textarea>
   </section>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { monaco } from '@/domains/editor/lib/monaco';
 import { useEditorStore } from '@/domains/editor/stores/editorStore';
 import { parseGeneratedCode } from '@/domains/ui-designer/lib/codeParser';
 import { serializeUiDocument } from '@/domains/ui-designer/lib/uiDocument';
@@ -25,37 +29,20 @@ const props = defineProps<{
 
 const editorStore = useEditorStore();
 const workspaceStore = useWorkspaceStore();
-const editorElement = ref<HTMLElement | null>(null);
-const editor = ref<monaco.editor.IStandaloneCodeEditor | null>(null);
+const content = ref('');
 
 async function loadFile() {
-  const content = await window.prototypeIDE.readFile(props.tab.filePath);
+  const nextContent = await window.prototypeIDE.readFile(props.tab.filePath);
   editorStore.setActiveFile(props.tab.filePath);
-  editorStore.setDocumentContent(props.tab.filePath, content);
-
-  if (editor.value) {
-    const model = editor.value.getModel();
-    const language = editorStore.getDocumentLanguage(props.tab.filePath);
-
-    if (model) {
-      model.setValue(content);
-      monaco.editor.setModelLanguage(model, language);
-    } else {
-      editor.value.setValue(content);
-    }
-  }
-
+  editorStore.setDocumentContent(props.tab.filePath, nextContent);
+  content.value = nextContent;
   workspaceStore.markDirty(props.tab.id, false);
 }
 
 async function saveFile() {
-  if (!editor.value) {
-    return;
-  }
-
-  const content = editor.value.getValue();
-  editorStore.setDocumentContent(props.tab.filePath, content);
-  await window.prototypeIDE.writeFile(props.tab.filePath, content);
+  const currentContent = content.value;
+  editorStore.setDocumentContent(props.tab.filePath, currentContent);
+  await window.prototypeIDE.writeFile(props.tab.filePath, currentContent);
 
   if (props.tab.filePath.endsWith('.h')) {
     const baseDir = dirname(props.tab.filePath);
@@ -64,7 +51,7 @@ async function saveFile() {
     const uiExists = await window.prototypeIDE.fileExists(uiPath);
 
     if (uiExists) {
-      const components = parseGeneratedCode(content);
+      const components = parseGeneratedCode(currentContent);
 
       if (components.length > 0) {
         await window.prototypeIDE.writeFile(
@@ -79,6 +66,11 @@ async function saveFile() {
   workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
 }
 
+function handleInput() {
+  editorStore.setDocumentContent(props.tab.filePath, content.value);
+  workspaceStore.markDirty(props.tab.id, true);
+}
+
 function bindSaveShortcut(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
     event.preventDefault();
@@ -90,31 +82,6 @@ function bindSaveShortcut(event: KeyboardEvent) {
 }
 
 onMounted(async () => {
-  if (!editorElement.value) {
-    return;
-  }
-
-  editor.value = monaco.editor.create(editorElement.value, {
-    value: '',
-    language: editorStore.getDocumentLanguage(props.tab.filePath),
-    automaticLayout: true,
-    minimap: {
-      enabled: false,
-    },
-    theme: 'vs-dark',
-    fontSize: 14,
-    roundedSelection: false,
-    scrollBeyondLastLine: false,
-  });
-
-  editor.value.onDidChangeModelContent(() => {
-    editorStore.setDocumentContent(
-      props.tab.filePath,
-      editor.value?.getValue() ?? ''
-    );
-    workspaceStore.markDirty(props.tab.id, true);
-  });
-
   await loadFile();
   window.addEventListener('keydown', bindSaveShortcut);
 });
@@ -128,7 +95,6 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', bindSaveShortcut);
-  editor.value?.dispose();
 });
 </script>
 
@@ -136,11 +102,24 @@ onBeforeUnmount(() => {
 .code-editor {
   display: flex;
   flex: 1;
-  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background-color: #1e1e1e;
 }
 
-.code-editor__body {
+.code-editor__textarea {
   width: 100%;
   height: 100%;
+  border: none;
+  padding: 16px 18px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  resize: none;
+  outline: none;
+  font-family: 'Consolas', 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
 }
 </style>
