@@ -1,7 +1,9 @@
 export default [
   {
-    files: ['*.js'],
-    ignores: ['node_modules/**'],
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+  {
+    files: ['electron/**/*.cjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'commonjs',
@@ -10,7 +12,6 @@ export default [
         console: 'readonly',
         process: 'readonly',
         setTimeout: 'readonly',
-        window: 'readonly',
       },
     },
     rules: {

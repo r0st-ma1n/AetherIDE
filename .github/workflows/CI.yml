@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  js-quality:
-    name: JavaScript Quality Checks
+  build-and-lint:
+    name: Build & Lint
     runs-on: ubuntu-latest
 
     defaults:
@@ -35,13 +35,32 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-  cpp-build:
-    name: Native Build Verification
+      - name: Run typecheck
+        run: npm run typecheck
+
+  test:
+    name: Test
     runs-on: ubuntu-latest
+    needs: build-and-lint
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ide/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ide
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ide
 
       - name: Configure CMake
         run: cmake -S . -B build
