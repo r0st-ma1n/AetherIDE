@@ -6,7 +6,7 @@ IDE_DIR := ide
 help:
 	@echo Available targets:
 	@echo   ide-install       Install frontend dependencies
-	@echo   ide-dev           Run Vite dev server
+	@echo   ide-dev           Run Electron + Vite dev mode
 	@echo   ide-build         Build the IDE frontend
 	@echo   ide-start         Start the Electron app
 	@echo   ide-lint          Run ESLint for the IDE
