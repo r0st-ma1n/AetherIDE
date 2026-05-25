@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -90,6 +90,60 @@ function registerIpcHandlers() {
     await fs.writeFile(absolutePath, payload.content, 'utf-8');
     return { ok: true };
   });
+
+  ipcMain.handle('file:exists', async (_event, relativePath) => {
+    try {
+      const absolutePath = resolveProjectPath(relativePath);
+      await fs.access(absolutePath);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function buildAppMenu(window) {
+  const template = [
+    {
+      label: 'File',
+      submenu: [{ role: 'close', label: 'Close Window' }],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Tools',
+      submenu: [
+        {
+          label: 'Toggle Debug Panel',
+          accelerator: 'Ctrl+Shift+D',
+          click: () => {
+            window.webContents.send('tools:toggle-debug-panel');
+          },
+        },
+        { role: 'toggleDevTools', label: 'Toggle Developer Tools' },
+      ],
+    },
+  ];
+
+  return Menu.buildFromTemplate(template);
 }
 
 function createWindow() {
@@ -106,6 +160,8 @@ function createWindow() {
     },
     title: 'PrototypeIDE',
   });
+
+  Menu.setApplicationMenu(buildAppMenu(window));
 
   if (VITE_DEV_SERVER_URL) {
     window.loadURL(VITE_DEV_SERVER_URL);

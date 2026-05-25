@@ -13,6 +13,7 @@ const PALETTE = [
 ];
 
 export const useUiDesignerStore = defineStore('ui-designer', () => {
+  const currentDocumentPath = ref<string | null>(null);
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
   const draggingPaletteType = ref<UiComponentType | null>(null);
@@ -26,11 +27,13 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   async function loadDocument(filePath: string) {
     const source = await window.prototypeIDE.readFile(filePath);
+    currentDocumentPath.value = filePath;
     components.value = parseUiDocument(source);
     selectedComponentId.value = components.value[0]?.id ?? null;
   }
 
   async function saveDocument(filePath: string) {
+    currentDocumentPath.value = filePath;
     await window.prototypeIDE.writeFile(
       filePath,
       serializeUiDocument(components.value)
@@ -90,6 +93,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   return {
     components,
+    currentDocumentPath,
     draggingPaletteType,
     finishPaletteDrag,
     loadDocument,

@@ -32,8 +32,15 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { generateHeaderFromUi } from '@/domains/ui-designer/lib/codeGenerator';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
+import {
+  basename,
+  basenameWithoutExt,
+  dirname,
+  joinPath,
+} from '@/shared/lib/path';
 import type { UiComponentType, WorkspaceTab } from '@/shared/types';
 
 const props = defineProps<{
@@ -51,7 +58,15 @@ async function loadDocument() {
 
 async function saveDocument() {
   await designerStore.saveDocument(props.tab.filePath);
+
+  const baseDir = dirname(props.tab.filePath);
+  const baseName = basenameWithoutExt(props.tab.filePath);
+  const headerPath = joinPath(baseDir, `${baseName}.h`);
+  const headerCode = generateHeaderFromUi(designerStore.components, baseName);
+
+  await window.prototypeIDE.writeFile(headerPath, headerCode);
   workspaceStore.markDirty(props.tab.id, false);
+  workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
 }
 
 function handleSaveShortcut(event: KeyboardEvent) {

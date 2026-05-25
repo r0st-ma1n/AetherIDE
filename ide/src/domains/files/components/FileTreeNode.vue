@@ -21,8 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { toWorkspaceTab } from '@/domains/files/lib/projectFiles';
+import { computed } from 'vue';
+import { useFileExplorerStore } from '@/domains/files/stores/fileExplorerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import type { FileTreeNode as FileTreeNodeModel } from '@/shared/types';
 
@@ -31,20 +31,21 @@ const props = defineProps<{
 }>();
 
 const workspaceStore = useWorkspaceStore();
-const isOpen = ref(false);
+const fileStore = useFileExplorerStore();
+
+const isOpen = computed(() => fileStore.isDirectoryExpanded(props.node.path));
 
 function handleClick() {
   if (props.node.isDirectory) {
-    isOpen.value = !isOpen.value;
+    fileStore.toggleDirectory(props.node.path);
     return;
   }
 
-  workspaceStore.openTab(
-    toWorkspaceTab({
-      name: props.node.name,
-      path: props.node.path,
-    })
-  );
+  const entry = fileStore.flattenedEntryMap[props.node.path];
+
+  if (entry) {
+    workspaceStore.openTab(entry);
+  }
 }
 </script>
 

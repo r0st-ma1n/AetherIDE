@@ -5,6 +5,8 @@ import type { WorkspaceTab, WorkspaceTabKind } from '@/shared/types';
 export const useWorkspaceStore = defineStore('workspace', () => {
   const tabs = ref<WorkspaceTab[]>([]);
   const activeTabId = ref<string | null>(null);
+  const toastMessage = ref<string | null>(null);
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   const activeTab = computed(
     () => tabs.value.find((tab) => tab.id === activeTabId.value) ?? null
@@ -55,13 +57,59 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  function initializeTabs(candidates: WorkspaceTab[]) {
+    if (tabs.value.length > 0 || candidates.length === 0) {
+      return;
+    }
+
+    const preferredUiTab =
+      candidates.find((tab) => tab.filePath === 'ide/GainPlugin.ui') ??
+      candidates.find((tab) => tab.kind === 'designer') ??
+      null;
+
+    const preferredCodeTab =
+      candidates.find(
+        (tab) => tab.filePath === 'framework/core/examples/gain/GainPlugin.h'
+      ) ??
+      candidates.find((tab) => tab.kind === 'code') ??
+      null;
+
+    if (preferredUiTab) {
+      openTab(preferredUiTab);
+    }
+
+    if (preferredCodeTab) {
+      openTab(preferredCodeTab);
+    }
+
+    if (preferredUiTab) {
+      activeTabId.value = preferredUiTab.id;
+    }
+  }
+
+  function showToast(message: string) {
+    toastMessage.value = message;
+
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+
+    toastTimer = setTimeout(() => {
+      toastMessage.value = null;
+      toastTimer = null;
+    }, 2000);
+  }
+
   return {
     tabs,
     activeTab,
     activeTabId,
     closeTab,
     markDirty,
+    initializeTabs,
     openTab,
     setActiveTab,
+    showToast,
+    toastMessage,
   };
 });

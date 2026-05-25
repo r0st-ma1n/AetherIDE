@@ -31,17 +31,24 @@ const activeTab = computed(() =>
 
 <style scoped>
 .workspace {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   background-color: #1e1e1e;
 }
 
 .workspace__content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .workspace__empty {

@@ -17,8 +17,10 @@ declare global {
   interface Window {
     prototypeIDE: {
       version: string;
+      onToggleDebugPanel: (callback: () => void) => () => void;
       listProjectFiles: () => Promise<ProjectFileEntry[]>;
       readFile: (path: string) => Promise<string>;
+      fileExists: (path: string) => Promise<boolean>;
       writeFile: (path: string, content: string) => Promise<{ ok: boolean }>;
     };
   }

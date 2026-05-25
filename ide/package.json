@@ -4,7 +4,9 @@
   "description": "PrototypeIDE desktop shell and renderer",
   "main": "electron/main/index.cjs",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:renderer": "vite --host 127.0.0.1 --strictPort",
+    "dev:electron": "electron .",
     "build": "vite build",
     "preview": "vite preview",
     "start": "electron .",

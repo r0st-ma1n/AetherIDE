@@ -21,12 +21,17 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useFileExplorerStore } from '@/domains/files/stores/fileExplorerStore';
+import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import FileTreeNode from './FileTreeNode.vue';
 
 const fileStore = useFileExplorerStore();
+const workspaceStore = useWorkspaceStore();
 
 onMounted(() => {
-  void fileStore.loadEntries();
+  void (async () => {
+    await fileStore.loadEntries();
+    workspaceStore.initializeTabs(fileStore.entries);
+  })();
 });
 </script>
 
