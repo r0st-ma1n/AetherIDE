@@ -2,7 +2,10 @@
   <section class="panel">
     <header class="panel__header">Explorer</header>
     <div class="panel__body">
+      <div v-if="fileStore.isLoading" class="panel__state">Loading files...</div>
+      <div v-else-if="fileStore.error" class="panel__state">{{ fileStore.error }}</div>
       <button
+        v-else
         v-for="entry in fileStore.entries"
         :key="entry.id"
         class="file-entry"
@@ -16,11 +19,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useFileExplorerStore } from '@/domains/files/stores/fileExplorerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 
 const fileStore = useFileExplorerStore();
 const workspaceStore = useWorkspaceStore();
+
+onMounted(() => {
+  void fileStore.loadEntries();
+});
 </script>
 
 <style scoped>
@@ -43,6 +51,11 @@ const workspaceStore = useWorkspaceStore();
   display: grid;
   gap: 8px;
   padding: 0 12px 12px;
+}
+
+.panel__state {
+  padding: 12px;
+  color: #8190a8;
 }
 
 .file-entry {

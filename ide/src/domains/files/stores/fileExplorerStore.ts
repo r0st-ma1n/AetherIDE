@@ -1,35 +1,33 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { toWorkspaceTab } from '@/domains/files/lib/projectFiles';
 import type { WorkspaceTab } from '@/shared/types';
 
-const DEFAULT_ENTRIES: WorkspaceTab[] = [
-  {
-    id: 'designer:gain',
-    title: 'GainPlugin.ui',
-    filePath: 'ide/GainPlugin.ui',
-    kind: 'designer',
-    isDirty: false,
-  },
-  {
-    id: 'code:main',
-    title: 'main.ts',
-    filePath: 'ide/src/main.ts',
-    kind: 'code',
-    isDirty: false,
-  },
-  {
-    id: 'code:app-shell',
-    title: 'AppShell.vue',
-    filePath: 'ide/src/app/AppShell.vue',
-    kind: 'code',
-    isDirty: false,
-  },
-];
-
 export const useFileExplorerStore = defineStore('file-explorer', () => {
-  const entries = ref(DEFAULT_ENTRIES);
+  const entries = ref<WorkspaceTab[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+
+  async function loadEntries() {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const files = await window.prototypeIDE.listProjectFiles();
+      entries.value = files.map(toWorkspaceTab);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error ? loadError.message : 'Unable to load project files.';
+      error.value = message;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   return {
+    error,
     entries,
+    isLoading,
+    loadEntries,
   };
 });

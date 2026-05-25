@@ -8,6 +8,11 @@ export interface WorkspaceTab {
   isDirty: boolean;
 }
 
+export interface ProjectFileEntry {
+  name: string;
+  path: string;
+}
+
 export type UiComponentType = 'Knob' | 'Slider' | 'Button';
 
 export interface UiComponent {

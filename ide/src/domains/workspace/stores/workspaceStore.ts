@@ -2,26 +2,9 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { WorkspaceTab, WorkspaceTabKind } from '@/shared/types';
 
-const DEFAULT_TABS: WorkspaceTab[] = [
-  {
-    id: 'designer:gain',
-    title: 'GainPlugin.ui',
-    filePath: 'ide/GainPlugin.ui',
-    kind: 'designer',
-    isDirty: false,
-  },
-  {
-    id: 'code:gain-header',
-    title: 'GainPlugin.h',
-    filePath: 'framework/core/examples/gain/GainPlugin.h',
-    kind: 'code',
-    isDirty: false,
-  },
-];
-
 export const useWorkspaceStore = defineStore('workspace', () => {
-  const tabs = ref<WorkspaceTab[]>(DEFAULT_TABS);
-  const activeTabId = ref<string | null>(DEFAULT_TABS[0]?.id ?? null);
+  const tabs = ref<WorkspaceTab[]>([]);
+  const activeTabId = ref<string | null>(null);
 
   const activeTab = computed(() =>
     tabs.value.find((tab) => tab.id === activeTabId.value) ?? null,

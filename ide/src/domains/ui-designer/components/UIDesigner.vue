@@ -2,7 +2,12 @@
   <section class="designer">
     <header class="designer__header">
       <span>{{ tab.title }}</span>
-      <span>{{ generatedPreview }}</span>
+      <div class="designer__actions">
+        <span>{{ generatedPreview }}</span>
+        <button class="designer__save" :disabled="isSaving" @click="saveDocument">
+          {{ isSaving ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
     </header>
 
     <div class="designer__canvas">
@@ -20,18 +25,75 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { generateCodePreview } from '@/domains/ui-designer/lib/codeGenerator';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
+import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import type { WorkspaceTab } from '@/shared/types';
 
-defineProps<{
+const props = defineProps<{
   tab: WorkspaceTab;
 }>();
 
 const designerStore = useUiDesignerStore();
+const workspaceStore = useWorkspaceStore();
+const isSaving = ref(false);
 
 const generatedPreview = computed(() => generateCodePreview(designerStore.components));
+
+async function loadDocument() {
+  await designerStore.loadDocument(props.tab.filePath);
+  workspaceStore.markDirty(props.tab.id, false);
+}
+
+async function saveDocument() {
+  isSaving.value = true;
+
+  try {
+    await designerStore.saveDocument(props.tab.filePath);
+    workspaceStore.markDirty(props.tab.id, false);
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+function handleSaveShortcut(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+
+    if (workspaceStore.activeTabId === props.tab.id) {
+      void saveDocument();
+    }
+  }
+}
+
+watch(
+  () => designerStore.components,
+  () => {
+    if (workspaceStore.activeTabId === props.tab.id) {
+      workspaceStore.markDirty(props.tab.id, true);
+    }
+  },
+  {
+    deep: true,
+  },
+);
+
+watch(
+  () => props.tab.filePath,
+  async () => {
+    await loadDocument();
+  },
+);
+
+onMounted(async () => {
+  await loadDocument();
+  window.addEventListener('keydown', handleSaveShortcut);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleSaveShortcut);
+});
 </script>
 
 <style scoped>
@@ -52,6 +114,20 @@ const generatedPreview = computed(() => generateCodePreview(designerStore.compon
   padding: 14px 18px;
   border-bottom: 1px solid #2f3541;
   color: #dce3ee;
+}
+
+.designer__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.designer__save {
+  border: 1px solid #3a4352;
+  border-radius: 999px;
+  background-color: transparent;
+  color: #9fb0c8;
+  padding: 6px 10px;
 }
 
 .designer__canvas {
