@@ -25,7 +25,7 @@ import TabBar from './TabBar.vue';
 const workspaceStore = useWorkspaceStore();
 
 const activeTab = computed(() =>
-  workspaceStore.tabs.find((tab) => tab.id === workspaceStore.activeTabId),
+  workspaceStore.tabs.find((tab) => tab.id === workspaceStore.activeTabId)
 );
 </script>
 

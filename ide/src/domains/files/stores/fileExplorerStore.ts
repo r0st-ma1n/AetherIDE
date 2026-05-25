@@ -20,7 +20,9 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
       tree.value = buildFileTree(files);
     } catch (loadError) {
       const message =
-        loadError instanceof Error ? loadError.message : 'Unable to load project files.';
+        loadError instanceof Error
+          ? loadError.message
+          : 'Unable to load project files.';
       error.value = message;
     } finally {
       isLoading.value = false;

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { parseUiDocument, serializeUiDocument } from '@/domains/ui-designer/lib/uiDocument';
+import {
+  parseUiDocument,
+  serializeUiDocument,
+} from '@/domains/ui-designer/lib/uiDocument';
 import type { UiComponent, UiComponentType } from '@/shared/types';
 
 const PALETTE = [
@@ -15,7 +18,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const draggingPaletteType = ref<UiComponentType | null>(null);
 
   const selectedComponent = computed(
-    () => components.value.find((component) => component.id === selectedComponentId.value) ?? null,
+    () =>
+      components.value.find(
+        (component) => component.id === selectedComponentId.value
+      ) ?? null
   );
 
   async function loadDocument(filePath: string) {
@@ -25,7 +31,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   }
 
   async function saveDocument(filePath: string) {
-    await window.prototypeIDE.writeFile(filePath, serializeUiDocument(components.value));
+    await window.prototypeIDE.writeFile(
+      filePath,
+      serializeUiDocument(components.value)
+    );
   }
 
   function addComponent(type: UiComponentType) {
@@ -46,7 +55,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId.value = componentId;
   }
 
-  function placeComponent(type: UiComponentType, position: UiComponent['position']) {
+  function placeComponent(
+    type: UiComponentType,
+    position: UiComponent['position']
+  ) {
     const next: UiComponent = {
       id: `${type.toLowerCase()}-${Date.now()}`,
       type,
@@ -57,7 +69,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId.value = next.id;
   }
 
-  function moveComponent(componentId: string, position: UiComponent['position']) {
+  function moveComponent(
+    componentId: string,
+    position: UiComponent['position']
+  ) {
     const component = components.value.find((item) => item.id === componentId);
 
     if (component) {

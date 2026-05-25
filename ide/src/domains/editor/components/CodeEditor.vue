@@ -35,7 +35,11 @@ function detectLanguage(filePath: string) {
     return 'html';
   }
 
-  if (filePath.endsWith('.cpp') || filePath.endsWith('.c') || filePath.endsWith('.h')) {
+  if (
+    filePath.endsWith('.cpp') ||
+    filePath.endsWith('.c') ||
+    filePath.endsWith('.h')
+  ) {
     return 'cpp';
   }
 
@@ -67,7 +71,10 @@ async function saveFile() {
   if (!editor.value) {
     return;
   }
-  await window.prototypeIDE.writeFile(props.tab.filePath, editor.value.getValue());
+  await window.prototypeIDE.writeFile(
+    props.tab.filePath,
+    editor.value.getValue()
+  );
   workspaceStore.markDirty(props.tab.id, false);
 }
 
@@ -111,7 +118,7 @@ watch(
   () => props.tab.filePath,
   async () => {
     await loadFile();
-  },
+  }
 );
 
 onBeforeUnmount(() => {

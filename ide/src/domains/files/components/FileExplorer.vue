@@ -2,9 +2,18 @@
   <section class="panel">
     <header class="panel__header">Explorer</header>
     <div class="panel__body">
-      <div v-if="fileStore.isLoading" class="panel__state">Loading files...</div>
-      <div v-else-if="fileStore.error" class="panel__state">{{ fileStore.error }}</div>
-      <FileTreeNode v-else v-for="node in fileStore.tree" :key="node.id" :node="node" />
+      <div v-if="fileStore.isLoading" class="panel__state">
+        Loading files...
+      </div>
+      <div v-else-if="fileStore.error" class="panel__state">
+        {{ fileStore.error }}
+      </div>
+      <FileTreeNode
+        v-else
+        v-for="node in fileStore.tree"
+        :key="node.id"
+        :node="node"
+      />
     </div>
   </section>
 </template>

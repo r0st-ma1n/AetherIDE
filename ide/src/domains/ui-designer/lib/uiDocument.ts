@@ -44,6 +44,6 @@ export function serializeUiDocument(components: UiComponent[]) {
       })),
     },
     null,
-    2,
+    2
   );
 }

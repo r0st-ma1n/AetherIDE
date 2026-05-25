@@ -11,7 +11,11 @@
     </button>
 
     <div v-if="node.isDirectory && isOpen" class="tree-node__children">
-      <FileTreeNode v-for="child in node.children" :key="child.id" :node="child" />
+      <FileTreeNode
+        v-for="child in node.children"
+        :key="child.id"
+        :node="child"
+      />
     </div>
   </div>
 </template>
@@ -39,7 +43,7 @@ function handleClick() {
     toWorkspaceTab({
       name: props.node.name,
       path: props.node.path,
-    }),
+    })
   );
 }
 </script>

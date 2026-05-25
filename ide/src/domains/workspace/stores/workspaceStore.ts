@@ -6,8 +6,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const tabs = ref<WorkspaceTab[]>([]);
   const activeTabId = ref<string | null>(null);
 
-  const activeTab = computed(() =>
-    tabs.value.find((tab) => tab.id === activeTabId.value) ?? null,
+  const activeTab = computed(
+    () => tabs.value.find((tab) => tab.id === activeTabId.value) ?? null
   );
 
   function openTab(payload: {
@@ -38,7 +38,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     tabs.value.splice(index, 1);
 
     if (activeTabId.value === tabId) {
-      activeTabId.value = tabs.value[index - 1]?.id ?? tabs.value[0]?.id ?? null;
+      activeTabId.value =
+        tabs.value[index - 1]?.id ?? tabs.value[0]?.id ?? null;
     }
   }
 

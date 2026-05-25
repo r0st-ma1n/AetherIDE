@@ -12,7 +12,10 @@
           v-for="component in designerStore.components"
           :key="component.id"
           class="designer__component"
-          :class="{ 'designer__component--active': component.id === designerStore.selectedComponentId }"
+          :class="{
+            'designer__component--active':
+              component.id === designerStore.selectedComponentId,
+          }"
           :style="{
             left: `${component.position.x}px`,
             top: `${component.position.y}px`,
@@ -85,7 +88,9 @@ function startDrag(event: MouseEvent, componentId: string) {
   }
 
   const rect = canvasElement.value.getBoundingClientRect();
-  const component = designerStore.components.find((item) => item.id === componentId);
+  const component = designerStore.components.find(
+    (item) => item.id === componentId
+  );
 
   if (!component) {
     return;
@@ -119,14 +124,14 @@ watch(
   },
   {
     deep: true,
-  },
+  }
 );
 
 watch(
   () => props.tab.filePath,
   async () => {
     await loadDocument();
-  },
+  }
 );
 
 onMounted(async () => {
