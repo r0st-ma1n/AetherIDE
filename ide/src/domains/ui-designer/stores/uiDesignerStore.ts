@@ -12,6 +12,7 @@ const PALETTE = [
 export const useUiDesignerStore = defineStore('ui-designer', () => {
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
+  const draggingPaletteType = ref<UiComponentType | null>(null);
 
   const selectedComponent = computed(
     () => components.value.find((component) => component.id === selectedComponentId.value) ?? null,
@@ -45,14 +46,46 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId.value = componentId;
   }
 
+  function placeComponent(type: UiComponentType, position: UiComponent['position']) {
+    const next: UiComponent = {
+      id: `${type.toLowerCase()}-${Date.now()}`,
+      type,
+      position,
+    };
+
+    components.value.push(next);
+    selectedComponentId.value = next.id;
+  }
+
+  function moveComponent(componentId: string, position: UiComponent['position']) {
+    const component = components.value.find((item) => item.id === componentId);
+
+    if (component) {
+      component.position = position;
+    }
+  }
+
+  function startPaletteDrag(type: UiComponentType) {
+    draggingPaletteType.value = type;
+  }
+
+  function finishPaletteDrag() {
+    draggingPaletteType.value = null;
+  }
+
   return {
     components,
+    draggingPaletteType,
+    finishPaletteDrag,
     loadDocument,
     palette: PALETTE,
+    placeComponent,
+    moveComponent,
     saveDocument,
     selectedComponent,
     selectedComponentId,
     addComponent,
     selectComponent,
+    startPaletteDrag,
   };
 });

@@ -1,35 +1,37 @@
 <template>
   <section class="designer">
-    <header class="designer__header">
-      <span>{{ tab.title }}</span>
-      <div class="designer__actions">
-        <span>{{ generatedPreview }}</span>
-        <button class="designer__save" :disabled="isSaving" @click="saveDocument">
-          {{ isSaving ? 'Saving...' : 'Save' }}
+    <div class="designer__stage">
+      <div
+        ref="canvasElement"
+        class="designer__canvas"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent="handleDrop"
+      >
+        <button
+          v-for="component in designerStore.components"
+          :key="component.id"
+          class="designer__component"
+          :class="{ 'designer__component--active': component.id === designerStore.selectedComponentId }"
+          :style="{
+            left: `${component.position.x}px`,
+            top: `${component.position.y}px`,
+          }"
+          @mousedown="startDrag($event, component.id)"
+          @click="designerStore.selectComponent(component.id)"
+        >
+          {{ component.type }}
         </button>
       </div>
-    </header>
-
-    <div class="designer__canvas">
-      <button
-        v-for="component in designerStore.components"
-        :key="component.id"
-        class="designer__component"
-        :class="{ 'designer__component--active': component.id === designerStore.selectedComponentId }"
-        @click="designerStore.selectComponent(component.id)"
-      >
-        {{ component.type }}
-      </button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { generateCodePreview } from '@/domains/ui-designer/lib/codeGenerator';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
-import type { WorkspaceTab } from '@/shared/types';
+import type { UiComponentType, WorkspaceTab } from '@/shared/types';
 
 const props = defineProps<{
   tab: WorkspaceTab;
@@ -37,9 +39,7 @@ const props = defineProps<{
 
 const designerStore = useUiDesignerStore();
 const workspaceStore = useWorkspaceStore();
-const isSaving = ref(false);
-
-const generatedPreview = computed(() => generateCodePreview(designerStore.components));
+const canvasElement = ref<HTMLElement | null>(null);
 
 async function loadDocument() {
   await designerStore.loadDocument(props.tab.filePath);
@@ -47,14 +47,8 @@ async function loadDocument() {
 }
 
 async function saveDocument() {
-  isSaving.value = true;
-
-  try {
-    await designerStore.saveDocument(props.tab.filePath);
-    workspaceStore.markDirty(props.tab.id, false);
-  } finally {
-    isSaving.value = false;
-  }
+  await designerStore.saveDocument(props.tab.filePath);
+  workspaceStore.markDirty(props.tab.id, false);
 }
 
 function handleSaveShortcut(event: KeyboardEvent) {
@@ -65,6 +59,55 @@ function handleSaveShortcut(event: KeyboardEvent) {
       void saveDocument();
     }
   }
+}
+
+function handleDrop(event: DragEvent) {
+  const type =
+    (event.dataTransfer?.getData('text/plain') as UiComponentType | '') ||
+    designerStore.draggingPaletteType ||
+    '';
+
+  if (!type || !canvasElement.value) {
+    return;
+  }
+
+  const rect = canvasElement.value.getBoundingClientRect();
+  designerStore.placeComponent(type, {
+    x: Math.max(0, Math.round(event.clientX - rect.left - 50)),
+    y: Math.max(0, Math.round(event.clientY - rect.top - 20)),
+  });
+  designerStore.finishPaletteDrag();
+}
+
+function startDrag(event: MouseEvent, componentId: string) {
+  if (!canvasElement.value) {
+    return;
+  }
+
+  const rect = canvasElement.value.getBoundingClientRect();
+  const component = designerStore.components.find((item) => item.id === componentId);
+
+  if (!component) {
+    return;
+  }
+
+  const offsetX = event.clientX - rect.left - component.position.x;
+  const offsetY = event.clientY - rect.top - component.position.y;
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    designerStore.moveComponent(componentId, {
+      x: Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX)),
+      y: Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY)),
+    });
+  };
+
+  const onMouseUp = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
 }
 
 watch(
@@ -98,58 +141,44 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .designer {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex: 1;
   height: 100%;
-  border: 1px solid #2f3541;
-  border-radius: 20px;
-  overflow: hidden;
-  background-color: rgba(17, 19, 24, 0.95);
+  background-color: #1a1a1a;
 }
 
-.designer__header {
+.designer__stage {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
-  border-bottom: 1px solid #2f3541;
-  color: #dce3ee;
-}
-
-.designer__actions {
-  display: flex;
-  gap: 12px;
+  flex: 1;
   align-items: center;
-}
-
-.designer__save {
-  border: 1px solid #3a4352;
-  border-radius: 999px;
-  background-color: transparent;
-  color: #9fb0c8;
-  padding: 6px 10px;
+  justify-content: center;
+  background-color: #1a1a1a;
+  background-image: radial-gradient(#2a2a2a 1px, transparent 0);
+  background-size: 20px 20px;
 }
 
 .designer__canvas {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 12px;
-  padding: 18px;
-  background-image: radial-gradient(circle, rgba(95, 110, 132, 0.22) 1px, transparent 1px);
-  background-size: 18px 18px;
+  position: relative;
+  width: 600px;
+  height: 400px;
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .designer__component {
-  border: 1px solid #36567f;
-  border-radius: 14px;
-  padding: 12px 16px;
-  background-color: #21456c;
-  color: #eff7ff;
+  position: absolute;
+  border: 1px solid #005999;
+  border-radius: 4px;
+  padding: 8px 16px;
+  background-color: #007acc;
+  color: white;
   cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .designer__component--active {
-  outline: 2px solid #8dd0ff;
+  border: 2px solid #55b3ff;
+  box-shadow: 0 0 10px rgba(85, 179, 255, 0.5);
 }
 </style>

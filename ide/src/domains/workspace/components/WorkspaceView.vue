@@ -31,23 +31,24 @@ const activeTab = computed(() =>
 
 <style scoped>
 .workspace {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 100vh;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background-color: #1e1e1e;
 }
 
 .workspace__content {
+  display: flex;
+  flex: 1;
   min-height: 0;
-  padding: 16px;
 }
 
 .workspace__empty {
-  display: grid;
-  height: 100%;
-  place-items: center;
-  color: #76839a;
-  border: 1px dashed #313847;
-  border-radius: 20px;
-  background-color: rgba(18, 20, 26, 0.8);
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  color: #555;
 }
 </style>

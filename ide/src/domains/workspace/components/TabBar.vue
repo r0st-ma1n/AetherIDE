@@ -31,26 +31,28 @@ defineEmits<{
 <style scoped>
 .tab-bar {
   display: flex;
-  gap: 8px;
-  padding: 12px 16px 0;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
 }
 
 .tab-bar__tab {
-  display: inline-flex;
+  display: flex;
   gap: 8px;
   align-items: center;
-  border: 1px solid #2f3541;
-  border-bottom: none;
-  border-radius: 12px 12px 0 0;
-  padding: 10px 14px;
-  background-color: #181b21;
-  color: #93a0b5;
+  border: none;
+  padding: 10px 15px;
+  background: none;
+  color: #969696;
   cursor: pointer;
+  font-size: 13px;
+  border-top: 2px solid transparent;
 }
 
 .tab-bar__tab--active {
-  background-color: #20252d;
-  color: #f3f5f7;
+  color: #ffffff;
+  background-color: #1e1e1e;
+  border-top-color: #007acc;
 }
 
 .tab-bar__dirty {
@@ -58,6 +60,6 @@ defineEmits<{
 }
 
 .tab-bar__close {
-  color: #6e7b90;
+  color: #969696;
 }
 </style>

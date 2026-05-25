@@ -24,12 +24,9 @@ import WorkspaceView from '@/domains/workspace/components/WorkspaceView.vue';
 
 <style scoped>
 .ide-shell {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  display: flex;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(62, 78, 109, 0.25), transparent 36%),
-    linear-gradient(180deg, #16181d 0%, #101114 100%);
+  background-color: #1e1e1e;
 }
 
 .ide-shell__left,
@@ -37,18 +34,25 @@ import WorkspaceView from '@/domains/workspace/components/WorkspaceView.vue';
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: rgba(23, 25, 31, 0.96);
+  background-color: #252526;
 }
 
 .ide-shell__left {
+  width: 280px;
+  min-width: 200px;
   border-right: 1px solid #2c3340;
 }
 
 .ide-shell__right {
+  width: 250px;
+  min-width: 200px;
   border-left: 1px solid #2c3340;
 }
 
 .ide-shell__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   min-width: 0;
 }
 </style>

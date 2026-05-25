@@ -4,6 +4,8 @@ const path = require('path');
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+const HIDDEN_ROOT_DIRECTORIES = new Set(['docs']);
+const HIDDEN_FILE_NAMES = new Set(['README.md', 'GEMINI.md']);
 const ALLOWED_EXTENSIONS = new Set([
   '.ts',
   '.tsx',
@@ -28,6 +30,10 @@ async function collectProjectFiles(dirPath, result = []) {
       continue;
     }
 
+    if (dirPath === PROJECT_ROOT && HIDDEN_ROOT_DIRECTORIES.has(entry.name)) {
+      continue;
+    }
+
     if (['node_modules', 'dist', 'build'].includes(entry.name)) {
       continue;
     }
@@ -40,6 +46,10 @@ async function collectProjectFiles(dirPath, result = []) {
     }
 
     if (!ALLOWED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+      continue;
+    }
+
+    if (dirPath === PROJECT_ROOT && HIDDEN_FILE_NAMES.has(entry.name)) {
       continue;
     }
 

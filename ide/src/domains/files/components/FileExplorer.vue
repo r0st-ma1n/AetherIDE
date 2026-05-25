@@ -4,16 +4,7 @@
     <div class="panel__body">
       <div v-if="fileStore.isLoading" class="panel__state">Loading files...</div>
       <div v-else-if="fileStore.error" class="panel__state">{{ fileStore.error }}</div>
-      <button
-        v-else
-        v-for="entry in fileStore.entries"
-        :key="entry.id"
-        class="file-entry"
-        @click="workspaceStore.openTab(entry)"
-      >
-        <span class="file-entry__kind">{{ entry.kind === 'designer' ? 'UI' : 'TS' }}</span>
-        <span>{{ entry.title }}</span>
-      </button>
+      <FileTreeNode v-else v-for="node in fileStore.tree" :key="node.id" :node="node" />
     </div>
   </section>
 </template>
@@ -21,10 +12,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useFileExplorerStore } from '@/domains/files/stores/fileExplorerStore';
-import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
+import FileTreeNode from './FileTreeNode.vue';
 
 const fileStore = useFileExplorerStore();
-const workspaceStore = useWorkspaceStore();
 
 onMounted(() => {
   void fileStore.loadEntries();
@@ -33,47 +23,26 @@ onMounted(() => {
 
 <style scoped>
 .panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
+  flex: 1;
   border-bottom: 1px solid #2c3340;
+  overflow-y: auto;
 }
 
 .panel__header {
-  padding: 16px;
-  font-size: 12px;
+  margin: 0;
+  padding: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #8f9bb0;
+  letter-spacing: 0.8px;
+  color: #888;
 }
 
 .panel__body {
-  display: grid;
-  gap: 8px;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 }
 
 .panel__state {
-  padding: 12px;
-  color: #8190a8;
-}
-
-.file-entry {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid #2e3541;
-  border-radius: 14px;
-  background-color: #1b1f27;
-  padding: 12px;
-  color: #d9dde5;
-  text-align: left;
-  cursor: pointer;
-}
-
-.file-entry__kind {
-  min-width: 28px;
-  color: #7ab7ff;
-  font-size: 11px;
+  padding: 8px 0;
+  color: #888;
 }
 </style>

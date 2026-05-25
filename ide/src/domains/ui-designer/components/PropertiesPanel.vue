@@ -11,12 +11,12 @@
         <strong>{{ selectedComponent.type }}</strong>
       </div>
       <div class="property-row">
-        <span>X</span>
-        <strong>{{ selectedComponent.position.x }}</strong>
+        <span>Left</span>
+        <strong>{{ selectedComponent.position.x }}px</strong>
       </div>
       <div class="property-row">
-        <span>Y</span>
-        <strong>{{ selectedComponent.position.y }}</strong>
+        <span>Top</span>
+        <strong>{{ selectedComponent.position.y }}px</strong>
       </div>
     </div>
     <div v-else class="panel__empty">Select a component in the designer.</div>
@@ -33,34 +33,38 @@ const { selectedComponent } = storeToRefs(designerStore);
 
 <style scoped>
 .panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 100vh;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .panel__header {
-  padding: 16px;
-  font-size: 12px;
+  padding: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #8f9bb0;
-  border-bottom: 1px solid #2c3340;
+  color: #888;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid #2d2d2d;
 }
 
 .panel__body,
 .panel__empty {
-  padding: 16px;
+  padding: 10px;
+  flex: 1;
 }
 
 .property-row {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #273040;
-  color: #d6deea;
+  padding: 0 0 10px;
+  color: #cccccc;
 }
 
 .panel__empty {
-  color: #74829a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(204, 204, 204, 0.5);
+  font-size: 12px;
 }
 </style>

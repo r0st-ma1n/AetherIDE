@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { buildFileTree } from '@/domains/files/lib/fileTree';
 import { toWorkspaceTab } from '@/domains/files/lib/projectFiles';
-import type { WorkspaceTab } from '@/shared/types';
+import type { FileTreeNode, WorkspaceTab } from '@/shared/types';
 
 export const useFileExplorerStore = defineStore('file-explorer', () => {
   const entries = ref<WorkspaceTab[]>([]);
+  const tree = ref<FileTreeNode[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
@@ -15,6 +17,7 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
     try {
       const files = await window.prototypeIDE.listProjectFiles();
       entries.value = files.map(toWorkspaceTab);
+      tree.value = buildFileTree(files);
     } catch (loadError) {
       const message =
         loadError instanceof Error ? loadError.message : 'Unable to load project files.';
@@ -29,5 +32,6 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
     entries,
     isLoading,
     loadEntries,
+    tree,
   };
 });

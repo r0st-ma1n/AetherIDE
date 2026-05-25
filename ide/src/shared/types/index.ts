@@ -13,6 +13,14 @@ export interface ProjectFileEntry {
   path: string;
 }
 
+export interface FileTreeNode {
+  id: string;
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children: FileTreeNode[];
+}
+
 export type UiComponentType = 'Knob' | 'Slider' | 'Button';
 
 export interface UiComponent {

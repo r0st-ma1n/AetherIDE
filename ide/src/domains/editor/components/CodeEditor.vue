@@ -1,12 +1,5 @@
 <template>
   <section class="code-editor">
-    <header class="code-editor__header">
-      <span>{{ tab.title }}</span>
-      <button class="code-editor__action" :disabled="isSaving" @click="saveFile">
-        {{ isSaving ? 'Saving...' : 'Save' }}
-      </button>
-    </header>
-
     <div ref="editorElement" class="code-editor__body"></div>
   </section>
 </template>
@@ -24,7 +17,6 @@ const props = defineProps<{
 const workspaceStore = useWorkspaceStore();
 const editorElement = ref<HTMLElement | null>(null);
 const editor = ref<monaco.editor.IStandaloneCodeEditor | null>(null);
-const isSaving = ref(false);
 
 function detectLanguage(filePath: string) {
   if (filePath.endsWith('.json')) {
@@ -75,15 +67,8 @@ async function saveFile() {
   if (!editor.value) {
     return;
   }
-
-  isSaving.value = true;
-
-  try {
-    await window.prototypeIDE.writeFile(props.tab.filePath, editor.value.getValue());
-    workspaceStore.markDirty(props.tab.id, false);
-  } finally {
-    isSaving.value = false;
-  }
+  await window.prototypeIDE.writeFile(props.tab.filePath, editor.value.getValue());
+  workspaceStore.markDirty(props.tab.id, false);
 }
 
 function bindSaveShortcut(event: KeyboardEvent) {
@@ -137,32 +122,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .code-editor {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  border: 1px solid #2f3541;
-  border-radius: 20px;
-  overflow: hidden;
-  background-color: rgba(17, 19, 24, 0.95);
-}
-
-.code-editor__header {
   display: flex;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid #2f3541;
-  color: #dce3ee;
-}
-
-.code-editor__action {
-  border: 1px solid #3a4352;
-  border-radius: 999px;
-  background-color: transparent;
-  color: #9fb0c8;
-  padding: 6px 10px;
+  flex: 1;
+  height: 100%;
 }
 
 .code-editor__body {
-  min-height: 420px;
+  width: 100%;
+  height: 100%;
 }
 </style>

@@ -2,60 +2,79 @@
   <section class="panel">
     <header class="panel__header">Palette</header>
     <div class="panel__body">
-      <button
+      <div
         v-for="component in designerStore.palette"
         :key="component.type"
         class="palette-item"
+        draggable="true"
+        @dragstart="onDragStart($event, component.type)"
+        @dragend="designerStore.finishPaletteDrag()"
         @click="designerStore.addComponent(component.type)"
       >
         <strong>{{ component.label }}</strong>
         <span>{{ component.type }}</span>
-      </button>
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
+import type { UiComponentType } from '@/shared/types';
 
 const designerStore = useUiDesignerStore();
+
+function onDragStart(event: DragEvent, type: UiComponentType) {
+  designerStore.startPaletteDrag(type);
+  if (event.dataTransfer) {
+    event.dataTransfer.setData('text/plain', type);
+    event.dataTransfer.effectAllowed = 'copy';
+  }
+}
 </script>
 
 <style scoped>
 .panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
+  padding: 10px;
+  flex: 0 0 auto;
+  max-height: 40%;
+  overflow-y: auto;
 }
 
 .panel__header {
-  padding: 16px;
-  font-size: 12px;
+  margin: 0 0 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #8f9bb0;
+  color: #888;
+  letter-spacing: 0.8px;
 }
 
 .panel__body {
-  display: grid;
-  gap: 10px;
-  padding: 0 12px 16px;
+  display: block;
 }
 
 .palette-item {
-  display: grid;
-  gap: 4px;
-  border: 1px solid #2e3541;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #1f2430 0%, #181c24 100%);
-  padding: 14px;
-  color: #e8edf7;
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+  background-color: #2a2d2e;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  border: 1px solid #3c3c3c;
+  color: #d4d4d4;
   text-align: left;
   cursor: pointer;
+  font-size: 12px;
+}
+
+.palette-item::before {
+  content: '▤';
+  color: #808080;
 }
 
 .palette-item span {
-  color: #8fa1bd;
-  font-size: 12px;
+  display: none;
 }
 </style>
