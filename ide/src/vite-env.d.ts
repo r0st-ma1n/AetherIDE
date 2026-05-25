@@ -9,11 +9,15 @@ declare module '*.vue' {
   export default component;
 }
 
-interface Window {
-  prototypeIDE: {
-    version: string;
-    listProjectFiles: () => Promise<ProjectFileEntry[]>;
-    readFile: (path: string) => Promise<string>;
-    writeFile: (path: string, content: string) => Promise<{ ok: boolean }>;
-  };
+declare global {
+  interface Window {
+    prototypeIDE: {
+      version: string;
+      listProjectFiles: () => Promise<ProjectFileEntry[]>;
+      readFile: (path: string) => Promise<string>;
+      writeFile: (path: string, content: string) => Promise<{ ok: boolean }>;
+    };
+  }
 }
+
+export {};

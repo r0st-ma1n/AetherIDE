@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "start": "electron .",
     "lint": "eslint .",
+    "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
