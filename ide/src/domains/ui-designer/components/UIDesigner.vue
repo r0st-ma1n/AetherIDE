@@ -70,14 +70,21 @@ async function saveDocument() {
   // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
   try {
     if (window.prototypeIDE.readFile) {
-      existingHeader = (await window.prototypeIDE.readFile(headerPath)) || '';
-      existingCpp = (await window.prototypeIDE.readFile(cppPath)) || '';
+      existingHeader =
+        (await window.prototypeIDE.readFile(headerPath)) || '';
+      existingCpp =
+        (await window.prototypeIDE.readFile(cppPath)) || '';
     }
   } catch (err) {
     // Игнорируем ошибку (например, если файлы генерируются впервые)
   }
 
-  const { headerCode, cppCode } = generatePluginCode(designerStore.components, baseName, existingHeader, existingCpp);
+  const { headerCode, cppCode } = generatePluginCode(
+    designerStore.components,
+    baseName,
+    existingHeader,
+    existingCpp,
+  );
 
   await window.prototypeIDE.writeFile(headerPath, headerCode);
   await window.prototypeIDE.writeFile(cppPath, cppCode);

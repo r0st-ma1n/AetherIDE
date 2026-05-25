@@ -41,7 +41,7 @@ function capitalize(str: string) {
 // Простой шаблонизатор в стиле Handlebars (Jinja2)
 function renderTemplate(template: string, data: Record<string, string>) {
   return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) =>
-    data[key] !== undefined ? data[key] : ''
+    data[key] !== undefined ? data[key] : '',
   );
 }
 
@@ -97,7 +97,7 @@ export function generatePluginCode(
   components: UiComponent[],
   className: string,
   existingHeader: string = '',
-  existingCpp: string = ''
+  existingCpp: string = '',
 ) {
   const headerUserCode = extractUserCode(existingHeader);
   const cppUserCode = extractUserCode(existingCpp);
@@ -111,7 +111,9 @@ export function generatePluginCode(
     .map((c) => `    apf::${c.type} ${c.safeId};`)
     .join('\n');
   const eventHandlersDeclarations = safeComponents
-    .map((c) => `    void on${capitalize(c.safeId)}ValueChanged(float newValue);`)
+    .map(
+      (c) => `    void on${capitalize(c.safeId)}ValueChanged(float newValue);`,
+    )
     .join('\n');
 
   const setupComponents = safeComponents
@@ -121,7 +123,7 @@ export function generatePluginCode(
     if (auto* param = processor.getParameter("${c.id}")) {
         ${c.safeId}.setParameter(param);
     }
-    ${c.safeId}.onValueChanged = this { on${capitalize(c.safeId)}ValueChanged(val); };`
+    ${c.safeId}.onValueChanged = this { on${capitalize(c.safeId)}ValueChanged(val); };`,
     )
     .join('\n\n');
 
@@ -131,7 +133,7 @@ export function generatePluginCode(
     // --- USER CODE BEGIN: on${capitalize(c.safeId)}ValueChanged ---
 ${getUserCode(cppUserCode, `on${capitalize(c.safeId)}ValueChanged`, '    ')}
     // --- USER CODE END: on${capitalize(c.safeId)}ValueChanged ---
-}`
+}`,
     )
     .join('\n\n');
 
