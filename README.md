@@ -58,16 +58,19 @@ cmake --build .
 
 ### Запуск IDE
 
+Самый удобный способ запуска — использовать `Makefile` в корне проекта:
+
+**Режим разработки (Electron + Vite HMR):**
 ```bash
-cd ide
-npm start
+make ide-dev
 ```
 
-Или из корневой директории:
-
+**Сборка и запуск всех компонентов (Frontend + C++ Backend):**
 ```bash
-npm --prefix ide start
+make run-all
 ```
+
+*(Если у вас не установлен `make`, используйте `npm --prefix ide run dev` для запуска фронтенда).*
 
 ### Использование
 
