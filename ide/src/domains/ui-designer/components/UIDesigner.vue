@@ -70,10 +70,8 @@ async function saveDocument() {
   // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
   try {
     if (window.prototypeIDE.readFile) {
-      existingHeader =
-        (await window.prototypeIDE.readFile(headerPath)) || '';
-      existingCpp =
-        (await window.prototypeIDE.readFile(cppPath)) || '';
+      existingHeader = (await window.prototypeIDE.readFile(headerPath)) || '';
+      existingCpp = (await window.prototypeIDE.readFile(cppPath)) || '';
     }
   } catch (err) {
     // Игнорируем ошибку (например, если файлы генерируются впервые)
@@ -83,7 +81,7 @@ async function saveDocument() {
     designerStore.components,
     baseName,
     existingHeader,
-    existingCpp,
+    existingCpp
   );
 
   await window.prototypeIDE.writeFile(headerPath, headerCode);
