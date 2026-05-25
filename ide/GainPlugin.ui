@@ -1,3 +1,10 @@
 {
-    "components": []
+  "components": [
+    {
+      "id": "knob-1779727804935",
+      "type": "Knob",
+      "left": "306px",
+      "top": "125px"
+    }
+  ]
 }

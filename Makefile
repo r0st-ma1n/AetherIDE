@@ -48,6 +48,6 @@ cmake-configure:
 cmake-build:
 	cmake --build $(BUILD_DIR)
 
-test: cmake-configure cmake-build ide-lint ide-typecheck ide-build
+test: cmake-configure cmake-build ide-format-check ide-lint ide-typecheck ide-build
 
 run-all: cmake-configure cmake-build ide-build ide-start
