@@ -19,6 +19,7 @@ declare global {
       version: string;
       listProjectFiles: () => Promise<ProjectFileEntry[]>;
       readFile: (path: string) => Promise<string>;
+      fileExists: (path: string) => Promise<boolean>;
       writeFile: (path: string, content: string) => Promise<{ ok: boolean }>;
     };
   }

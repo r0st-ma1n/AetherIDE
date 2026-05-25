@@ -5,6 +5,8 @@ import type { WorkspaceTab, WorkspaceTabKind } from '@/shared/types';
 export const useWorkspaceStore = defineStore('workspace', () => {
   const tabs = ref<WorkspaceTab[]>([]);
   const activeTabId = ref<string | null>(null);
+  const toastMessage = ref<string | null>(null);
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   const activeTab = computed(
     () => tabs.value.find((tab) => tab.id === activeTabId.value) ?? null
@@ -55,6 +57,19 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  function showToast(message: string) {
+    toastMessage.value = message;
+
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+
+    toastTimer = setTimeout(() => {
+      toastMessage.value = null;
+      toastTimer = null;
+    }, 2000);
+  }
+
   return {
     tabs,
     activeTab,
@@ -63,5 +78,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     markDirty,
     openTab,
     setActiveTab,
+    showToast,
+    toastMessage,
   };
 });

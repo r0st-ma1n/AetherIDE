@@ -90,6 +90,16 @@ function registerIpcHandlers() {
     await fs.writeFile(absolutePath, payload.content, 'utf-8');
     return { ok: true };
   });
+
+  ipcMain.handle('file:exists', async (_event, relativePath) => {
+    try {
+      const absolutePath = resolveProjectPath(relativePath);
+      await fs.access(absolutePath);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 function createWindow() {

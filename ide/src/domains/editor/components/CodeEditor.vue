@@ -7,7 +7,15 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { monaco } from '@/domains/editor/lib/monaco';
+import { parseGeneratedCode } from '@/domains/ui-designer/lib/codeParser';
+import { serializeUiDocument } from '@/domains/ui-designer/lib/uiDocument';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
+import {
+  basename,
+  basenameWithoutExt,
+  dirname,
+  joinPath,
+} from '@/shared/lib/path';
 import type { WorkspaceTab } from '@/shared/types';
 
 const props = defineProps<{
@@ -71,11 +79,30 @@ async function saveFile() {
   if (!editor.value) {
     return;
   }
-  await window.prototypeIDE.writeFile(
-    props.tab.filePath,
-    editor.value.getValue()
-  );
+
+  const content = editor.value.getValue();
+  await window.prototypeIDE.writeFile(props.tab.filePath, content);
+
+  if (props.tab.filePath.endsWith('.h')) {
+    const baseDir = dirname(props.tab.filePath);
+    const baseName = basenameWithoutExt(props.tab.filePath);
+    const uiPath = joinPath(baseDir, `${baseName}.ui`);
+    const uiExists = await window.prototypeIDE.fileExists(uiPath);
+
+    if (uiExists) {
+      const components = parseGeneratedCode(content);
+
+      if (components.length > 0) {
+        await window.prototypeIDE.writeFile(
+          uiPath,
+          serializeUiDocument(components)
+        );
+      }
+    }
+  }
+
   workspaceStore.markDirty(props.tab.id, false);
+  workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
 }
 
 function bindSaveShortcut(event: KeyboardEvent) {
