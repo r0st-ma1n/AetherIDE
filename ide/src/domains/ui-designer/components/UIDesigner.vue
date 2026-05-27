@@ -81,7 +81,8 @@ const RESIZE_HANDLES: Array<{ direction: ResizeDirection }> = [
   { direction: 'w' },
 ];
 
-const MIN_RENDER_SIZE = 1;
+const MIN_COMPONENT_WIDTH = 40;
+const MIN_COMPONENT_HEIGHT = 24;
 
 async function loadDocument() {
   await designerStore.loadDocument(props.tab.filePath);
@@ -215,7 +216,13 @@ function startResize(
   const onMouseMove = (moveEvent: MouseEvent) => {
     const dx = moveEvent.clientX - initialPointer.x;
     const dy = moveEvent.clientY - initialPointer.y;
-    const nextBounds = getResizedBounds(initialBounds, direction, dx, dy);
+    const nextBounds = getResizedBounds(
+      initialBounds,
+      direction,
+      dx,
+      dy,
+      moveEvent.shiftKey
+    );
 
     designerStore.resizeComponent(componentId, {
       position: {
@@ -239,8 +246,13 @@ function getResizedBounds(
   initialBounds: Pick<UiComponent, 'position' | 'size'>,
   direction: ResizeDirection,
   dx: number,
-  dy: number
+  dy: number,
+  preserveAspectRatio: boolean
 ) {
+  if (preserveAspectRatio) {
+    return getAspectRatioBounds(initialBounds, direction, dx, dy);
+  }
+
   const nextBounds = {
     position: { ...initialBounds.position },
     size: { ...initialBounds.size },
@@ -248,21 +260,21 @@ function getResizedBounds(
 
   if (direction.includes('e')) {
     nextBounds.size.width = Math.max(
-      MIN_RENDER_SIZE,
+      MIN_COMPONENT_WIDTH,
       Math.round(initialBounds.size.width + dx)
     );
   }
 
   if (direction.includes('s')) {
     nextBounds.size.height = Math.max(
-      MIN_RENDER_SIZE,
+      MIN_COMPONENT_HEIGHT,
       Math.round(initialBounds.size.height + dy)
     );
   }
 
   if (direction.includes('w')) {
     const width = Math.max(
-      MIN_RENDER_SIZE,
+      MIN_COMPONENT_WIDTH,
       Math.round(initialBounds.size.width - dx)
     );
     nextBounds.position.x =
@@ -272,7 +284,7 @@ function getResizedBounds(
 
   if (direction.includes('n')) {
     const height = Math.max(
-      MIN_RENDER_SIZE,
+      MIN_COMPONENT_HEIGHT,
       Math.round(initialBounds.size.height - dy)
     );
     nextBounds.position.y =
@@ -281,6 +293,92 @@ function getResizedBounds(
   }
 
   return nextBounds;
+}
+
+function getAspectRatioBounds(
+  initialBounds: Pick<UiComponent, 'position' | 'size'>,
+  direction: ResizeDirection,
+  dx: number,
+  dy: number
+) {
+  const initialWidth = initialBounds.size.width;
+  const initialHeight = initialBounds.size.height;
+  const aspectRatio = initialWidth / initialHeight;
+  const minScale = Math.max(
+    MIN_COMPONENT_WIDTH / initialWidth,
+    MIN_COMPONENT_HEIGHT / initialHeight
+  );
+
+  let scale = 1;
+
+  if (direction === 'e' || direction === 'w') {
+    const signedWidthDelta = direction === 'e' ? dx : -dx;
+    scale = (initialWidth + signedWidthDelta) / initialWidth;
+  } else if (direction === 'n' || direction === 's') {
+    const signedHeightDelta = direction === 's' ? dy : -dy;
+    scale = (initialHeight + signedHeightDelta) / initialHeight;
+  } else {
+    const signedWidthDelta = direction.includes('e') ? dx : -dx;
+    const signedHeightDelta = direction.includes('s') ? dy : -dy;
+    const widthScale = (initialWidth + signedWidthDelta) / initialWidth;
+    const heightScale = (initialHeight + signedHeightDelta) / initialHeight;
+
+    scale =
+      Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)
+        ? widthScale
+        : heightScale;
+  }
+
+  const normalizedScale = Math.max(minScale, scale);
+  const width = Math.max(
+    MIN_COMPONENT_WIDTH,
+    Math.round(initialWidth * normalizedScale)
+  );
+  const height = Math.max(
+    MIN_COMPONENT_HEIGHT,
+    Math.round(width / aspectRatio)
+  );
+
+  return buildBoundsFromAnchor(initialBounds, direction, {
+    width,
+    height: Math.max(MIN_COMPONENT_HEIGHT, height),
+  });
+}
+
+function buildBoundsFromAnchor(
+  initialBounds: Pick<UiComponent, 'position' | 'size'>,
+  direction: ResizeDirection,
+  size: UiComponent['size']
+) {
+  const left = initialBounds.position.x;
+  const top = initialBounds.position.y;
+  const right = left + initialBounds.size.width;
+  const bottom = top + initialBounds.size.height;
+  const centerX = left + initialBounds.size.width / 2;
+  const centerY = top + initialBounds.size.height / 2;
+
+  let nextX = left;
+  let nextY = top;
+
+  if (direction.includes('w')) {
+    nextX = Math.round(right - size.width);
+  } else if (!direction.includes('e')) {
+    nextX = Math.round(centerX - size.width / 2);
+  }
+
+  if (direction.includes('n')) {
+    nextY = Math.round(bottom - size.height);
+  } else if (!direction.includes('s')) {
+    nextY = Math.round(centerY - size.height / 2);
+  }
+
+  return {
+    position: {
+      x: nextX,
+      y: nextY,
+    },
+    size,
+  };
 }
 
 function clampToCanvas(value: number, max: number) {
