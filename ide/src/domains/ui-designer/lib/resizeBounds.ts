@@ -1,6 +1,11 @@
-import type { UiComponent } from '@/shared/types';
+import type { DesignerGridStep, UiComponent } from '@/shared/types';
 
 export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+
+export interface SnapConfig {
+  enabled: boolean;
+  step: DesignerGridStep;
+}
 
 export const MIN_COMPONENT_WIDTH = 40;
 export const MIN_COMPONENT_HEIGHT = 24;
@@ -10,10 +15,11 @@ export function getResizedBounds(
   direction: ResizeDirection,
   dx: number,
   dy: number,
-  preserveAspectRatio: boolean
+  snapConfig: SnapConfig,
+  preserveAspectRatio = false
 ) {
   if (preserveAspectRatio) {
-    return getAspectRatioBounds(initialBounds, direction, dx, dy);
+    return getAspectRatioBounds(initialBounds, direction, dx, dy, snapConfig);
   }
 
   const nextBounds = {
@@ -55,6 +61,34 @@ export function getResizedBounds(
     nextBounds.size.height = height;
   }
 
+  if (snapConfig.enabled) {
+    if (direction.includes('w')) {
+      const snappedLeft = snapCoordinate(nextBounds.position.x, snapConfig);
+      const preservedRight =
+        initialBounds.position.x + initialBounds.size.width;
+      nextBounds.position.x = snappedLeft;
+      nextBounds.size.width = Math.max(
+        MIN_COMPONENT_WIDTH,
+        preservedRight - snappedLeft
+      );
+    } else {
+      nextBounds.size.width = snapSize(nextBounds.size.width, snapConfig);
+    }
+
+    if (direction.includes('n')) {
+      const snappedTop = snapCoordinate(nextBounds.position.y, snapConfig);
+      const preservedBottom =
+        initialBounds.position.y + initialBounds.size.height;
+      nextBounds.position.y = snappedTop;
+      nextBounds.size.height = Math.max(
+        MIN_COMPONENT_HEIGHT,
+        preservedBottom - snappedTop
+      );
+    } else {
+      nextBounds.size.height = snapSize(nextBounds.size.height, snapConfig);
+    }
+  }
+
   return nextBounds;
 }
 
@@ -63,49 +97,24 @@ export function normalizeBoundsToCanvas(
   canvasWidth: number,
   canvasHeight: number
 ) {
-  const maxWidth = Math.max(MIN_COMPONENT_WIDTH, Math.round(canvasWidth));
-  const maxHeight = Math.max(MIN_COMPONENT_HEIGHT, Math.round(canvasHeight));
-
-  let left = Math.round(bounds.position.x);
-  let top = Math.round(bounds.position.y);
-  let right = Math.round(bounds.position.x + bounds.size.width);
-  let bottom = Math.round(bounds.position.y + bounds.size.height);
-
-  if (left < 0) {
-    left = 0;
-  }
-
-  if (top < 0) {
-    top = 0;
-  }
-
-  if (right > maxWidth) {
-    right = maxWidth;
-  }
-
-  if (bottom > maxHeight) {
-    bottom = maxHeight;
-  }
-
-  if (right - left < MIN_COMPONENT_WIDTH) {
-    if (bounds.position.x < 0) {
-      right = Math.min(maxWidth, MIN_COMPONENT_WIDTH);
-      left = 0;
-    } else {
-      left = Math.max(0, right - MIN_COMPONENT_WIDTH);
-      right = left + MIN_COMPONENT_WIDTH;
-    }
-  }
-
-  if (bottom - top < MIN_COMPONENT_HEIGHT) {
-    if (bounds.position.y < 0) {
-      bottom = Math.min(maxHeight, MIN_COMPONENT_HEIGHT);
-      top = 0;
-    } else {
-      top = Math.max(0, bottom - MIN_COMPONENT_HEIGHT);
-      bottom = top + MIN_COMPONENT_HEIGHT;
-    }
-  }
+  const maxWidth = Math.round(canvasWidth);
+  const maxHeight = Math.round(canvasHeight);
+  const width = Math.max(
+    MIN_COMPONENT_WIDTH,
+    Math.min(Math.round(bounds.size.width), maxWidth)
+  );
+  const height = Math.max(
+    MIN_COMPONENT_HEIGHT,
+    Math.min(Math.round(bounds.size.height), maxHeight)
+  );
+  const left = Math.min(
+    Math.max(0, Math.round(bounds.position.x)),
+    Math.max(0, maxWidth - width)
+  );
+  const top = Math.min(
+    Math.max(0, Math.round(bounds.position.y)),
+    Math.max(0, maxHeight - height)
+  );
 
   return {
     position: {
@@ -113,25 +122,74 @@ export function normalizeBoundsToCanvas(
       y: top,
     },
     size: {
-      width: Math.min(maxWidth, right - left),
-      height: Math.min(maxHeight, bottom - top),
+      width,
+      height,
     },
   };
+}
+
+export function clampPositionToCanvas(
+  position: UiComponent['position'],
+  size: UiComponent['size'],
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  const maxWidth = Math.round(canvasWidth);
+  const maxHeight = Math.round(canvasHeight);
+  const boundedWidth = Math.min(Math.round(size.width), maxWidth);
+  const boundedHeight = Math.min(Math.round(size.height), maxHeight);
+
+  return {
+    x: Math.min(
+      Math.max(0, Math.round(position.x)),
+      Math.max(0, maxWidth - boundedWidth)
+    ),
+    y: Math.min(
+      Math.max(0, Math.round(position.y)),
+      Math.max(0, maxHeight - boundedHeight)
+    ),
+  };
+}
+
+export function snapPosition(
+  position: UiComponent['position'],
+  snapConfig: SnapConfig
+) {
+  return {
+    x: snapCoordinate(position.x, snapConfig),
+    y: snapCoordinate(position.y, snapConfig),
+  };
+}
+
+export function snapCoordinate(value: number, snapConfig: SnapConfig) {
+  if (!snapConfig.enabled) {
+    return value;
+  }
+
+  return Math.max(0, Math.round(value / snapConfig.step) * snapConfig.step);
+}
+
+export function snapSize(value: number, snapConfig: SnapConfig) {
+  if (!snapConfig.enabled) {
+    return value;
+  }
+
+  return Math.max(
+    snapConfig.step,
+    Math.round(value / snapConfig.step) * snapConfig.step
+  );
 }
 
 function getAspectRatioBounds(
   initialBounds: Pick<UiComponent, 'position' | 'size'>,
   direction: ResizeDirection,
   dx: number,
-  dy: number
+  dy: number,
+  snapConfig: SnapConfig
 ) {
   const initialWidth = initialBounds.size.width;
   const initialHeight = initialBounds.size.height;
   const aspectRatio = initialWidth / initialHeight;
-  const minScale = Math.max(
-    MIN_COMPONENT_WIDTH / initialWidth,
-    MIN_COMPONENT_HEIGHT / initialHeight
-  );
 
   let scale = 1;
 
@@ -153,19 +211,28 @@ function getAspectRatioBounds(
         : heightScale;
   }
 
+  const minScale = Math.max(
+    MIN_COMPONENT_WIDTH / initialWidth,
+    MIN_COMPONENT_HEIGHT / initialHeight
+  );
   const normalizedScale = Math.max(minScale, scale);
-  const width = Math.max(
+
+  let width = Math.max(
     MIN_COMPONENT_WIDTH,
     Math.round(initialWidth * normalizedScale)
   );
-  const height = Math.max(
-    MIN_COMPONENT_HEIGHT,
-    Math.round(width / aspectRatio)
-  );
+  let height = Math.max(MIN_COMPONENT_HEIGHT, Math.round(width / aspectRatio));
+
+  if (snapConfig.enabled) {
+    width = snapSize(width, snapConfig);
+    height = Math.max(MIN_COMPONENT_HEIGHT, Math.round(width / aspectRatio));
+    height = snapSize(height, snapConfig);
+    width = Math.max(MIN_COMPONENT_WIDTH, Math.round(height * aspectRatio));
+  }
 
   return buildBoundsFromAnchor(initialBounds, direction, {
     width,
-    height: Math.max(MIN_COMPONENT_HEIGHT, height),
+    height,
   });
 }
 

@@ -4,7 +4,11 @@ import {
   parseUiDocument,
   serializeUiDocument,
 } from '@/domains/ui-designer/lib/uiDocument';
-import type { UiComponent, UiComponentType } from '@/shared/types';
+import type {
+  DesignerGridStep,
+  UiComponent,
+  UiComponentType,
+} from '@/shared/types';
 
 const PALETTE = [
   { type: 'Knob' as UiComponentType, label: 'Dial / Knob' },
@@ -12,6 +16,7 @@ const PALETTE = [
   { type: 'Button' as UiComponentType, label: 'Toggle Button' },
 ];
 
+const GRID_STEPS: DesignerGridStep[] = [5, 10, 20];
 const DEFAULT_COMPONENT_SIZE = {
   width: 100,
   height: 40,
@@ -22,6 +27,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
   const draggingPaletteType = ref<UiComponentType | null>(null);
+  const gridStep = ref<DesignerGridStep>(10);
+  const snapToGridEnabled = ref(true);
 
   const selectedComponent = computed(
     () =>
@@ -62,6 +69,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   function selectComponent(componentId: string) {
     selectedComponentId.value = componentId;
+  }
+
+  function clearSelection() {
+    selectedComponentId.value = null;
   }
 
   function placeComponent(
@@ -110,9 +121,19 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     draggingPaletteType.value = null;
   }
 
+  function setGridStep(step: DesignerGridStep) {
+    gridStep.value = step;
+  }
+
+  function setSnapToGridEnabled(enabled: boolean) {
+    snapToGridEnabled.value = enabled;
+  }
+
   return {
     components,
     currentDocumentPath,
+    gridStep,
+    gridSteps: GRID_STEPS,
     draggingPaletteType,
     finishPaletteDrag,
     loadDocument,
@@ -123,6 +144,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     saveDocument,
     selectedComponent,
     selectedComponentId,
+    clearSelection,
+    setGridStep,
+    setSnapToGridEnabled,
+    snapToGridEnabled,
     addComponent,
     selectComponent,
     startPaletteDrag,
