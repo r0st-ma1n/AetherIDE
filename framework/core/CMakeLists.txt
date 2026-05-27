@@ -7,13 +7,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(clap)
 
-add_library(apf_core
+add_library(aether_core
     src/Parameter.cpp
 )
 
-target_include_directories(apf_core
+target_include_directories(aether_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(apf_core PUBLIC clap)
+target_link_libraries(aether_core PUBLIC clap)

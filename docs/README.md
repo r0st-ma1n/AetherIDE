@@ -8,7 +8,7 @@
 - [GIT_CONVENTIONS.md](./GIT_CONVENTIONS.md) - правила по веткам, коммитам и pull request
 - [standards/architecture.md](./standards/architecture.md) - границы модулей и устройство приложения
 - [standards/javascript-electron.md](./standards/javascript-electron.md) - стандарты для `Electron`, `renderer` и `preload`
-- [standards/cpp-cmake.md](./standards/cpp-cmake.md) - стандарты для `C++`, `APF` и `CMake`
+- [standards/cpp-cmake.md](./standards/cpp-cmake.md) - стандарты для `C++`, `Aether` и `CMake`
 - [standards/testing.md](./standards/testing.md) - минимальные правила тестирования и проверки изменений
 
 ## Принцип

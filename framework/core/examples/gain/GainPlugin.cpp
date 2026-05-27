@@ -6,8 +6,8 @@ void GainPlugin::prepare([[maybe_unused]] double sampleRate, [[maybe_unused]] in
 void GainPlugin::reset() {
 }
 
-apf::ParameterLayout GainPlugin::createParameters() {
-    apf::ParameterLayout layout;
+aether::ParameterLayout GainPlugin::createParameters() {
+    aether::ParameterLayout layout;
 
     layout.addFloat(
         "gain",
@@ -20,7 +20,7 @@ apf::ParameterLayout GainPlugin::createParameters() {
     return layout;
 }
 
-void GainPlugin::process(apf::ProcessContext& context) {
+void GainPlugin::process(aether::ProcessContext& context) {
     const float gain = context.parameters.getFloat("gain").value();
 
     for (int ch = 0; ch < context.audio.numChannels(); ++ch) {

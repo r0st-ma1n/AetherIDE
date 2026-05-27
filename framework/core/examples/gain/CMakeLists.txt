@@ -5,5 +5,5 @@ add_executable(gain_console_test
 
 target_link_libraries(gain_console_test
     PRIVATE
-        apf_core
+        aether_core
 )

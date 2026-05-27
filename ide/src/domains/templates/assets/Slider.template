@@ -1,5 +1,5 @@
     // Setup {{safeId}} (Orientation: {{orientation}})
     {{safeId}}.setBounds({{x}}, {{y}}, 150, 30);
-    {{safeId}}.setOrientation(apf::Slider::{{orientation}});
+    {{safeId}}.setOrientation(aether::Slider::{{orientation}});
     if (auto* param = processor.getParameter("{{id}}")) { {{safeId}}.setParameter(param); }
     {{safeId}}.onValueChanged = [this](float val) { on{{capitalizedId}}ValueChanged(val); };

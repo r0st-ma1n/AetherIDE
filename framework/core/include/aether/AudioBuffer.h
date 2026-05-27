@@ -3,7 +3,7 @@
 #include <vector>
 #include <stdexcept>
 
-namespace apf {
+namespace aether {
 
 class AudioBuffer {
 public:
