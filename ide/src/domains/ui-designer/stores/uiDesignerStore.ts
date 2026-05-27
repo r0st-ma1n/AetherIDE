@@ -4,7 +4,11 @@ import {
   parseUiDocument,
   serializeUiDocument,
 } from '@/domains/ui-designer/lib/uiDocument';
-import type { UiComponent, UiComponentType } from '@/shared/types';
+import type {
+  DesignerGridStep,
+  UiComponent,
+  UiComponentType,
+} from '@/shared/types';
 
 const PALETTE = [
   { type: 'Knob' as UiComponentType, label: 'Dial / Knob' },
@@ -12,11 +16,15 @@ const PALETTE = [
   { type: 'Button' as UiComponentType, label: 'Toggle Button' },
 ];
 
+const GRID_STEPS: DesignerGridStep[] = [5, 10, 20];
+
 export const useUiDesignerStore = defineStore('ui-designer', () => {
   const currentDocumentPath = ref<string | null>(null);
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
   const draggingPaletteType = ref<UiComponentType | null>(null);
+  const gridStep = ref<DesignerGridStep>(10);
+  const snapToGridEnabled = ref(true);
 
   const selectedComponent = computed(
     () =>
@@ -91,9 +99,19 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     draggingPaletteType.value = null;
   }
 
+  function setGridStep(step: DesignerGridStep) {
+    gridStep.value = step;
+  }
+
+  function setSnapToGridEnabled(enabled: boolean) {
+    snapToGridEnabled.value = enabled;
+  }
+
   return {
     components,
     currentDocumentPath,
+    gridStep,
+    gridSteps: GRID_STEPS,
     draggingPaletteType,
     finishPaletteDrag,
     loadDocument,
@@ -103,6 +121,9 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     saveDocument,
     selectedComponent,
     selectedComponentId,
+    setGridStep,
+    setSnapToGridEnabled,
+    snapToGridEnabled,
     addComponent,
     selectComponent,
     startPaletteDrag,

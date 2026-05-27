@@ -22,6 +22,7 @@ export interface FileTreeNode {
 }
 
 export type UiComponentType = 'Knob' | 'Slider' | 'Button';
+export type DesignerGridStep = 5 | 10 | 20;
 
 export interface UiComponent {
   id: string;
