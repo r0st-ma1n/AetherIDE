@@ -11,10 +11,10 @@ int main() {
 
     plugin.prepare(sampleRate, blockSize);
 
-    apf::ParameterLayout parameters = plugin.createParameters();
+    aether::ParameterLayout parameters = plugin.createParameters();
     parameters.getFloat("gain").setValue(0.5f);
 
-    apf::AudioBuffer buffer(channels, blockSize);
+    aether::AudioBuffer buffer(channels, blockSize);
 
     for (int ch = 0; ch < buffer.numChannels(); ++ch) {
         float* samples = buffer.channel(ch);
@@ -24,7 +24,7 @@ int main() {
         }
     }
 
-    apf::ProcessContext context {
+    aether::ProcessContext context {
         .audio = buffer,
         .parameters = parameters,
         .sampleRate = sampleRate,

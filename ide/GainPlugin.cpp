@@ -1,7 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY COMMENTS
 #include "GainPlugin.h"
 
-void GainPluginUI::setupUI(apf::PluginProcessor& processor) {
+void GainPluginUI::setupUI(aether::PluginProcessor& processor) {
     // Setup knob1779727804935
     knob1779727804935.setBounds(100, 80, 140, 70);
     if (auto* param = processor.getParameter("knob-1779727804935")) {

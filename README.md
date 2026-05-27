@@ -92,7 +92,7 @@ PrototypeIDE/
 ├── framework/                    # C++ фреймворк для аудио-плагинов
 │   └── core/                    # Основные компоненты фреймворка
 │       ├── include/             # Заголовочные файлы
-│       │   └── apf/
+│       │   └── aether/
 │       │       ├── AudioBuffer.h
 │       │       ├── Parameter.h
 │       │       ├── ProcessContext.h
@@ -112,7 +112,7 @@ PrototypeIDE/
 - **Editor**: Monaco Editor (редактор VS Code)
 - **Desktop Framework**: Electron
 - **Backend**: C++ (CMake)
-- **Audio Processing**: Собственный фреймворк APF (Audio Plugin Framework)
+- **Audio Processing**: Собственный фреймворк Aether (Audio Plugin Framework)
 
 ## 🐛 Известные проблемы
 

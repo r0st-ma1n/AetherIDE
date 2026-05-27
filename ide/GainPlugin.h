@@ -1,8 +1,8 @@
 // GENERATED CODE - DO NOT MODIFY COMMENTS
 #pragma once
 
-#include "apf/PluginProcessor.h"
-#include "apf/Parameter.h"
+#include "aether/PluginProcessor.h"
+#include "aether/Parameter.h"
 
 // --- USER CODE BEGIN: Includes ---
 
@@ -10,16 +10,16 @@
 
 class GainPluginUI {
 public:
-    void setupUI(apf::PluginProcessor& processor);
+    void setupUI(aether::PluginProcessor& processor);
 
     // --- USER CODE BEGIN: PublicMethods ---
 
     // --- USER CODE END: PublicMethods ---
 
 private:
-    apf::Knob knob1779727804935;
-    apf::Slider slider1779887593361;
-    apf::Button button1779887600111;
+    aether::Knob knob1779727804935;
+    aether::Slider slider1779887593361;
+    aether::Button button1779887600111;
 
     // Event Handlers
     void onKnob1779727804935ValueChanged(float newValue);

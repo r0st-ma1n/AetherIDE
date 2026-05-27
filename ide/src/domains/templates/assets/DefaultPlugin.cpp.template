@@ -1,7 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY COMMENTS
 #include "{{className}}.h"
 
-void {{className}}UI::setupUI(apf::PluginProcessor& processor) {
+void {{className}}UI::setupUI(aether::PluginProcessor& processor) {
 {{setupComponents}}
 
     // --- USER CODE BEGIN: SetupUI ---

@@ -1,8 +1,8 @@
 // GENERATED CODE - DO NOT MODIFY COMMENTS
 #pragma once
 
-#include "apf/PluginProcessor.h"
-#include "apf/Parameter.h"
+#include "aether/PluginProcessor.h"
+#include "aether/Parameter.h"
 
 // --- USER CODE BEGIN: Includes ---
 {{includes}}
@@ -10,7 +10,7 @@
 
 class {{className}}UI {
 public:
-    void setupUI(apf::PluginProcessor& processor);
+    void setupUI(aether::PluginProcessor& processor);
 
     // --- USER CODE BEGIN: PublicMethods ---
 {{publicMethods}}

@@ -1,8 +1,8 @@
-#include "apf/Parameter.h"
+#include "aether/Parameter.h"
 
 #include <algorithm>
 
-namespace apf {
+namespace aether {
 
 FloatParameter::FloatParameter(
     std::string id,

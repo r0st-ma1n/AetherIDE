@@ -1,9 +1,9 @@
 #pragma once
 
-#include "apf/AudioBuffer.h"
-#include "apf/Parameter.h"
+#include "aether/AudioBuffer.h"
+#include "aether/Parameter.h"
 
-namespace apf {
+namespace aether {
 
 struct ProcessContext {
     AudioBuffer& audio;

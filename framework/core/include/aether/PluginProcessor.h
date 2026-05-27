@@ -1,9 +1,9 @@
 #pragma once
 
-#include "apf/ProcessContext.h"
-#include "apf/Parameter.h"
+#include "aether/ProcessContext.h"
+#include "aether/Parameter.h"
 
-namespace apf {
+namespace aether {
 
 class PluginProcessor {
 public:

@@ -93,7 +93,7 @@ export function generatePluginCode(
   }));
 
   const componentDeclarations = safeComponents
-    .map((c) => `    apf::${c.type} ${c.safeId};`)
+    .map((c) => `    aether::${c.type} ${c.safeId};`)
     .join('\n');
   const eventHandlersDeclarations = safeComponents
     .map(

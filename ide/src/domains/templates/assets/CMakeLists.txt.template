@@ -6,5 +6,5 @@ add_library({{className}} SHARED
     {{className}}.h
 )
 
-target_link_libraries({{className}} PRIVATE apf_core)
+target_link_libraries({{className}} PRIVATE aether_core)
 target_include_directories({{className}} PRIVATE .)
