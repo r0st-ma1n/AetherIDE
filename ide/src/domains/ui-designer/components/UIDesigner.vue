@@ -40,6 +40,7 @@
         ref="canvasElement"
         class="designer__canvas"
         :style="canvasGridStyle"
+        @mousedown.self="handleCanvasMouseDown"
         @dragenter.prevent
         @dragover.prevent
         @drop.prevent="handleDrop"
@@ -104,6 +105,7 @@ const props = defineProps<{
 const designerStore = useUiDesignerStore();
 const workspaceStore = useWorkspaceStore();
 const canvasElement = ref<HTMLElement | null>(null);
+let stopActivePointerInteraction: (() => void) | null = null;
 const canvasGridStyle = computed(
   () =>
     ({
@@ -189,6 +191,14 @@ function handleSnapToggle(event: Event) {
   );
 }
 
+function handleCanvasMouseDown(event: MouseEvent) {
+  if (event.button !== 0) {
+    return;
+  }
+
+  designerStore.clearSelection();
+}
+
 function handleDrop(event: DragEvent) {
   const type =
     (event.dataTransfer?.getData('text/plain') as UiComponentType | '') ||
@@ -213,7 +223,7 @@ function handleDrop(event: DragEvent) {
 }
 
 function startDrag(event: MouseEvent, componentId: string) {
-  if (!canvasElement.value) {
+  if (event.button !== 0 || !canvasElement.value) {
     return;
   }
 
@@ -225,6 +235,9 @@ function startDrag(event: MouseEvent, componentId: string) {
   if (!component) {
     return;
   }
+
+  designerStore.selectComponent(componentId);
+  stopPointerInteraction();
 
   const offsetX = event.clientX - rect.left - component.position.x;
   const offsetY = event.clientY - rect.top - component.position.y;
@@ -241,8 +254,13 @@ function startDrag(event: MouseEvent, componentId: string) {
   };
 
   const onMouseUp = () => {
+    stopPointerInteraction();
+  };
+
+  stopActivePointerInteraction = () => {
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
+    stopActivePointerInteraction = null;
   };
 
   window.addEventListener('mousemove', onMouseMove);
@@ -254,7 +272,7 @@ function startResize(
   componentId: string,
   direction: ResizeDirection
 ) {
-  if (!canvasElement.value) {
+  if (event.button !== 0 || !canvasElement.value) {
     return;
   }
 
@@ -268,6 +286,7 @@ function startResize(
   }
 
   designerStore.selectComponent(componentId);
+  stopPointerInteraction();
 
   const initialPointer = {
     x: event.clientX,
@@ -291,12 +310,21 @@ function startResize(
   };
 
   const onMouseUp = () => {
+    stopPointerInteraction();
+  };
+
+  stopActivePointerInteraction = () => {
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
+    stopActivePointerInteraction = null;
   };
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
+}
+
+function stopPointerInteraction() {
+  stopActivePointerInteraction?.();
 }
 
 function getResizedBounds(
@@ -453,6 +481,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  stopPointerInteraction();
   window.removeEventListener('keydown', handleSaveShortcut);
 });
 </script>

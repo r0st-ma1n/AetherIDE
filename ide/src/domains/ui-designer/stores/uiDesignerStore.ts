@@ -71,6 +71,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId.value = componentId;
   }
 
+  function clearSelection() {
+    selectedComponentId.value = null;
+  }
+
   function placeComponent(
     type: UiComponentType,
     position: UiComponent['position']
@@ -140,6 +144,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     saveDocument,
     selectedComponent,
     selectedComponentId,
+    clearSelection,
     setGridStep,
     setSnapToGridEnabled,
     snapToGridEnabled,
