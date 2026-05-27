@@ -30,4 +30,8 @@ export interface UiComponent {
     x: number;
     y: number;
   };
+  size: {
+    width: number;
+    height: number;
+  };
 }

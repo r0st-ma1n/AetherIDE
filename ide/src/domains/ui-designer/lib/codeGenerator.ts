@@ -119,7 +119,7 @@ export function generatePluginCode(
   const setupComponents = safeComponents
     .map(
       (c) => `    // Setup ${c.safeId}
-    ${c.safeId}.setBounds(${c.position.x}, ${c.position.y}, 100, 40);
+    ${c.safeId}.setBounds(${c.position.x}, ${c.position.y}, ${c.size.width}, ${c.size.height});
     if (auto* param = processor.getParameter("${c.id}")) {
         ${c.safeId}.setParameter(param);
     }
