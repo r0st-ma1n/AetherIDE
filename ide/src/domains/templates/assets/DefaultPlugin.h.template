@@ -1,0 +1,28 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+#pragma once
+
+#include "apf/PluginProcessor.h"
+#include "apf/Parameter.h"
+
+// --- USER CODE BEGIN: Includes ---
+{{includes}}
+// --- USER CODE END: Includes ---
+
+class {{className}}UI {
+public:
+    void setupUI(apf::PluginProcessor& processor);
+
+    // --- USER CODE BEGIN: PublicMethods ---
+{{publicMethods}}
+    // --- USER CODE END: PublicMethods ---
+
+private:
+{{componentDeclarations}}
+
+    // Event Handlers
+{{eventHandlersDeclarations}}
+
+    // --- USER CODE BEGIN: PrivateMembers ---
+{{privateMembers}}
+    // --- USER CODE END: PrivateMembers ---
+};

@@ -1,98 +1,132 @@
 <template>
-  <header class="tab-bar">
-    <button
-      v-for="tab in tabs"
+  <div class="tab-bar">
+    <div
+      v-for="tab in workspaceStore.tabs"
       :key="tab.id"
-      class="tab-bar__tab"
-      :class="{ 'tab-bar__tab--active': tab.id === activeTabId }"
-      @click="$emit('activate', tab.id)"
+      class="tab"
+      :class="{ 'tab--active': workspaceStore.activeTabId === tab.id }"
+      @click="handleTabClick(tab.id)"
+      @mousedown.middle="handleCloseClick($event, tab.id)"
     >
-      <span class="tab-bar__title">{{ tab.title }}</span>
-      <span v-if="tab.isDirty" class="tab-bar__dirty">*</span>
-      <span
-        class="tab-bar__close"
-        title="Close tab"
-        @click.stop="$emit('close', tab.id)"
-      >
-        x
+      <span class="tab__title" :title="tab.filePath">
+        {{ basename(tab.filePath) }}
       </span>
-    </button>
-  </header>
+      <span v-if="tab.isDirty" class="tab__dirty">●</span>
+      <button
+        class="tab__close"
+        title="Close (Middle Click)"
+        @click.stop="handleCloseClick($event, tab.id)"
+      >
+        ×
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import type { WorkspaceTab } from '@/shared/types';
+import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
+import { basename } from '@/shared/lib/path';
 
-defineProps<{
-  tabs: WorkspaceTab[];
-  activeTabId: string | null;
-}>();
+const workspaceStore = useWorkspaceStore();
 
-defineEmits<{
-  activate: [tabId: string];
-  close: [tabId: string];
-}>();
+function handleTabClick(tabId: string) {
+  workspaceStore.activeTabId = tabId;
+}
+
+function handleCloseClick(event: MouseEvent, tabId: string) {
+  // Вызываем метод закрытия вкладки из стора
+  if (workspaceStore.closeTab) {
+    workspaceStore.closeTab(tabId);
+  }
+}
 </script>
 
 <style scoped>
 .tab-bar {
-  position: relative;
-  z-index: 4000;
   display: flex;
-  background-color: #2d2d2d;
-  border-bottom: 1px solid #1e1e1e;
-  flex-shrink: 0;
+  background-color: #252526;
   overflow-x: auto;
   overflow-y: hidden;
+  height: 35px;
+  flex-shrink: 0;
 }
 
-.tab-bar__tab {
-  position: relative;
+.tab-bar::-webkit-scrollbar {
+  height: 2px;
+}
+
+.tab-bar::-webkit-scrollbar-thumb {
+  background: #464646;
+}
+
+.tab {
   display: flex;
-  gap: 8px;
   align-items: center;
-  flex: 0 0 auto;
-  border: none;
-  padding: 10px 15px;
-  background: none;
+  padding: 0 10px 0 14px;
+  background-color: #2d2d2d;
   color: #969696;
+  border-right: 1px solid #1e1e1e;
   cursor: pointer;
-  font-size: 13px;
-  border-top: 2px solid transparent;
+  min-width: 120px;
+  max-width: 200px;
+  user-select: none;
+  position: relative;
 }
 
-.tab-bar__title {
-  max-width: 180px;
+.tab--active {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.tab--active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #007acc;
+}
+
+.tab__title {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
 }
 
-.tab-bar__tab--active {
+.tab__dirty {
+  margin-left: 6px;
+  font-size: 10px;
   color: #ffffff;
-  background-color: #1e1e1e;
-  border-top-color: #007acc;
+  line-height: 1;
 }
 
-.tab-bar__dirty {
-  color: #ffb86c;
-}
-
-.tab-bar__close {
-  display: inline-flex;
+.tab__close {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
   width: 20px;
   height: 20px;
-  border-radius: 4px;
-  color: #969696;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
 }
 
-.tab-bar__close:hover {
-  background-color: #3a3d41;
+.tab:hover .tab__close,
+.tab--active .tab__close {
+  opacity: 1;
+}
+
+.tab__close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 </style>

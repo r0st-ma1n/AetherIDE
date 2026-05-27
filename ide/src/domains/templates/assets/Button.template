@@ -1,0 +1,5 @@
+    // Setup {{safeId}}
+    {{safeId}}.setBounds({{x}}, {{y}}, 80, 30);
+    {{safeId}}.setMode(apf::Button::{{mode}}); // Toggle or Momentary
+    if (auto* param = processor.getParameter("{{id}}")) { {{safeId}}.setParameter(param); }
+    {{safeId}}.onClick = [this]() { on{{capitalizedId}}Clicked(); };

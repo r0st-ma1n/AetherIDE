@@ -1,0 +1,16 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+#include "{{className}}.h"
+
+void {{className}}UI::setupUI(apf::PluginProcessor& processor) {
+{{setupComponents}}
+
+    // --- USER CODE BEGIN: SetupUI ---
+{{setupUI}}
+    // --- USER CODE END: SetupUI ---
+}
+
+{{eventHandlersImplementations}}
+
+// --- USER CODE BEGIN: CustomMethods ---
+{{customMethods}}
+// --- USER CODE END: CustomMethods ---

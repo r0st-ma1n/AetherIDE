@@ -45,57 +45,42 @@ function renderTemplate(template: string, data: Record<string, string>) {
   );
 }
 
-const HEADER_TEMPLATE = `// GENERATED CODE - DO NOT MODIFY COMMENTS
-#pragma once
-
-#include "apf/PluginProcessor.h"
-#include "apf/Parameter.h"
-
-// --- USER CODE BEGIN: Includes ---
-{{includes}}
-// --- USER CODE END: Includes ---
-
-class {{className}}UI {
-public:
-    void setupUI(apf::PluginProcessor& processor);
-
-    // --- USER CODE BEGIN: PublicMethods ---
-{{publicMethods}}
-    // --- USER CODE END: PublicMethods ---
-
-private:
-{{componentDeclarations}}
-
-    // Event Handlers
-{{eventHandlersDeclarations}}
-
-    // --- USER CODE BEGIN: PrivateMembers ---
-{{privateMembers}}
-    // --- USER CODE END: PrivateMembers ---
-};
-`;
-
-const CPP_TEMPLATE = `// GENERATED CODE - DO NOT MODIFY COMMENTS
-#include "{{className}}.h"
-
-void {{className}}UI::setupUI(apf::PluginProcessor& processor) {
-{{setupComponents}}
-
-    // --- USER CODE BEGIN: SetupUI ---
-{{setupUI}}
-    // --- USER CODE END: SetupUI ---
+export interface Templates {
+  header: string;
+  cpp: string;
+  components: Record<string, string>;
 }
 
-{{eventHandlersImplementations}}
+export function validateCppSyntax(code: string): {
+  valid: boolean;
+  error?: string;
+} {
+  const stack: string[] = [];
+  const pairs: Record<string, string> = { '}': '{', ')': '(', ']': '[' };
 
-// --- USER CODE BEGIN: CustomMethods ---
-{{customMethods}}
-// --- USER CODE END: CustomMethods ---
-`;
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    if (char === '{' || char === '(' || char === '[') {
+      stack.push(char);
+    } else if (char === '}' || char === ')' || char === ']') {
+      if (stack.length === 0 || stack.pop() !== pairs[char]) {
+        return {
+          valid: false,
+          error: `Unmatched closing bracket '${char}' near index ${i}`,
+        };
+      }
+    }
+  }
+
+  return stack.length === 0
+    ? { valid: true }
+    : { valid: false, error: 'Unclosed brackets remaining in code' };
+}
 
 export function generatePluginCode(
   components: UiComponent[],
   className: string,
+  templates: Templates,
   existingHeader: string = '',
   existingCpp: string = ''
 ) {
@@ -139,7 +124,7 @@ ${getUserCode(cppUserCode, `on${capitalize(c.safeId)}ValueChanged`, '    ')}
     )
     .join('\n\n');
 
-  const headerCode = renderTemplate(HEADER_TEMPLATE, {
+  const headerCode = renderTemplate(templates.header, {
     className,
     includes: getUserCode(headerUserCode, 'Includes'),
     publicMethods: getUserCode(headerUserCode, 'PublicMethods', '    '),
@@ -148,7 +133,7 @@ ${getUserCode(cppUserCode, `on${capitalize(c.safeId)}ValueChanged`, '    ')}
     privateMembers: getUserCode(headerUserCode, 'PrivateMembers', '    '),
   });
 
-  const cppCode = renderTemplate(CPP_TEMPLATE, {
+  const cppCode = renderTemplate(templates.cpp, {
     className,
     setupComponents,
     setupUI: getUserCode(cppUserCode, 'SetupUI', '    '),
