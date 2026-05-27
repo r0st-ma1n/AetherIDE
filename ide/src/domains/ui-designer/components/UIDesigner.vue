@@ -44,7 +44,7 @@
         @dragover.prevent
         @drop.prevent="handleDrop"
       >
-        <button
+        <div
           v-for="component in designerStore.components"
           :key="component.id"
           class="designer__component"
@@ -55,12 +55,25 @@
           :style="{
             left: `${component.position.x}px`,
             top: `${component.position.y}px`,
+            width: `${component.size.width}px`,
+            height: `${component.size.height}px`,
           }"
           @mousedown="startDrag($event, component.id)"
           @click="designerStore.selectComponent(component.id)"
         >
-          {{ component.type }}
-        </button>
+          <span class="designer__component-label">{{ component.type }}</span>
+
+          <div
+            v-if="component.id === designerStore.selectedComponentId"
+            v-for="handle in RESIZE_HANDLES"
+            :key="handle.direction"
+            class="designer__resize-handle"
+            :class="`designer__resize-handle--${handle.direction}`"
+            @mousedown.stop.prevent="
+              startResize($event, component.id, handle.direction)
+            "
+          ></div>
+        </div>
       </div>
     </div>
   </section>
@@ -79,6 +92,7 @@ import {
 } from '@/shared/lib/path';
 import type {
   DesignerGridStep,
+  UiComponent,
   UiComponentType,
   WorkspaceTab,
 } from '@/shared/types';
@@ -96,6 +110,22 @@ const canvasGridStyle = computed(
       '--designer-grid-step': `${designerStore.gridStep}px`,
     }) as Record<string, string>
 );
+
+type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+
+const RESIZE_HANDLES: Array<{ direction: ResizeDirection }> = [
+  { direction: 'nw' },
+  { direction: 'n' },
+  { direction: 'ne' },
+  { direction: 'e' },
+  { direction: 'se' },
+  { direction: 's' },
+  { direction: 'sw' },
+  { direction: 'w' },
+];
+
+const MIN_COMPONENT_WIDTH = 40;
+const MIN_COMPONENT_HEIGHT = 24;
 
 async function loadDocument() {
   await designerStore.loadDocument(props.tab.filePath);
@@ -170,9 +200,14 @@ function handleDrop(event: DragEvent) {
   }
 
   const rect = canvasElement.value.getBoundingClientRect();
-  designerStore.placeComponent(type, {
+  const droppedPosition = snapPosition({
     x: Math.max(0, Math.round(event.clientX - rect.left - 50)),
     y: Math.max(0, Math.round(event.clientY - rect.top - 20)),
+  });
+
+  designerStore.placeComponent(type, {
+    x: droppedPosition.x,
+    y: droppedPosition.y,
   });
   designerStore.finishPaletteDrag();
 }
@@ -196,8 +231,12 @@ function startDrag(event: MouseEvent, componentId: string) {
 
   const onMouseMove = (moveEvent: MouseEvent) => {
     designerStore.moveComponent(componentId, {
-      x: Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX)),
-      y: Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY)),
+      x: snapCoordinate(
+        Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX))
+      ),
+      y: snapCoordinate(
+        Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY))
+      ),
     });
   };
 
@@ -208,6 +247,185 @@ function startDrag(event: MouseEvent, componentId: string) {
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
+}
+
+function startResize(
+  event: MouseEvent,
+  componentId: string,
+  direction: ResizeDirection
+) {
+  if (!canvasElement.value) {
+    return;
+  }
+
+  const rect = canvasElement.value.getBoundingClientRect();
+  const component = designerStore.components.find(
+    (item) => item.id === componentId
+  );
+
+  if (!component) {
+    return;
+  }
+
+  designerStore.selectComponent(componentId);
+
+  const initialPointer = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+  const initialBounds = {
+    position: { ...component.position },
+    size: { ...component.size },
+  };
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    const dx = moveEvent.clientX - initialPointer.x;
+    const dy = moveEvent.clientY - initialPointer.y;
+    const nextBounds = normalizeBoundsToCanvas(
+      getResizedBounds(initialBounds, direction, dx, dy),
+      rect.width,
+      rect.height
+    );
+
+    designerStore.resizeComponent(componentId, nextBounds);
+  };
+
+  const onMouseUp = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+}
+
+function getResizedBounds(
+  initialBounds: Pick<UiComponent, 'position' | 'size'>,
+  direction: ResizeDirection,
+  dx: number,
+  dy: number
+) {
+  const nextBounds = {
+    position: { ...initialBounds.position },
+    size: { ...initialBounds.size },
+  };
+
+  if (direction.includes('e')) {
+    nextBounds.size.width = Math.max(
+      MIN_COMPONENT_WIDTH,
+      Math.round(initialBounds.size.width + dx)
+    );
+  }
+
+  if (direction.includes('s')) {
+    nextBounds.size.height = Math.max(
+      MIN_COMPONENT_HEIGHT,
+      Math.round(initialBounds.size.height + dy)
+    );
+  }
+
+  if (direction.includes('w')) {
+    const width = Math.max(
+      MIN_COMPONENT_WIDTH,
+      Math.round(initialBounds.size.width - dx)
+    );
+    nextBounds.position.x =
+      initialBounds.position.x + initialBounds.size.width - width;
+    nextBounds.size.width = width;
+  }
+
+  if (direction.includes('n')) {
+    const height = Math.max(
+      MIN_COMPONENT_HEIGHT,
+      Math.round(initialBounds.size.height - dy)
+    );
+    nextBounds.position.y =
+      initialBounds.position.y + initialBounds.size.height - height;
+    nextBounds.size.height = height;
+  }
+
+  if (designerStore.snapToGridEnabled) {
+    if (direction.includes('w')) {
+      const snappedLeft = snapCoordinate(nextBounds.position.x);
+      const preservedRight =
+        initialBounds.position.x + initialBounds.size.width;
+      nextBounds.position.x = snappedLeft;
+      nextBounds.size.width = Math.max(
+        MIN_COMPONENT_WIDTH,
+        preservedRight - snappedLeft
+      );
+    } else {
+      nextBounds.size.width = snapSize(nextBounds.size.width);
+    }
+
+    if (direction.includes('n')) {
+      const snappedTop = snapCoordinate(nextBounds.position.y);
+      const preservedBottom =
+        initialBounds.position.y + initialBounds.size.height;
+      nextBounds.position.y = snappedTop;
+      nextBounds.size.height = Math.max(
+        MIN_COMPONENT_HEIGHT,
+        preservedBottom - snappedTop
+      );
+    } else {
+      nextBounds.size.height = snapSize(nextBounds.size.height);
+    }
+  }
+
+  return nextBounds;
+}
+
+function normalizeBoundsToCanvas(
+  bounds: Pick<UiComponent, 'position' | 'size'>,
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  const maxWidth = Math.round(canvasWidth);
+  const maxHeight = Math.round(canvasHeight);
+  const left = Math.max(0, Math.round(bounds.position.x));
+  const top = Math.max(0, Math.round(bounds.position.y));
+
+  return {
+    position: {
+      x: left,
+      y: top,
+    },
+    size: {
+      width: Math.max(
+        MIN_COMPONENT_WIDTH,
+        Math.min(Math.round(bounds.size.width), maxWidth - left)
+      ),
+      height: Math.max(
+        MIN_COMPONENT_HEIGHT,
+        Math.min(Math.round(bounds.size.height), maxHeight - top)
+      ),
+    },
+  };
+}
+
+function snapPosition(position: UiComponent['position']) {
+  return {
+    x: snapCoordinate(position.x),
+    y: snapCoordinate(position.y),
+  };
+}
+
+function snapCoordinate(value: number) {
+  if (!designerStore.snapToGridEnabled) {
+    return value;
+  }
+
+  const step = designerStore.gridStep;
+  return Math.max(0, Math.round(value / step) * step);
+}
+
+function snapSize(value: number) {
+  if (!designerStore.snapToGridEnabled) {
+    return value;
+  }
+
+  const step = designerStore.gridStep;
+  return Math.max(step, Math.round(value / step) * step);
 }
 
 watch(
@@ -357,17 +575,90 @@ onBeforeUnmount(() => {
 
 .designer__component {
   position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #005999;
   border-radius: 4px;
-  padding: 8px 16px;
   background-color: #007acc;
   color: white;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.designer__component-label {
+  pointer-events: none;
 }
 
 .designer__component--active {
   border: 2px solid #55b3ff;
   box-shadow: 0 0 10px rgba(85, 179, 255, 0.5);
+}
+
+.designer__resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #d9f1ff;
+  border-radius: 2px;
+  background-color: #55b3ff;
+  box-shadow: 0 0 0 1px rgba(10, 15, 20, 0.35);
+}
+
+.designer__resize-handle--n,
+.designer__resize-handle--s {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.designer__resize-handle--e,
+.designer__resize-handle--w {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.designer__resize-handle--nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.designer__resize-handle--n {
+  top: -5px;
+  cursor: ns-resize;
+}
+
+.designer__resize-handle--ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.designer__resize-handle--e {
+  right: -5px;
+  cursor: ew-resize;
+}
+
+.designer__resize-handle--se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+.designer__resize-handle--s {
+  bottom: -5px;
+  cursor: ns-resize;
+}
+
+.designer__resize-handle--sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.designer__resize-handle--w {
+  left: -5px;
+  cursor: ew-resize;
 }
 </style>

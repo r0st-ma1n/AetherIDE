@@ -17,7 +17,9 @@ export function parseGeneratedCode(source: string): UiComponent[] {
       continue;
     }
 
-    const boundsMatch = line.match(/\.setBounds\(\s*(\d+)\s*,\s*(\d+)/);
+    const boundsMatch = line.match(
+      /\.setBounds\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/
+    );
 
     if (boundsMatch && currentId && currentType) {
       components.push({
@@ -26,6 +28,10 @@ export function parseGeneratedCode(source: string): UiComponent[] {
         position: {
           x: Number.parseInt(boundsMatch[1] ?? '0', 10),
           y: Number.parseInt(boundsMatch[2] ?? '0', 10),
+        },
+        size: {
+          width: Number.parseInt(boundsMatch[3] ?? '100', 10),
+          height: Number.parseInt(boundsMatch[4] ?? '40', 10),
         },
       });
       currentId = null;

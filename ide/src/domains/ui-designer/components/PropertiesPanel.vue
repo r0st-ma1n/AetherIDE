@@ -18,6 +18,14 @@
         <span>Top</span>
         <strong>{{ selectedComponent.position.y }}px</strong>
       </div>
+      <div class="property-row">
+        <span>Width</span>
+        <strong>{{ selectedComponent.size.width }}px</strong>
+      </div>
+      <div class="property-row">
+        <span>Height</span>
+        <strong>{{ selectedComponent.size.height }}px</strong>
+      </div>
     </div>
     <div v-else class="panel__empty">Select a component in the designer.</div>
   </section>

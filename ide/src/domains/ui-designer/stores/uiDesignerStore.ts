@@ -17,6 +17,10 @@ const PALETTE = [
 ];
 
 const GRID_STEPS: DesignerGridStep[] = [5, 10, 20];
+const DEFAULT_COMPONENT_SIZE = {
+  width: 100,
+  height: 40,
+};
 
 export const useUiDesignerStore = defineStore('ui-designer', () => {
   const currentDocumentPath = ref<string | null>(null);
@@ -56,6 +60,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
         x: 120 + components.value.length * 16,
         y: 80 + components.value.length * 16,
       },
+      size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
     components.value.push(next);
@@ -74,6 +79,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
       id: `${type.toLowerCase()}-${Date.now()}`,
       type,
       position,
+      size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
     components.value.push(next);
@@ -88,6 +94,18 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
     if (component) {
       component.position = position;
+    }
+  }
+
+  function resizeComponent(
+    componentId: string,
+    bounds: Pick<UiComponent, 'position' | 'size'>
+  ) {
+    const component = components.value.find((item) => item.id === componentId);
+
+    if (component) {
+      component.position = bounds.position;
+      component.size = bounds.size;
     }
   }
 
@@ -118,6 +136,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     palette: PALETTE,
     placeComponent,
     moveComponent,
+    resizeComponent,
     saveDocument,
     selectedComponent,
     selectedComponentId,
