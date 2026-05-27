@@ -216,21 +216,13 @@ function startResize(
   const onMouseMove = (moveEvent: MouseEvent) => {
     const dx = moveEvent.clientX - initialPointer.x;
     const dy = moveEvent.clientY - initialPointer.y;
-    const nextBounds = getResizedBounds(
-      initialBounds,
-      direction,
-      dx,
-      dy,
-      moveEvent.shiftKey
+    const nextBounds = normalizeBoundsToCanvas(
+      getResizedBounds(initialBounds, direction, dx, dy, moveEvent.shiftKey),
+      rect.width,
+      rect.height
     );
 
-    designerStore.resizeComponent(componentId, {
-      position: {
-        x: clampToCanvas(nextBounds.position.x, rect.width),
-        y: clampToCanvas(nextBounds.position.y, rect.height),
-      },
-      size: nextBounds.size,
-    });
+    designerStore.resizeComponent(componentId, nextBounds);
   };
 
   const onMouseUp = () => {
@@ -240,6 +232,67 @@ function startResize(
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
+}
+
+function normalizeBoundsToCanvas(
+  bounds: Pick<UiComponent, 'position' | 'size'>,
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  const maxWidth = Math.max(MIN_COMPONENT_WIDTH, Math.round(canvasWidth));
+  const maxHeight = Math.max(MIN_COMPONENT_HEIGHT, Math.round(canvasHeight));
+
+  let left = Math.round(bounds.position.x);
+  let top = Math.round(bounds.position.y);
+  let right = Math.round(bounds.position.x + bounds.size.width);
+  let bottom = Math.round(bounds.position.y + bounds.size.height);
+
+  if (left < 0) {
+    left = 0;
+  }
+
+  if (top < 0) {
+    top = 0;
+  }
+
+  if (right > maxWidth) {
+    right = maxWidth;
+  }
+
+  if (bottom > maxHeight) {
+    bottom = maxHeight;
+  }
+
+  if (right - left < MIN_COMPONENT_WIDTH) {
+    if (bounds.position.x < 0) {
+      right = Math.min(maxWidth, MIN_COMPONENT_WIDTH);
+      left = 0;
+    } else {
+      left = Math.max(0, right - MIN_COMPONENT_WIDTH);
+      right = left + MIN_COMPONENT_WIDTH;
+    }
+  }
+
+  if (bottom - top < MIN_COMPONENT_HEIGHT) {
+    if (bounds.position.y < 0) {
+      bottom = Math.min(maxHeight, MIN_COMPONENT_HEIGHT);
+      top = 0;
+    } else {
+      top = Math.max(0, bottom - MIN_COMPONENT_HEIGHT);
+      bottom = top + MIN_COMPONENT_HEIGHT;
+    }
+  }
+
+  return {
+    position: {
+      x: left,
+      y: top,
+    },
+    size: {
+      width: Math.min(maxWidth, right - left),
+      height: Math.min(maxHeight, bottom - top),
+    },
+  };
 }
 
 function getResizedBounds(
@@ -379,10 +432,6 @@ function buildBoundsFromAnchor(
     },
     size,
   };
-}
-
-function clampToCanvas(value: number, max: number) {
-  return Math.max(0, Math.min(Math.round(value), Math.round(max)));
 }
 
 watch(
