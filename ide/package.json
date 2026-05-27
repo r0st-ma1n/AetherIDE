@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "start": "electron .",
     "lint": "eslint .",
+    "test": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

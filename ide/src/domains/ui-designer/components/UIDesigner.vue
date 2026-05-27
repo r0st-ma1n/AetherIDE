@@ -83,6 +83,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { generatePluginCode } from '@/domains/ui-designer/lib/codeGenerator';
+import {
+  getResizedBounds,
+  normalizeBoundsToCanvas,
+  snapCoordinate,
+  snapPosition,
+  type ResizeDirection,
+} from '@/domains/ui-designer/lib/resizeBounds';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import {
@@ -93,7 +100,6 @@ import {
 } from '@/shared/lib/path';
 import type {
   DesignerGridStep,
-  UiComponent,
   UiComponentType,
   WorkspaceTab,
 } from '@/shared/types';
@@ -113,8 +119,6 @@ const canvasGridStyle = computed(
     }) as Record<string, string>
 );
 
-type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
-
 const RESIZE_HANDLES: Array<{ direction: ResizeDirection }> = [
   { direction: 'nw' },
   { direction: 'n' },
@@ -125,9 +129,10 @@ const RESIZE_HANDLES: Array<{ direction: ResizeDirection }> = [
   { direction: 'sw' },
   { direction: 'w' },
 ];
-
-const MIN_COMPONENT_WIDTH = 40;
-const MIN_COMPONENT_HEIGHT = 24;
+const snapConfig = computed(() => ({
+  enabled: designerStore.snapToGridEnabled,
+  step: designerStore.gridStep,
+}));
 
 async function loadDocument() {
   await designerStore.loadDocument(props.tab.filePath);
@@ -210,10 +215,13 @@ function handleDrop(event: DragEvent) {
   }
 
   const rect = canvasElement.value.getBoundingClientRect();
-  const droppedPosition = snapPosition({
-    x: Math.max(0, Math.round(event.clientX - rect.left - 50)),
-    y: Math.max(0, Math.round(event.clientY - rect.top - 20)),
-  });
+  const droppedPosition = snapPosition(
+    {
+      x: Math.max(0, Math.round(event.clientX - rect.left - 50)),
+      y: Math.max(0, Math.round(event.clientY - rect.top - 20)),
+    },
+    snapConfig.value
+  );
 
   designerStore.placeComponent(type, {
     x: droppedPosition.x,
@@ -245,10 +253,12 @@ function startDrag(event: MouseEvent, componentId: string) {
   const onMouseMove = (moveEvent: MouseEvent) => {
     designerStore.moveComponent(componentId, {
       x: snapCoordinate(
-        Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX))
+        Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX)),
+        snapConfig.value
       ),
       y: snapCoordinate(
-        Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY))
+        Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY)),
+        snapConfig.value
       ),
     });
   };
@@ -301,7 +311,7 @@ function startResize(
     const dx = moveEvent.clientX - initialPointer.x;
     const dy = moveEvent.clientY - initialPointer.y;
     const nextBounds = normalizeBoundsToCanvas(
-      getResizedBounds(initialBounds, direction, dx, dy),
+      getResizedBounds(initialBounds, direction, dx, dy, snapConfig.value),
       rect.width,
       rect.height
     );
@@ -325,135 +335,6 @@ function startResize(
 
 function stopPointerInteraction() {
   stopActivePointerInteraction?.();
-}
-
-function getResizedBounds(
-  initialBounds: Pick<UiComponent, 'position' | 'size'>,
-  direction: ResizeDirection,
-  dx: number,
-  dy: number
-) {
-  const nextBounds = {
-    position: { ...initialBounds.position },
-    size: { ...initialBounds.size },
-  };
-
-  if (direction.includes('e')) {
-    nextBounds.size.width = Math.max(
-      MIN_COMPONENT_WIDTH,
-      Math.round(initialBounds.size.width + dx)
-    );
-  }
-
-  if (direction.includes('s')) {
-    nextBounds.size.height = Math.max(
-      MIN_COMPONENT_HEIGHT,
-      Math.round(initialBounds.size.height + dy)
-    );
-  }
-
-  if (direction.includes('w')) {
-    const width = Math.max(
-      MIN_COMPONENT_WIDTH,
-      Math.round(initialBounds.size.width - dx)
-    );
-    nextBounds.position.x =
-      initialBounds.position.x + initialBounds.size.width - width;
-    nextBounds.size.width = width;
-  }
-
-  if (direction.includes('n')) {
-    const height = Math.max(
-      MIN_COMPONENT_HEIGHT,
-      Math.round(initialBounds.size.height - dy)
-    );
-    nextBounds.position.y =
-      initialBounds.position.y + initialBounds.size.height - height;
-    nextBounds.size.height = height;
-  }
-
-  if (designerStore.snapToGridEnabled) {
-    if (direction.includes('w')) {
-      const snappedLeft = snapCoordinate(nextBounds.position.x);
-      const preservedRight =
-        initialBounds.position.x + initialBounds.size.width;
-      nextBounds.position.x = snappedLeft;
-      nextBounds.size.width = Math.max(
-        MIN_COMPONENT_WIDTH,
-        preservedRight - snappedLeft
-      );
-    } else {
-      nextBounds.size.width = snapSize(nextBounds.size.width);
-    }
-
-    if (direction.includes('n')) {
-      const snappedTop = snapCoordinate(nextBounds.position.y);
-      const preservedBottom =
-        initialBounds.position.y + initialBounds.size.height;
-      nextBounds.position.y = snappedTop;
-      nextBounds.size.height = Math.max(
-        MIN_COMPONENT_HEIGHT,
-        preservedBottom - snappedTop
-      );
-    } else {
-      nextBounds.size.height = snapSize(nextBounds.size.height);
-    }
-  }
-
-  return nextBounds;
-}
-
-function normalizeBoundsToCanvas(
-  bounds: Pick<UiComponent, 'position' | 'size'>,
-  canvasWidth: number,
-  canvasHeight: number
-) {
-  const maxWidth = Math.round(canvasWidth);
-  const maxHeight = Math.round(canvasHeight);
-  const left = Math.max(0, Math.round(bounds.position.x));
-  const top = Math.max(0, Math.round(bounds.position.y));
-
-  return {
-    position: {
-      x: left,
-      y: top,
-    },
-    size: {
-      width: Math.max(
-        MIN_COMPONENT_WIDTH,
-        Math.min(Math.round(bounds.size.width), maxWidth - left)
-      ),
-      height: Math.max(
-        MIN_COMPONENT_HEIGHT,
-        Math.min(Math.round(bounds.size.height), maxHeight - top)
-      ),
-    },
-  };
-}
-
-function snapPosition(position: UiComponent['position']) {
-  return {
-    x: snapCoordinate(position.x),
-    y: snapCoordinate(position.y),
-  };
-}
-
-function snapCoordinate(value: number) {
-  if (!designerStore.snapToGridEnabled) {
-    return value;
-  }
-
-  const step = designerStore.gridStep;
-  return Math.max(0, Math.round(value / step) * step);
-}
-
-function snapSize(value: number) {
-  if (!designerStore.snapToGridEnabled) {
-    return value;
-  }
-
-  const step = designerStore.gridStep;
-  return Math.max(step, Math.round(value / step) * step);
 }
 
 watch(
