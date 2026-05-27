@@ -1,34 +1,42 @@
-# Build directories
-build/
-cmake-build-*/
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# IDE specific files
-.vscode/
+# Editor and IDE settings
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-
-# Node modules
-node_modules/
-ide/node_modules/
-
-# Electron specific
-ide/dist/
-ide/out/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# OS specific
-.DS_Store
-Thumbs.db
-desktop.ini
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
 
-# Compiled files
+# Native build outputs
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile.in
+
+# Compiled binaries and libraries
 *.o
 *.obj
 *.exe
@@ -37,25 +45,17 @@ desktop.ini
 *.dylib
 *.a
 *.lib
+*.pdb
 
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-*.cmake
-!CMakeLists.txt
+# Frontend dependencies and build outputs
+node_modules/
+ide/node_modules/
+ide/dist/
+ide/out/
+ide/.vite/
+ide/coverage/
 
-# Package lock files (optional, uncomment if needed)
-# package-lock.json
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-
-# User-specific files
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
+# Environment files
+.env
+.env.*
+!.env.example

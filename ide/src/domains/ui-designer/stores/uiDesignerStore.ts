@@ -4,7 +4,11 @@ import {
   parseUiDocument,
   serializeUiDocument,
 } from '@/domains/ui-designer/lib/uiDocument';
-import type { UiComponent, UiComponentType } from '@/shared/types';
+import type {
+  DesignerGridStep,
+  UiComponent,
+  UiComponentType,
+} from '@/shared/types';
 
 const PALETTE = [
   { type: 'Knob' as UiComponentType, label: 'Dial / Knob' },
@@ -12,11 +16,19 @@ const PALETTE = [
   { type: 'Button' as UiComponentType, label: 'Toggle Button' },
 ];
 
+const GRID_STEPS: DesignerGridStep[] = [5, 10, 20];
+const DEFAULT_COMPONENT_SIZE = {
+  width: 100,
+  height: 40,
+};
+
 export const useUiDesignerStore = defineStore('ui-designer', () => {
   const currentDocumentPath = ref<string | null>(null);
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
   const draggingPaletteType = ref<UiComponentType | null>(null);
+  const gridStep = ref<DesignerGridStep>(10);
+  const snapToGridEnabled = ref(true);
 
   const selectedComponent = computed(
     () =>
@@ -48,6 +60,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
         x: 120 + components.value.length * 16,
         y: 80 + components.value.length * 16,
       },
+      size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
     components.value.push(next);
@@ -58,6 +71,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId.value = componentId;
   }
 
+  function clearSelection() {
+    selectedComponentId.value = null;
+  }
+
   function placeComponent(
     type: UiComponentType,
     position: UiComponent['position']
@@ -66,6 +83,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
       id: `${type.toLowerCase()}-${Date.now()}`,
       type,
       position,
+      size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
     components.value.push(next);
@@ -83,6 +101,18 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     }
   }
 
+  function resizeComponent(
+    componentId: string,
+    bounds: Pick<UiComponent, 'position' | 'size'>
+  ) {
+    const component = components.value.find((item) => item.id === componentId);
+
+    if (component) {
+      component.position = bounds.position;
+      component.size = bounds.size;
+    }
+  }
+
   function startPaletteDrag(type: UiComponentType) {
     draggingPaletteType.value = type;
   }
@@ -91,18 +121,33 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     draggingPaletteType.value = null;
   }
 
+  function setGridStep(step: DesignerGridStep) {
+    gridStep.value = step;
+  }
+
+  function setSnapToGridEnabled(enabled: boolean) {
+    snapToGridEnabled.value = enabled;
+  }
+
   return {
     components,
     currentDocumentPath,
+    gridStep,
+    gridSteps: GRID_STEPS,
     draggingPaletteType,
     finishPaletteDrag,
     loadDocument,
     palette: PALETTE,
     placeComponent,
     moveComponent,
+    resizeComponent,
     saveDocument,
     selectedComponent,
     selectedComponentId,
+    clearSelection,
+    setGridStep,
+    setSnapToGridEnabled,
+    snapToGridEnabled,
     addComponent,
     selectComponent,
     startPaletteDrag,

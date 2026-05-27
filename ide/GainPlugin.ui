@@ -3,8 +3,26 @@
     {
       "id": "knob-1779727804935",
       "type": "Knob",
-      "left": "306px",
-      "top": "125px"
+      "left": "100px",
+      "top": "80px",
+      "width": "140px",
+      "height": "70px"
+    },
+    {
+      "id": "slider-1779887593361",
+      "type": "Slider",
+      "left": "240px",
+      "top": "30px",
+      "width": "110px",
+      "height": "80px"
+    },
+    {
+      "id": "button-1779887600111",
+      "type": "Button",
+      "left": "180px",
+      "top": "280px",
+      "width": "130px",
+      "height": "50px"
     }
   ]
 }
