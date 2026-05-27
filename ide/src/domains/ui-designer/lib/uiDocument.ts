@@ -5,9 +5,15 @@ interface RawUiComponent {
   type: UiComponent['type'];
   left?: string;
   top?: string;
+  width?: string;
+  height?: string;
   position?: {
     x: number;
     y: number;
+  };
+  size?: {
+    width: number;
+    height: number;
   };
 }
 
@@ -30,6 +36,10 @@ export function parseUiDocument(source: string): UiComponent[] {
       x: parsePixels(component.left, 80),
       y: parsePixels(component.top, 80),
     },
+    size: component.size ?? {
+      width: parsePixels(component.width, 100),
+      height: parsePixels(component.height, 40),
+    },
   }));
 }
 
@@ -41,6 +51,8 @@ export function serializeUiDocument(components: UiComponent[]) {
         type: component.type,
         left: `${component.position.x}px`,
         top: `${component.position.y}px`,
+        width: `${component.size.width}px`,
+        height: `${component.size.height}px`,
       })),
     },
     null,
