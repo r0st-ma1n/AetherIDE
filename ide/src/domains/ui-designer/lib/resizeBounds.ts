@@ -99,8 +99,22 @@ export function normalizeBoundsToCanvas(
 ) {
   const maxWidth = Math.round(canvasWidth);
   const maxHeight = Math.round(canvasHeight);
-  const left = Math.max(0, Math.round(bounds.position.x));
-  const top = Math.max(0, Math.round(bounds.position.y));
+  const width = Math.max(
+    MIN_COMPONENT_WIDTH,
+    Math.min(Math.round(bounds.size.width), maxWidth)
+  );
+  const height = Math.max(
+    MIN_COMPONENT_HEIGHT,
+    Math.min(Math.round(bounds.size.height), maxHeight)
+  );
+  const left = Math.min(
+    Math.max(0, Math.round(bounds.position.x)),
+    Math.max(0, maxWidth - width)
+  );
+  const top = Math.min(
+    Math.max(0, Math.round(bounds.position.y)),
+    Math.max(0, maxHeight - height)
+  );
 
   return {
     position: {
@@ -108,15 +122,32 @@ export function normalizeBoundsToCanvas(
       y: top,
     },
     size: {
-      width: Math.max(
-        MIN_COMPONENT_WIDTH,
-        Math.min(Math.round(bounds.size.width), maxWidth - left)
-      ),
-      height: Math.max(
-        MIN_COMPONENT_HEIGHT,
-        Math.min(Math.round(bounds.size.height), maxHeight - top)
-      ),
+      width,
+      height,
     },
+  };
+}
+
+export function clampPositionToCanvas(
+  position: UiComponent['position'],
+  size: UiComponent['size'],
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  const maxWidth = Math.round(canvasWidth);
+  const maxHeight = Math.round(canvasHeight);
+  const boundedWidth = Math.min(Math.round(size.width), maxWidth);
+  const boundedHeight = Math.min(Math.round(size.height), maxHeight);
+
+  return {
+    x: Math.min(
+      Math.max(0, Math.round(position.x)),
+      Math.max(0, maxWidth - boundedWidth)
+    ),
+    y: Math.min(
+      Math.max(0, Math.round(position.y)),
+      Math.max(0, maxHeight - boundedHeight)
+    ),
   };
 }
 

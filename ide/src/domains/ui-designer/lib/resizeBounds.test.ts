@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clampPositionToCanvas,
   getResizedBounds,
   MIN_COMPONENT_HEIGHT,
   MIN_COMPONENT_WIDTH,
@@ -100,7 +101,7 @@ describe('getResizedBounds', () => {
 });
 
 describe('normalizeBoundsToCanvas', () => {
-  it('shrinks overflowing bounds to the remaining space inside the canvas', () => {
+  it('keeps overflowing bounds inside the canvas by shifting position when possible', () => {
     const result = normalizeBoundsToCanvas(
       {
         position: { x: 560, y: 360 },
@@ -111,8 +112,24 @@ describe('normalizeBoundsToCanvas', () => {
     );
 
     expect(result).toEqual({
-      position: { x: 560, y: 360 },
-      size: { width: 40, height: 40 },
+      position: { x: 500, y: 330 },
+      size: { width: 100, height: 70 },
+    });
+  });
+
+  it('clamps bounds position to keep the component inside right and bottom edges', () => {
+    const result = normalizeBoundsToCanvas(
+      {
+        position: { x: 590, y: 395 },
+        size: { width: 100, height: 70 },
+      },
+      600,
+      400
+    );
+
+    expect(result).toEqual({
+      position: { x: 500, y: 330 },
+      size: { width: 100, height: 70 },
     });
   });
 });
@@ -127,5 +144,21 @@ describe('snap helpers', () => {
 
   it('returns original coordinates when snap is disabled', () => {
     expect(snapCoordinate(27, snapOff)).toBe(27);
+  });
+});
+
+describe('clampPositionToCanvas', () => {
+  it('keeps dragged components inside the canvas bounds', () => {
+    expect(
+      clampPositionToCanvas(
+        { x: 580, y: 390 },
+        { width: 100, height: 40 },
+        600,
+        400
+      )
+    ).toEqual({
+      x: 500,
+      y: 360,
+    });
   });
 });

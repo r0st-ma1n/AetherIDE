@@ -84,6 +84,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { generatePluginCode } from '@/domains/ui-designer/lib/codeGenerator';
 import {
+  clampPositionToCanvas,
   getResizedBounds,
   normalizeBoundsToCanvas,
   snapCoordinate,
@@ -133,6 +134,10 @@ const snapConfig = computed(() => ({
   enabled: designerStore.snapToGridEnabled,
   step: designerStore.gridStep,
 }));
+const DEFAULT_COMPONENT_SIZE = {
+  width: 100,
+  height: 40,
+};
 
 async function loadDocument() {
   await designerStore.loadDocument(props.tab.filePath);
@@ -219,10 +224,16 @@ function handleDrop(event: DragEvent) {
     },
     snapConfig.value
   );
+  const clampedPosition = clampPositionToCanvas(
+    droppedPosition,
+    DEFAULT_COMPONENT_SIZE,
+    rect.width,
+    rect.height
+  );
 
   designerStore.placeComponent(type, {
-    x: droppedPosition.x,
-    y: droppedPosition.y,
+    x: clampedPosition.x,
+    y: clampedPosition.y,
   });
   designerStore.finishPaletteDrag();
 }
@@ -248,7 +259,7 @@ function startDrag(event: MouseEvent, componentId: string) {
   const offsetY = event.clientY - rect.top - component.position.y;
 
   const onMouseMove = (moveEvent: MouseEvent) => {
-    designerStore.moveComponent(componentId, {
+    const nextPosition = {
       x: snapCoordinate(
         Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX)),
         snapConfig.value
@@ -257,7 +268,17 @@ function startDrag(event: MouseEvent, componentId: string) {
         Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY)),
         snapConfig.value
       ),
-    });
+    };
+
+    designerStore.moveComponent(
+      componentId,
+      clampPositionToCanvas(
+        nextPosition,
+        component.size,
+        rect.width,
+        rect.height
+      )
+    );
   };
 
   const onMouseUp = () => {
