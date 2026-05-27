@@ -32,9 +32,10 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { generatePluginCode } from '@/domains/ui-designer/lib/codeGenerator';
+import { generatePluginCode, validateCppSyntax } from '@/domains/ui-designer/lib/codeGenerator';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
+import { useTemplateStore } from '@/domains/templates/stores/templateStore';
 import {
   basename,
   basenameWithoutExt,
@@ -67,6 +68,27 @@ async function saveDocument() {
   let existingHeader = '';
   let existingCpp = '';
 
+  // Загружаем шаблоны (в реальном приложении пути вычисляются относительно корня)
+  const templatesDir = joinPath(dirname(dirname(dirname(baseDir))), 'templates');
+  
+  let templates = { header: '', cpp: '', components: {} as Record<string, string> };
+
+  if (window.prototypeIDE.readFile) {
+    try {
+      templates.header = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'plugin/PluginName.h.template'))) || '';
+      templates.cpp = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'plugin/PluginName.cpp.template'))) || '';
+      
+      templates.components['Knob'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Knob.template'))) || '';
+      templates.components['Slider'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Slider.template'))) || '';
+      templates.components['Button'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Button.template'))) || '';
+      templates.components['Label'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Label.template'))) || '';
+    } catch (e) {
+      workspaceStore.showToast('Failed to load templates!');
+      console.error(e);
+      return;
+    }
+  }
+
   // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
   try {
     if (window.prototypeIDE.readFile) {
@@ -80,9 +102,21 @@ async function saveDocument() {
   const { headerCode, cppCode } = generatePluginCode(
     designerStore.components,
     baseName,
+    templates,
     existingHeader,
     existingCpp
   );
+
+  // Базовая проверка синтаксиса перед записью
+  const headerValidation = validateCppSyntax(headerCode);
+  const cppValidation = validateCppSyntax(cppCode);
+
+  if (!headerValidation.valid || !cppValidation.valid) {
+    const errorMsg = headerValidation.error || cppValidation.error;
+    workspaceStore.showToast(`Generation Error: ${errorMsg}`);
+    console.error(`Syntax Error in generated code:`, errorMsg);
+    return;
+  }
 
   await window.prototypeIDE.writeFile(headerPath, headerCode);
   await window.prototypeIDE.writeFile(cppPath, cppCode);

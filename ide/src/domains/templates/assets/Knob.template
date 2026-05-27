@@ -1,0 +1,6 @@
+    // Setup {{safeId}}
+    {{safeId}}.setBounds({{x}}, {{y}}, 100, 40);
+    {{safeId}}.setRange({{min}}, {{max}});
+    {{safeId}}.setValue({{default}});
+    if (auto* param = processor.getParameter("{{id}}")) { {{safeId}}.setParameter(param); }
+    {{safeId}}.onValueChanged = [this](float val) { on{{capitalizedId}}ValueChanged(val); };
