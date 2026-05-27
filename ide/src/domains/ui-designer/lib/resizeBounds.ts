@@ -1,14 +1,6 @@
 import type { DesignerGridStep, UiComponent } from '@/shared/types';
 
-export type ResizeDirection =
-  | 'n'
-  | 'ne'
-  | 'e'
-  | 'se'
-  | 's'
-  | 'sw'
-  | 'w'
-  | 'nw';
+export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 
 export interface SnapConfig {
   enabled: boolean;
