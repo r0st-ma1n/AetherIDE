@@ -82,7 +82,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { generatePluginCode, validateCppSyntax } from '@/domains/ui-designer/lib/codeGenerator';
+import {
+  generatePluginCode,
+  validateCppSyntax,
+} from '@/domains/ui-designer/lib/codeGenerator';
 import {
   clampPositionToCanvas,
   getResizedBounds,
@@ -157,19 +160,44 @@ async function saveDocument() {
   let existingCpp = '';
 
   // Загружаем шаблоны (в реальном приложении пути вычисляются относительно корня)
-  const templatesDir = joinPath(dirname(dirname(dirname(baseDir))), 'templates');
+  const templatesDir = joinPath(
+    dirname(dirname(dirname(baseDir))),
+    'templates'
+  );
 
-  let templates = { header: '', cpp: '', components: {} as Record<string, string> };
+  let templates = {
+    header: '',
+    cpp: '',
+    components: {} as Record<string, string>,
+  };
 
   if (window.prototypeIDE.readFile) {
     try {
-      templates.header = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'plugin/PluginName.h.template'))) || '';
-      templates.cpp = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'plugin/PluginName.cpp.template'))) || '';
+      templates.header =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'plugin/PluginName.h.template')
+        )) || '';
+      templates.cpp =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'plugin/PluginName.cpp.template')
+        )) || '';
 
-      templates.components['Knob'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Knob.template'))) || '';
-      templates.components['Slider'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Slider.template'))) || '';
-      templates.components['Button'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Button.template'))) || '';
-      templates.components['Label'] = (await window.prototypeIDE.readFile(joinPath(templatesDir, 'components/Label.template'))) || '';
+      templates.components['Knob'] =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'components/Knob.template')
+        )) || '';
+      templates.components['Slider'] =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'components/Slider.template')
+        )) || '';
+      templates.components['Button'] =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'components/Button.template')
+        )) || '';
+      templates.components['Label'] =
+        (await window.prototypeIDE.readFile(
+          joinPath(templatesDir, 'components/Label.template')
+        )) || '';
     } catch (e) {
       workspaceStore.showToast('Failed to load templates!');
       console.error(e);

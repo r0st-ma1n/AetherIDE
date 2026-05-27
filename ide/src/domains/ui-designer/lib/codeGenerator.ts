@@ -51,7 +51,10 @@ export interface Templates {
   components: Record<string, string>;
 }
 
-export function validateCppSyntax(code: string): { valid: boolean; error?: string } {
+export function validateCppSyntax(code: string): {
+  valid: boolean;
+  error?: string;
+} {
   const stack: string[] = [];
   const pairs: Record<string, string> = { '}': '{', ')': '(', ']': '[' };
 
@@ -61,13 +64,16 @@ export function validateCppSyntax(code: string): { valid: boolean; error?: strin
       stack.push(char);
     } else if (char === '}' || char === ')' || char === ']') {
       if (stack.length === 0 || stack.pop() !== pairs[char]) {
-        return { valid: false, error: `Unmatched closing bracket '${char}' near index ${i}` };
+        return {
+          valid: false,
+          error: `Unmatched closing bracket '${char}' near index ${i}`,
+        };
       }
     }
   }
 
-  return stack.length === 0 
-    ? { valid: true } 
+  return stack.length === 0
+    ? { valid: true }
     : { valid: false, error: 'Unclosed brackets remaining in code' };
 }
 

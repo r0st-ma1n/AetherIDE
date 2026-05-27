@@ -32,7 +32,7 @@ export const useTemplateStore = defineStore('templates', () => {
 
       const components: Record<string, string> = {};
       const componentNames = ['Knob', 'Slider', 'Button', 'Label'];
-      
+
       for (const name of componentNames) {
         try {
           components[name] = await window.prototypeIDE.readFile(

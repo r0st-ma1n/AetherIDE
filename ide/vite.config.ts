@@ -14,7 +14,7 @@ function copyTemplatesPlugin() {
         fs.mkdirSync(destDir, { recursive: true });
         fs.cpSync(srcDir, destDir, { recursive: true });
       }
-    }
+    },
   };
 }
 
@@ -30,4 +30,3 @@ export default defineConfig({
     outDir: 'dist',
   },
 });
-

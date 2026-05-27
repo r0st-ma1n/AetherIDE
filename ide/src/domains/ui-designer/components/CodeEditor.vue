@@ -31,7 +31,7 @@ async function loadFile() {
 
 async function saveFile() {
   if (!editor || !window.prototypeIDE.writeFile) return;
-  
+
   const code = editor.getValue();
   try {
     await window.prototypeIDE.writeFile(props.tab.filePath, code);
@@ -56,12 +56,16 @@ onMounted(async () => {
   if (!editorContainer.value) return;
 
   const code = await loadFile();
-  
+
   // Определяем язык по расширению файла
   const extension = props.tab.filePath.split('.').pop()?.toLowerCase();
-  const language = ['cpp', 'h', 'c'].includes(extension || '') ? 'cpp' :
-                   extension === 'json' ? 'json' :
-                   ['ts', 'js'].includes(extension || '') ? 'typescript' : 'plaintext';
+  const language = ['cpp', 'h', 'c'].includes(extension || '')
+    ? 'cpp'
+    : extension === 'json'
+      ? 'json'
+      : ['ts', 'js'].includes(extension || '')
+        ? 'typescript'
+        : 'plaintext';
 
   editor = monaco.editor.create(editorContainer.value, {
     value: code,
