@@ -1,6 +1,14 @@
 import type { DesignerGridStep, UiComponent } from '@/shared/types';
 
-export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+export type ResizeDirection =
+  | 'n'
+  | 'ne'
+  | 'e'
+  | 'se'
+  | 's'
+  | 'sw'
+  | 'w'
+  | 'nw';
 
 export interface SnapConfig {
   enabled: boolean;
@@ -195,11 +203,8 @@ function getAspectRatioBounds(
   if (snapConfig.enabled) {
     width = snapSize(width, snapConfig);
     height = Math.max(MIN_COMPONENT_HEIGHT, Math.round(width / aspectRatio));
-
-    if (snapConfig.enabled) {
-      height = snapSize(height, snapConfig);
-      width = Math.max(MIN_COMPONENT_WIDTH, Math.round(height * aspectRatio));
-    }
+    height = snapSize(height, snapConfig);
+    width = Math.max(MIN_COMPONENT_WIDTH, Math.round(height * aspectRatio));
   }
 
   return buildBoundsFromAnchor(initialBounds, direction, {

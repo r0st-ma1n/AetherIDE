@@ -38,6 +38,9 @@ jobs:
       - name: Run typecheck
         run: npm run typecheck
 
+      - name: Run unit tests
+        run: npm test
+
   test:
     name: Test
     runs-on: ubuntu-latest

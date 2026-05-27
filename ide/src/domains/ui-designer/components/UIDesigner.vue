@@ -150,15 +150,12 @@ async function saveDocument() {
   let existingHeader = '';
   let existingCpp = '';
 
-  // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
   try {
     if (window.prototypeIDE.readFile) {
       existingHeader = (await window.prototypeIDE.readFile(headerPath)) || '';
       existingCpp = (await window.prototypeIDE.readFile(cppPath)) || '';
     }
-  } catch (err) {
-    // Игнорируем ошибку (например, если файлы генерируются впервые)
-  }
+  } catch {}
 
   const { headerCode, cppCode } = generatePluginCode(
     designerStore.components,
