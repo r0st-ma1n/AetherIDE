@@ -311,7 +311,14 @@ function startResize(
     const dx = moveEvent.clientX - initialPointer.x;
     const dy = moveEvent.clientY - initialPointer.y;
     const nextBounds = normalizeBoundsToCanvas(
-      getResizedBounds(initialBounds, direction, dx, dy, snapConfig.value),
+      getResizedBounds(
+        initialBounds,
+        direction,
+        dx,
+        dy,
+        snapConfig.value,
+        moveEvent.shiftKey
+      ),
       rect.width,
       rect.height
     );

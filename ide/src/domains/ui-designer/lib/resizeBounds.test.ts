@@ -74,6 +74,29 @@ describe('getResizedBounds', () => {
       size: { width: 153, height: 74 },
     });
   });
+
+  it('preserves aspect ratio while shift-resizing without snap', () => {
+    const result = getResizedBounds(initialBounds, 'se', 60, 5, snapOff, true);
+
+    expect(result).toEqual({
+      position: { x: 100, y: 80 },
+      size: { width: 180, height: 90 },
+    });
+  });
+
+  it('preserves aspect ratio while shift-resizing with snap enabled', () => {
+    const result = getResizedBounds(initialBounds, 'se', 43, 7, snapOn10, true);
+
+    expect(result.size.width % 10).toBe(0);
+    expect(result.size.height % 10).toBe(0);
+    expect(result.size.width / result.size.height).toBe(
+      initialBounds.size.width / initialBounds.size.height
+    );
+    expect(result).toEqual({
+      position: { x: 100, y: 80 },
+      size: { width: 160, height: 80 },
+    });
+  });
 });
 
 describe('normalizeBoundsToCanvas', () => {
