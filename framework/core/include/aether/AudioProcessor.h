@@ -1,19 +1,37 @@
 #pragma once
 
 #include "aether/ProcessContext.h"
-#include "aether/Parameter.h"
 
 namespace aether {
 
-class PluginProcessor {
+/**
+ * @brief Abstract base class for all audio processors.
+ *
+ * Subclass this to implement an audio plugin. The host calls
+ * prepareToPlay() before streaming begins, processBlock() for each
+ * block of audio, and releaseResources() when streaming ends.
+ */
+class AudioProcessor {
 public:
-    virtual ~PluginProcessor() = default;
+    virtual ~AudioProcessor() = default;
 
-    virtual void prepare(double sampleRate, int maxBlockSize) = 0;
-    virtual void reset() = 0;
-    virtual void process(ProcessContext& context) = 0;
+    /**
+     * @brief Called before processing begins to allocate resources.
+     * @param sampleRate    The sample rate in Hz.
+     * @param maxBlockSize  Maximum number of samples per block.
+     */
+    virtual void prepareToPlay(double sampleRate, int maxBlockSize) = 0;
 
-    virtual ParameterLayout createParameters() = 0;
+    /**
+     * @brief Processes one block of audio.
+     * @param context  The processing context containing audio buffers and parameters.
+     */
+    virtual void processBlock(ProcessContext& context) = 0;
+
+    /**
+     * @brief Called after processing ends to free resources.
+     */
+    virtual void releaseResources() = 0;
 };
 
-}
+} // namespace aether
