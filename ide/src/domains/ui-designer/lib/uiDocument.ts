@@ -15,6 +15,8 @@ interface RawUiComponent {
     width: number;
     height: number;
   };
+  params?: UiComponent['params'];
+  color?: string;
 }
 
 function parsePixels(value: string | undefined, fallback: number) {
@@ -40,6 +42,8 @@ export function parseUiDocument(source: string): UiComponent[] {
       width: parsePixels(component.width, 100),
       height: parsePixels(component.height, 40),
     },
+    ...(component.params !== undefined ? { params: component.params } : {}),
+    ...(component.color !== undefined ? { color: component.color } : {}),
   }));
 }
 
@@ -53,6 +57,8 @@ export function serializeUiDocument(components: UiComponent[]) {
         top: `${component.position.y}px`,
         width: `${component.size.width}px`,
         height: `${component.size.height}px`,
+        ...(component.params !== undefined ? { params: component.params } : {}),
+        ...(component.color !== undefined ? { color: component.color } : {}),
       })),
     },
     null,

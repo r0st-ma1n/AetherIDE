@@ -24,6 +24,12 @@ export interface FileTreeNode {
 export type UiComponentType = 'Knob' | 'Slider' | 'Button';
 export type DesignerGridStep = 5 | 10 | 20;
 
+export interface UiComponentParams {
+  min: number;
+  max: number;
+  default: number;
+}
+
 export interface UiComponent {
   id: string;
   type: UiComponentType;
@@ -35,4 +41,6 @@ export interface UiComponent {
     width: number;
     height: number;
   };
+  params?: Partial<UiComponentParams>;
+  color?: string;
 }
