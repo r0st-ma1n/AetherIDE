@@ -1,3 +1,4 @@
+import './shared/lib/monacoEnv';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import App from './App.vue';

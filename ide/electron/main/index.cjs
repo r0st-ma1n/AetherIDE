@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const path = require('path');
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -21,6 +22,9 @@ const ALLOWED_EXTENSIONS = new Set([
   '.md',
   '.txt',
 ]);
+
+/** @type {BrowserWindow | null} */
+let mainWindow = null;
 
 async function collectProjectFiles(dirPath, result = []) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -71,6 +75,40 @@ function resolveProjectPath(relativePath) {
   }
 
   return absolutePath;
+}
+
+function startFileWatcher() {
+  const debounceMap = new Map();
+
+  fsSync.watch(PROJECT_ROOT, { recursive: true }, (eventType, filename) => {
+    if (!filename || !mainWindow || mainWindow.isDestroyed()) return;
+
+    const ext = path.extname(filename).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) return;
+
+    // Ignore node_modules, dist, build, hidden paths
+    if (
+      filename.includes('node_modules') ||
+      filename.includes('dist') ||
+      filename.includes('build') ||
+      filename.startsWith('.')
+    ) {
+      return;
+    }
+
+    // Debounce per file (editors write twice: truncate + write)
+    const existing = debounceMap.get(filename);
+    if (existing) clearTimeout(existing);
+
+    debounceMap.set(
+      filename,
+      setTimeout(() => {
+        debounceMap.delete(filename);
+        const relativePath = filename.replace(/\\/g, '/');
+        mainWindow?.webContents.send('file:changed', relativePath);
+      }, 150)
+    );
+  });
 }
 
 function registerIpcHandlers() {
@@ -147,7 +185,7 @@ function buildAppMenu(window) {
 }
 
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1100,
@@ -161,19 +199,20 @@ function createWindow() {
     title: 'PrototypeIDE',
   });
 
-  Menu.setApplicationMenu(buildAppMenu(window));
+  Menu.setApplicationMenu(buildAppMenu(mainWindow));
 
   if (VITE_DEV_SERVER_URL) {
-    window.loadURL(VITE_DEV_SERVER_URL);
+    mainWindow.loadURL(VITE_DEV_SERVER_URL);
     return;
   }
 
-  window.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
 }
 
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
+  startFileWatcher();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -1,15 +1,50 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { WorkspaceTab, WorkspaceTabKind } from '@/shared/types';
 
+const STORAGE_KEY = 'workspace-state';
+
+interface PersistedState {
+  tabs: WorkspaceTab[];
+  activeTabId: string | null;
+}
+
+function loadPersisted(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(state: PersistedState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage errors (private browsing, quota exceeded)
+  }
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
-  const tabs = ref<WorkspaceTab[]>([]);
-  const activeTabId = ref<string | null>(null);
+  const persisted = loadPersisted();
+
+  const tabs = ref<WorkspaceTab[]>(persisted?.tabs ?? []);
+  const activeTabId = ref<string | null>(persisted?.activeTabId ?? null);
   const toastMessage = ref<string | null>(null);
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   const activeTab = computed(
     () => tabs.value.find((tab) => tab.id === activeTabId.value) ?? null
+  );
+
+  watch(
+    [tabs, activeTabId],
+    ([nextTabs, nextActiveId]) => {
+      savePersisted({ tabs: nextTabs, activeTabId: nextActiveId });
+    },
+    { deep: true, flush: 'sync' }
   );
 
   function openTab(payload: {
@@ -45,6 +80,14 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  function moveTab(sourceId: string, targetId: string) {
+    const fromIndex = tabs.value.findIndex((t) => t.id === sourceId);
+    const toIndex = tabs.value.findIndex((t) => t.id === targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const [tab] = tabs.value.splice(fromIndex, 1);
+    tabs.value.splice(toIndex, 0, tab);
+  }
+
   function setActiveTab(tabId: string) {
     activeTabId.value = tabId;
   }
@@ -58,6 +101,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   function initializeTabs(candidates: WorkspaceTab[]) {
+    // Skip if tabs were restored from localStorage
     if (tabs.value.length > 0 || candidates.length === 0) {
       return;
     }
@@ -106,6 +150,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     activeTabId,
     closeTab,
     markDirty,
+    moveTab,
     initializeTabs,
     openTab,
     setActiveTab,

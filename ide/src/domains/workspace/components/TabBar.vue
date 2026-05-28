@@ -4,9 +4,18 @@
       v-for="tab in workspaceStore.tabs"
       :key="tab.id"
       class="tab"
-      :class="{ 'tab--active': workspaceStore.activeTabId === tab.id }"
-      @click="handleTabClick(tab.id)"
-      @mousedown.middle="handleCloseClick($event, tab.id)"
+      :class="{
+        'tab--active': workspaceStore.activeTabId === tab.id,
+        'tab--drag-over': dragOverTabId === tab.id,
+      }"
+      draggable="true"
+      @click="workspaceStore.setActiveTab(tab.id)"
+      @mousedown.middle.prevent="workspaceStore.closeTab(tab.id)"
+      @dragstart="onDragStart($event, tab.id)"
+      @dragover.prevent="dragOverTabId = tab.id"
+      @dragleave="dragOverTabId = null"
+      @drop.prevent="onDrop(tab.id)"
+      @dragend="onDragEnd"
     >
       <span class="tab__title" :title="tab.filePath">
         {{ basename(tab.filePath) }}
@@ -14,8 +23,8 @@
       <span v-if="tab.isDirty" class="tab__dirty">●</span>
       <button
         class="tab__close"
-        title="Close (Middle Click)"
-        @click.stop="handleCloseClick($event, tab.id)"
+        title="Close (Ctrl+W / Middle click)"
+        @click.stop="workspaceStore.closeTab(tab.id)"
       >
         ×
       </button>
@@ -24,21 +33,53 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import { basename } from '@/shared/lib/path';
 
 const workspaceStore = useWorkspaceStore();
 
-function handleTabClick(tabId: string) {
-  workspaceStore.activeTabId = tabId;
-}
+const draggingTabId = ref<string | null>(null);
+const dragOverTabId = ref<string | null>(null);
 
-function handleCloseClick(event: MouseEvent, tabId: string) {
-  // Вызываем метод закрытия вкладки из стора
-  if (workspaceStore.closeTab) {
-    workspaceStore.closeTab(tabId);
+function onDragStart(event: DragEvent, tabId: string) {
+  draggingTabId.value = tabId;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', tabId);
   }
 }
+
+function onDrop(targetTabId: string) {
+  const sourceId = draggingTabId.value;
+  if (sourceId && sourceId !== targetTabId) {
+    workspaceStore.moveTab(sourceId, targetTabId);
+  }
+  dragOverTabId.value = null;
+}
+
+function onDragEnd() {
+  draggingTabId.value = null;
+  dragOverTabId.value = null;
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w') {
+    event.preventDefault();
+    const activeId = workspaceStore.activeTabId;
+    if (activeId) {
+      workspaceStore.closeTab(activeId);
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeyDown);
+});
 </script>
 
 <style scoped>
@@ -86,6 +127,12 @@ function handleCloseClick(event: MouseEvent, tabId: string) {
   right: 0;
   height: 2px;
   background-color: #007acc;
+}
+
+.tab--drag-over {
+  background-color: #37373d;
+  outline: 1px solid #007acc;
+  outline-offset: -1px;
 }
 
 .tab__title {
