@@ -9,7 +9,7 @@ int main() {
     constexpr int blockSize = 8;
     constexpr int channels = 2;
 
-    plugin.prepare(sampleRate, blockSize);
+    plugin.prepareToPlay(sampleRate, blockSize);
 
     aether::ParameterLayout parameters = plugin.createParameters();
     parameters.getFloat("gain").setValue(0.5f);
@@ -31,7 +31,9 @@ int main() {
         .blockSize = blockSize
     };
 
-    plugin.process(context);
+    plugin.processBlock(context);
+
+    plugin.releaseResources();
 
     std::cout << "Processed samples:\n";
 

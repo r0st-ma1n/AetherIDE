@@ -1,9 +1,9 @@
 #include "GainPlugin.h"
 
-void GainPlugin::prepare([[maybe_unused]] double sampleRate, [[maybe_unused]] int maxBlockSize) {
+void GainPlugin::prepareToPlay([[maybe_unused]] double sampleRate, [[maybe_unused]] int maxBlockSize) {
 }
 
-void GainPlugin::reset() {
+void GainPlugin::releaseResources() {
 }
 
 aether::ParameterLayout GainPlugin::createParameters() {
@@ -20,7 +20,7 @@ aether::ParameterLayout GainPlugin::createParameters() {
     return layout;
 }
 
-void GainPlugin::process(aether::ProcessContext& context) {
+void GainPlugin::processBlock(aether::ProcessContext& context) {
     const float gain = context.parameters.getFloat("gain").value();
 
     for (int ch = 0; ch < context.audio.numChannels(); ++ch) {
