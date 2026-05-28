@@ -1,20 +1,23 @@
-#include "aether/Parameter.h"
+#include "aether/AudioProcessorParameter.h"
 
 #include <algorithm>
 
 namespace aether {
 
-FloatParameter::FloatParameter(
+AudioProcessorParameter::AudioProcessorParameter(
     std::string id,
     std::string name,
     float min,
     float max,
-    float defaultValue
+    float defaultValue,
+    float step
 )
     : id_(std::move(id)),
       name_(std::move(name)),
       min_(min),
       max_(max),
+      defaultValue_(defaultValue),
+      step_(step),
       value_(defaultValue) {
     if (min >= max) {
         throw std::invalid_argument("Parameter min must be less than max");
@@ -25,27 +28,35 @@ FloatParameter::FloatParameter(
     }
 }
 
-const std::string& FloatParameter::id() const {
+const std::string& AudioProcessorParameter::id() const {
     return id_;
 }
 
-const std::string& FloatParameter::name() const {
+const std::string& AudioProcessorParameter::name() const {
     return name_;
 }
 
-float FloatParameter::min() const {
+float AudioProcessorParameter::min() const {
     return min_;
 }
 
-float FloatParameter::max() const {
+float AudioProcessorParameter::max() const {
     return max_;
 }
 
-float FloatParameter::value() const {
+float AudioProcessorParameter::defaultValue() const {
+    return defaultValue_;
+}
+
+float AudioProcessorParameter::step() const {
+    return step_;
+}
+
+float AudioProcessorParameter::value() const {
     return value_;
 }
 
-void FloatParameter::setValue(float value) {
+void AudioProcessorParameter::setValue(float value) {
     if (value < min_) {
         value_ = min_;
     } else if (value > max_) {
@@ -60,49 +71,50 @@ void ParameterLayout::addFloat(
     const std::string& name,
     float min,
     float max,
-    float defaultValue
+    float defaultValue,
+    float step
 ) {
-    floatParams_.emplace_back(id, name, min, max, defaultValue);
+    floatParams_.emplace_back(id, name, min, max, defaultValue, step);
 }
 
-FloatParameter& ParameterLayout::getFloat(const std::string& id) {
+AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) {
     auto it = std::find_if(
         floatParams_.begin(),
         floatParams_.end(),
-        [&](const FloatParameter& param) {
+        [&](const AudioProcessorParameter& param) {
             return param.id() == id;
         }
     );
 
     if (it == floatParams_.end()) {
-        throw std::runtime_error("Float parameter not found: " + id);
+        throw std::runtime_error("Parameter not found: " + id);
     }
 
     return *it;
 }
 
-const FloatParameter& ParameterLayout::getFloat(const std::string& id) const {
+const AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) const {
     auto it = std::find_if(
         floatParams_.begin(),
         floatParams_.end(),
-        [&](const FloatParameter& param) {
+        [&](const AudioProcessorParameter& param) {
             return param.id() == id;
         }
     );
 
     if (it == floatParams_.end()) {
-        throw std::runtime_error("Float parameter not found: " + id);
+        throw std::runtime_error("Parameter not found: " + id);
     }
 
     return *it;
 }
 
-std::vector<FloatParameter>& ParameterLayout::floats() {
+std::vector<AudioProcessorParameter>& ParameterLayout::floats() {
     return floatParams_;
 }
 
-const std::vector<FloatParameter>& ParameterLayout::floats() const {
+const std::vector<AudioProcessorParameter>& ParameterLayout::floats() const {
     return floatParams_;
 }
 
-}
+} // namespace aether

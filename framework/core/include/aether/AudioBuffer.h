@@ -38,4 +38,4 @@ private:
     std::vector<std::vector<float>> data_;
 };
 
-}
+} // namespace aether

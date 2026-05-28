@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aether/AudioBuffer.h"
-#include "aether/Parameter.h"
+#include "aether/AudioProcessorParameter.h"
 
 namespace aether {
 
@@ -12,4 +12,4 @@ struct ProcessContext {
     int blockSize;
 };
 
-}
+} // namespace aether

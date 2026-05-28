@@ -8,7 +8,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(clap)
 
 add_library(aether_core
-    src/Parameter.cpp
+    src/AudioProcessorParameter.cpp
 )
 
 target_include_directories(aether_core

@@ -1,14 +1,15 @@
 #pragma once
 
-#include "aether/PluginProcessor.h"
+#include "aether/AudioProcessor.h"
+#include "aether/AudioProcessorParameter.h"
 
-class GainPlugin final : public aether::PluginProcessor {
+class GainPlugin final : public aether::AudioProcessor {
 public:
-    void prepare(double sampleRate, int maxBlockSize) override;
-    void reset() override;
-    void process(aether::ProcessContext& context) override;
+    void prepareToPlay(double sampleRate, int maxBlockSize) override;
+    void releaseResources() override;
+    void processBlock(aether::ProcessContext& context) override;
 
-    aether::ParameterLayout createParameters() override;
+    aether::ParameterLayout createParameters();
 
     void setupUI();
 };
