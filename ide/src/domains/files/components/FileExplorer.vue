@@ -3,14 +3,11 @@
     <header class="panel__header">Explorer</header>
 
     <div v-if="fileStore.isLoading" class="panel__state">Loading files...</div>
-    <div v-else-if="fileStore.error" class="panel__state">{{ fileStore.error }}</div>
+    <div v-else-if="fileStore.error" class="panel__state">
+      {{ fileStore.error }}
+    </div>
 
-    <div
-      v-else
-      ref="scrollContainer"
-      class="panel__virtual"
-      @scroll="onScroll"
-    >
+    <div v-else ref="scrollContainer" class="panel__virtual" @scroll="onScroll">
       <div :style="{ height: `${totalHeight}px`, position: 'relative' }">
         <button
           v-for="(item, i) in visibleSlice"

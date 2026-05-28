@@ -73,7 +73,10 @@ async function loadFile() {
     const model = editor.getModel();
     if (model) {
       model.setValue(content);
-      monaco.editor.setModelLanguage(model, getMonacoLanguage(props.tab.filePath));
+      monaco.editor.setModelLanguage(
+        model,
+        getMonacoLanguage(props.tab.filePath)
+      );
     }
     updateStatus();
   }
@@ -94,7 +97,10 @@ async function saveFile() {
     if (uiExists) {
       const components = parseGeneratedCode(content);
       if (components.length > 0) {
-        await window.prototypeIDE.writeFile(uiPath, serializeUiDocument(components));
+        await window.prototypeIDE.writeFile(
+          uiPath,
+          serializeUiDocument(components)
+        );
       }
     }
   }
@@ -165,7 +171,10 @@ watch(
 const unsubscribeFileWatch = window.prototypeIDE.onFileChanged(
   async (changedPath: string) => {
     // Reload only if this tab's file was changed externally (not by our own save)
-    if (changedPath === props.tab.filePath && !workspaceStore.activeTab?.isDirty) {
+    if (
+      changedPath === props.tab.filePath &&
+      !workspaceStore.activeTab?.isDirty
+    ) {
       await loadFile();
     }
   }
