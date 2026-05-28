@@ -159,7 +159,7 @@ export function generateCppFromUI(spec: UISpec): string {
         parts.push(
           `min=${c.params.min}`,
           `max=${c.params.max}`,
-          `default=${c.params.default}`,
+          `default=${c.params.default}`
         );
       }
       if (c.color !== undefined) {

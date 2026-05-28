@@ -111,7 +111,14 @@ slider0.setBounds(5, 5, 100, 40);
 
   it('handles component without optional params and color', () => {
     const spec: UISpec = {
-      components: [{ id: 'btn', type: 'Button', position: { x: 0, y: 0 }, size: { width: 100, height: 30 } }],
+      components: [
+        {
+          id: 'btn',
+          type: 'Button',
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 30 },
+        },
+      ],
     };
     const restored = parseUIFromCpp(generateCppFromUI(spec));
     expect(restored.components[0]!.params).toBeUndefined();

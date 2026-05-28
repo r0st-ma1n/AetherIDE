@@ -1,4 +1,9 @@
-import type { UiComponent, UISpec, UISpecComponent, UiComponentType } from '@/shared/types';
+import type {
+  UiComponent,
+  UISpec,
+  UISpecComponent,
+  UiComponentType,
+} from '@/shared/types';
 
 export function parseGeneratedCode(source: string): UiComponent[] {
   const components: UiComponent[] = [];
@@ -65,10 +70,17 @@ export function parseUIFromCpp(src: string): UISpec {
       id,
       type,
       position: { x: Number(attrs['x'] ?? 0), y: Number(attrs['y'] ?? 0) },
-      size: { width: Number(attrs['w'] ?? 100), height: Number(attrs['h'] ?? 40) },
+      size: {
+        width: Number(attrs['w'] ?? 100),
+        height: Number(attrs['h'] ?? 40),
+      },
     };
 
-    if (attrs['min'] !== undefined && attrs['max'] !== undefined && attrs['default'] !== undefined) {
+    if (
+      attrs['min'] !== undefined &&
+      attrs['max'] !== undefined &&
+      attrs['default'] !== undefined
+    ) {
       component.params = {
         min: Number(attrs['min']),
         max: Number(attrs['max']),
