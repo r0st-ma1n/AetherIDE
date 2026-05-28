@@ -4,6 +4,25 @@ import { buildFileTree } from '@/domains/files/lib/fileTree';
 import { toWorkspaceTab } from '@/domains/files/lib/projectFiles';
 import type { FileTreeNode, WorkspaceTab } from '@/shared/types';
 
+export interface VisibleTreeNode {
+  node: FileTreeNode;
+  depth: number;
+}
+
+function flattenVisible(
+  nodes: FileTreeNode[],
+  depth: number,
+  expanded: Record<string, boolean>,
+  result: VisibleTreeNode[]
+): void {
+  for (const node of nodes) {
+    result.push({ node, depth });
+    if (node.isDirectory && (expanded[node.path] ?? false)) {
+      flattenVisible(node.children, depth + 1, expanded, result);
+    }
+  }
+}
+
 export const useFileExplorerStore = defineStore('file-explorer', () => {
   const entries = ref<WorkspaceTab[]>([]);
   const tree = ref<FileTreeNode[]>([]);
@@ -14,6 +33,12 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
   const flattenedEntryMap = computed(() =>
     Object.fromEntries(entries.value.map((entry) => [entry.filePath, entry]))
   );
+
+  const visibleNodes = computed<VisibleTreeNode[]>(() => {
+    const result: VisibleTreeNode[] = [];
+    flattenVisible(tree.value, 0, expandedDirectories.value, result);
+    return result;
+  });
 
   async function loadEntries() {
     isLoading.value = true;
@@ -62,5 +87,6 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
     openDirectory,
     tree,
     toggleDirectory,
+    visibleNodes,
   };
 });

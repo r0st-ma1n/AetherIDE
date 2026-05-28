@@ -10,6 +10,14 @@ contextBridge.exposeInMainWorld('prototypeIDE', {
       ipcRenderer.removeListener('tools:toggle-debug-panel', listener);
     };
   },
+  onFileChanged: (callback) => {
+    const listener = (_event, relativePath) => callback(relativePath);
+    ipcRenderer.on('file:changed', listener);
+
+    return () => {
+      ipcRenderer.removeListener('file:changed', listener);
+    };
+  },
   listProjectFiles: () => ipcRenderer.invoke('project:list-files'),
   readFile: (path) => ipcRenderer.invoke('file:read', path),
   fileExists: (path) => ipcRenderer.invoke('file:exists', path),
