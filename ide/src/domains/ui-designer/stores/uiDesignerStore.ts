@@ -7,6 +7,7 @@ import {
 import type {
   DesignerGridStep,
   UiComponent,
+  UiComponentParams,
   UiComponentType,
 } from '@/shared/types';
 
@@ -129,6 +130,30 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     snapToGridEnabled.value = enabled;
   }
 
+  function updateComponentType(componentId: string, type: UiComponentType) {
+    const component = components.value.find((item) => item.id === componentId);
+    if (component) {
+      component.type = type;
+    }
+  }
+
+  function updateComponentParams(
+    componentId: string,
+    params: Partial<UiComponentParams>
+  ) {
+    const component = components.value.find((item) => item.id === componentId);
+    if (component) {
+      component.params = { ...component.params, ...params };
+    }
+  }
+
+  function updateComponentColor(componentId: string, color: string) {
+    const component = components.value.find((item) => item.id === componentId);
+    if (component) {
+      component.color = color;
+    }
+  }
+
   return {
     components,
     currentDocumentPath,
@@ -151,5 +176,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     addComponent,
     selectComponent,
     startPaletteDrag,
+    updateComponentType,
+    updateComponentParams,
+    updateComponentColor,
   };
 });
