@@ -44,7 +44,7 @@ ide-start:
 ide-lint:
 	npm --prefix $(IDE_DIR) run lint
 
-ide-test:
+ide-test: ide-install
 	npm --prefix $(IDE_DIR) test
 
 ide-typecheck:
