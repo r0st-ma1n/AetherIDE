@@ -1,4 +1,4 @@
-import type { UiComponent } from '@/shared/types';
+import type { UiComponent, UISpec } from '@/shared/types';
 
 function sanitizeIdentifier(value: string) {
   return value.replace(/[^a-zA-Z0-9_]/g, '');
@@ -142,4 +142,30 @@ ${getUserCode(cppUserCode, `on${capitalize(c.safeId)}ValueChanged`, '    ')}
   });
 
   return { headerCode, cppCode };
+}
+
+export function generateCppFromUI(spec: UISpec): string {
+  return spec.components
+    .map((c) => {
+      const parts = [
+        `id=${c.id}`,
+        `type=${c.type}`,
+        `x=${c.position.x}`,
+        `y=${c.position.y}`,
+        `w=${c.size.width}`,
+        `h=${c.size.height}`,
+      ];
+      if (c.params !== undefined) {
+        parts.push(
+          `min=${c.params.min}`,
+          `max=${c.params.max}`,
+          `default=${c.params.default}`
+        );
+      }
+      if (c.color !== undefined) {
+        parts.push(`color=${c.color}`);
+      }
+      return `// AETHER ${parts.join(' ')}\n${c.id}.setBounds(${c.position.x}, ${c.position.y}, ${c.size.width}, ${c.size.height});`;
+    })
+    .join('\n');
 }
