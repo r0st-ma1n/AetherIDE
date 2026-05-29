@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import {
+  alignComponents,
+  distributeComponents,
+  type AlignType,
+  type DistributeAxis,
+} from '@/domains/ui-designer/lib/alignComponents';
+import {
   parseUiDocument,
   serializeUiDocument,
 } from '@/domains/ui-designer/lib/uiDocument';
@@ -27,6 +33,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const currentDocumentPath = ref<string | null>(null);
   const components = ref<UiComponent[]>([]);
   const selectedComponentId = ref<string | null>(null);
+  const selectionGroup = ref<string[]>([]);
   const draggingPaletteType = ref<UiComponentType | null>(null);
   const gridStep = ref<DesignerGridStep>(10);
   const snapToGridEnabled = ref(true);
@@ -70,10 +77,46 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   function selectComponent(componentId: string) {
     selectedComponentId.value = componentId;
+    selectionGroup.value = [];
   }
 
   function clearSelection() {
     selectedComponentId.value = null;
+    selectionGroup.value = [];
+  }
+
+  function toggleGroupSelection(componentId: string) {
+    const idx = selectionGroup.value.indexOf(componentId);
+    if (idx === -1) {
+      selectionGroup.value = [...selectionGroup.value, componentId];
+    } else {
+      selectionGroup.value = selectionGroup.value.filter(
+        (id) => id !== componentId
+      );
+    }
+    selectedComponentId.value = componentId;
+  }
+
+  function alignGroup(type: AlignType) {
+    const targets = components.value.filter((c) =>
+      selectionGroup.value.includes(c.id)
+    );
+    const positions = alignComponents(targets, type);
+    for (const [id, position] of positions) {
+      const comp = components.value.find((c) => c.id === id);
+      if (comp) comp.position = position;
+    }
+  }
+
+  function distributeGroup(axis: DistributeAxis) {
+    const targets = components.value.filter((c) =>
+      selectionGroup.value.includes(c.id)
+    );
+    const positions = distributeComponents(targets, axis);
+    for (const [id, position] of positions) {
+      const comp = components.value.find((c) => c.id === id);
+      if (comp) comp.position = position;
+    }
   }
 
   function placeComponent(
@@ -155,8 +198,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   }
 
   return {
+    alignGroup,
     components,
     currentDocumentPath,
+    distributeGroup,
     gridStep,
     gridSteps: GRID_STEPS,
     draggingPaletteType,
@@ -169,12 +214,14 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     saveDocument,
     selectedComponent,
     selectedComponentId,
+    selectionGroup,
     clearSelection,
     setGridStep,
     setSnapToGridEnabled,
     snapToGridEnabled,
     addComponent,
     selectComponent,
+    toggleGroupSelection,
     startPaletteDrag,
     updateComponentType,
     updateComponentParams,
