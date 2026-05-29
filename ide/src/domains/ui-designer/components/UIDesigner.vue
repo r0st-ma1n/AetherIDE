@@ -33,6 +33,25 @@
           </strong>
         </span>
       </label>
+
+      <div
+        v-if="designerStore.selectionGroup.length >= 2"
+        class="designer__align-group"
+      >
+        <button
+          v-for="btn in ALIGN_BUTTONS"
+          :key="btn.type"
+          class="designer__align-btn"
+          :title="btn.label"
+          @click="
+            btn.distribute
+              ? designerStore.distributeGroup(btn.axis!)
+              : designerStore.alignGroup(btn.type!)
+          "
+        >
+          {{ btn.icon }}
+        </button>
+      </div>
     </header>
 
     <div class="designer__stage">
@@ -52,6 +71,8 @@
           :class="{
             'designer__component--active':
               component.id === designerStore.selectedComponentId,
+            'designer__component--grouped':
+              designerStore.selectionGroup.includes(component.id),
           }"
           :style="{
             left: `${component.position.x}px`,
@@ -60,7 +81,7 @@
             height: `${component.size.height}px`,
           }"
           @mousedown="startDrag($event, component.id)"
-          @click="designerStore.selectComponent(component.id)"
+          @click="handleComponentClick($event, component.id)"
         >
           <span class="designer__component-label">{{ component.type }}</span>
 
@@ -82,6 +103,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type {
+  AlignType,
+  DistributeAxis,
+} from '@/domains/ui-designer/lib/alignComponents';
 import {
   generatePluginCode,
   validateCppSyntax,
@@ -133,6 +158,23 @@ const RESIZE_HANDLES: Array<{ direction: ResizeDirection }> = [
   { direction: 's' },
   { direction: 'sw' },
   { direction: 'w' },
+];
+
+const ALIGN_BUTTONS: Array<{
+  icon: string;
+  label: string;
+  type?: AlignType;
+  distribute?: true;
+  axis?: DistributeAxis;
+}> = [
+  { icon: '⬤←', label: 'Align left', type: 'left' },
+  { icon: '⬤→', label: 'Align right', type: 'right' },
+  { icon: '⬤↔', label: 'Align center (H)', type: 'center' },
+  { icon: '⬤↑', label: 'Align top', type: 'top' },
+  { icon: '⬤↓', label: 'Align bottom', type: 'bottom' },
+  { icon: '⬤↕', label: 'Align middle (V)', type: 'middle' },
+  { icon: '↔…', label: 'Distribute horizontally', distribute: true, axis: 'x' },
+  { icon: '↕…', label: 'Distribute vertically', distribute: true, axis: 'y' },
 ];
 const snapConfig = computed(() => ({
   enabled: designerStore.snapToGridEnabled,
@@ -443,6 +485,14 @@ function startResize(
   window.addEventListener('mouseup', onMouseUp);
 }
 
+function handleComponentClick(event: MouseEvent, componentId: string) {
+  if (event.shiftKey) {
+    designerStore.toggleGroupSelection(componentId);
+  } else {
+    designerStore.selectComponent(componentId);
+  }
+}
+
 function stopPointerInteraction() {
   stopActivePointerInteraction?.();
 }
@@ -614,6 +664,33 @@ onBeforeUnmount(() => {
 .designer__component--active {
   border: 2px solid #55b3ff;
   box-shadow: 0 0 10px rgba(85, 179, 255, 0.5);
+}
+
+.designer__component--grouped {
+  outline: 2px dashed #f0a040;
+  outline-offset: 2px;
+}
+
+.designer__align-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.designer__align-btn {
+  background: #2a2d33;
+  border: 1px solid #3c3f47;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.designer__align-btn:hover {
+  background: #3a3d45;
+  color: #fff;
 }
 
 .designer__resize-handle {
