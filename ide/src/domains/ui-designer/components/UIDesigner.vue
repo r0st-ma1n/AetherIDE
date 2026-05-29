@@ -321,27 +321,37 @@ function startDrag(event: MouseEvent, componentId: string) {
   const offsetX = event.clientX - rect.left - component.position.x;
   const offsetY = event.clientY - rect.top - component.position.y;
 
-  const onMouseMove = (moveEvent: MouseEvent) => {
-    const nextPosition = {
-      x: snapCoordinate(
-        Math.max(0, Math.round(moveEvent.clientX - rect.left - offsetX)),
-        snapConfig.value
-      ),
-      y: snapCoordinate(
-        Math.max(0, Math.round(moveEvent.clientY - rect.top - offsetY)),
-        snapConfig.value
-      ),
-    };
+  let rafId = 0;
+  let lastMoveEvent: MouseEvent | null = null;
 
-    designerStore.moveComponent(
-      componentId,
-      clampPositionToCanvas(
-        nextPosition,
-        component.size,
-        rect.width,
-        rect.height
-      )
-    );
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    lastMoveEvent = moveEvent;
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      if (!lastMoveEvent) return;
+      const e = lastMoveEvent;
+      const nextPosition = {
+        x: snapCoordinate(
+          Math.max(0, Math.round(e.clientX - rect.left - offsetX)),
+          snapConfig.value
+        ),
+        y: snapCoordinate(
+          Math.max(0, Math.round(e.clientY - rect.top - offsetY)),
+          snapConfig.value
+        ),
+      };
+
+      designerStore.moveComponent(
+        componentId,
+        clampPositionToCanvas(
+          nextPosition,
+          component.size,
+          rect.width,
+          rect.height
+        )
+      );
+    });
   };
 
   const onMouseUp = () => {
@@ -349,6 +359,7 @@ function startDrag(event: MouseEvent, componentId: string) {
   };
 
   stopActivePointerInteraction = () => {
+    cancelAnimationFrame(rafId);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
     stopActivePointerInteraction = null;
@@ -388,23 +399,33 @@ function startResize(
     size: { ...component.size },
   };
 
-  const onMouseMove = (moveEvent: MouseEvent) => {
-    const dx = moveEvent.clientX - initialPointer.x;
-    const dy = moveEvent.clientY - initialPointer.y;
-    const nextBounds = normalizeBoundsToCanvas(
-      getResizedBounds(
-        initialBounds,
-        direction,
-        dx,
-        dy,
-        snapConfig.value,
-        moveEvent.shiftKey
-      ),
-      rect.width,
-      rect.height
-    );
+  let rafId = 0;
+  let lastMoveEvent: MouseEvent | null = null;
 
-    designerStore.resizeComponent(componentId, nextBounds);
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    lastMoveEvent = moveEvent;
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = 0;
+      if (!lastMoveEvent) return;
+      const e = lastMoveEvent;
+      const dx = e.clientX - initialPointer.x;
+      const dy = e.clientY - initialPointer.y;
+      const nextBounds = normalizeBoundsToCanvas(
+        getResizedBounds(
+          initialBounds,
+          direction,
+          dx,
+          dy,
+          snapConfig.value,
+          e.shiftKey
+        ),
+        rect.width,
+        rect.height
+      );
+
+      designerStore.resizeComponent(componentId, nextBounds);
+    });
   };
 
   const onMouseUp = () => {
@@ -412,6 +433,7 @@ function startResize(
   };
 
   stopActivePointerInteraction = () => {
+    cancelAnimationFrame(rafId);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
     stopActivePointerInteraction = null;
