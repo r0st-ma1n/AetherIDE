@@ -44,3 +44,7 @@ export interface UiComponent {
   params?: Partial<UiComponentParams>;
   color?: string;
 }
+
+export interface UISpec {
+  components: UiComponent[];
+}

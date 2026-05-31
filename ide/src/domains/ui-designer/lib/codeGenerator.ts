@@ -1,4 +1,32 @@
-import type { UiComponent } from '@/shared/types';
+import type { UiComponent, UISpec } from '@/shared/types';
+
+const AETHER_BEGIN = '// --- AETHER UI BEGIN ---';
+const AETHER_END = '// --- AETHER UI END ---';
+
+export function generateCppFromUI(spec: UISpec): string {
+  const lines: string[] = [AETHER_BEGIN];
+  for (const c of spec.components) {
+    const parts = [
+      `id="${c.id}"`,
+      `type="${c.type}"`,
+      `x="${c.position.x}"`,
+      `y="${c.position.y}"`,
+      `w="${c.size.width}"`,
+      `h="${c.size.height}"`,
+    ];
+    if (c.params?.min !== undefined) parts.push(`min="${c.params.min}"`);
+    if (c.params?.max !== undefined) parts.push(`max="${c.params.max}"`);
+    if (c.params?.default !== undefined)
+      parts.push(`default="${c.params.default}"`);
+    if (c.color !== undefined) parts.push(`color="${c.color}"`);
+    lines.push(`// @aether ${parts.join(' ')}`);
+    lines.push(
+      `${c.id}.setBounds(${c.position.x}, ${c.position.y}, ${c.size.width}, ${c.size.height});`
+    );
+  }
+  lines.push(AETHER_END);
+  return lines.join('\n');
+}
 
 function sanitizeIdentifier(value: string) {
   return value.replace(/[^a-zA-Z0-9_]/g, '');
