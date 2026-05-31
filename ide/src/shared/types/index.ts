@@ -43,6 +43,21 @@ export interface UiComponentParams {
   default: number;
 }
 
+export interface AetherProjectComponent {
+  type: UiComponentType;
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  properties: Record<string, unknown>;
+}
+
+export interface AetherProject {
+  version: number;
+  components: AetherProjectComponent[];
+}
+
 export interface UiComponent {
   id: string;
   type: UiComponentType;
