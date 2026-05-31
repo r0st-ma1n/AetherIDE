@@ -7,19 +7,22 @@ export function generateCppFromUI(spec: UISpec): string {
   const lines: string[] = [AETHER_BEGIN];
   for (const c of spec.components) {
     const parts = [
-      `id="${c.id}"`,
-      `type="${c.type}"`,
-      `x="${c.position.x}"`,
-      `y="${c.position.y}"`,
-      `w="${c.size.width}"`,
-      `h="${c.size.height}"`,
+      `id=${c.id}`,
+      `type=${c.type}`,
+      `x=${c.position.x}`,
+      `y=${c.position.y}`,
+      `w=${c.size.width}`,
+      `h=${c.size.height}`,
     ];
-    if (c.params?.min !== undefined) parts.push(`min="${c.params.min}"`);
-    if (c.params?.max !== undefined) parts.push(`max="${c.params.max}"`);
-    if (c.params?.default !== undefined)
-      parts.push(`default="${c.params.default}"`);
-    if (c.color !== undefined) parts.push(`color="${c.color}"`);
-    lines.push(`// @aether ${parts.join(' ')}`);
+    if (c.params !== undefined) {
+      parts.push(
+        `min=${c.params.min}`,
+        `max=${c.params.max}`,
+        `default=${c.params.default}`
+      );
+    }
+    if (c.color !== undefined) parts.push(`color=${c.color}`);
+    lines.push(`// AETHER ${parts.join(' ')}`);
     lines.push(
       `${c.id}.setBounds(${c.position.x}, ${c.position.y}, ${c.size.width}, ${c.size.height});`
     );

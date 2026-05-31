@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { UISpec, UiComponentType } from '@/shared/types';
+import type { UISpec, UISpecComponent, UiComponentType } from '@/shared/types';
 import { generateCppFromUI } from './codeGenerator';
 import { parseUIFromCpp } from './codeParser';
 
@@ -11,7 +11,7 @@ describe('generateCppFromUI', () => {
     expect(cpp).toContain('// --- AETHER UI END ---');
   });
 
-  it('serializes all required fields into @aether line', () => {
+  it('serializes all required fields into AETHER line', () => {
     const spec: UISpec = {
       components: [
         {
@@ -23,9 +23,7 @@ describe('generateCppFromUI', () => {
       ],
     };
     const cpp = generateCppFromUI(spec);
-    expect(cpp).toContain(
-      '// @aether id="knob1" type="Knob" x="10" y="20" w="80" h="80"'
-    );
+    expect(cpp).toContain('// AETHER id=knob1 type=Knob x=10 y=20 w=80 h=80');
   });
 
   it('serializes optional params and color', () => {
@@ -42,10 +40,10 @@ describe('generateCppFromUI', () => {
       ],
     };
     const cpp = generateCppFromUI(spec);
-    expect(cpp).toContain('min="0"');
-    expect(cpp).toContain('max="1"');
-    expect(cpp).toContain('default="0.5"');
-    expect(cpp).toContain('color="#ff0000"');
+    expect(cpp).toContain('min=0');
+    expect(cpp).toContain('max=1');
+    expect(cpp).toContain('default=0.5');
+    expect(cpp).toContain('color=#ff0000');
   });
 
   it('omits params/color when not present', () => {
@@ -91,30 +89,30 @@ describe('parseUIFromCpp', () => {
     expect(parseUIFromCpp(cpp)).toEqual({ components: [] });
   });
 
-  it('skips @aether line missing id', () => {
+  it('skips AETHER line missing id', () => {
     const cpp = [
-      '// @aether type="Knob" x="0" y="0" w="80" h="80"',
-      '// @aether id="btn1" type="Button" x="0" y="0" w="100" h="30"',
+      '// AETHER type=Knob x=0 y=0 w=80 h=80',
+      '// AETHER id=btn1 type=Button x=0 y=0 w=100 h=30',
     ].join('\n');
     const result = parseUIFromCpp(cpp);
     expect(result.components).toHaveLength(1);
     expect(result.components[0].id).toBe('btn1');
   });
 
-  it('skips @aether line missing type', () => {
+  it('skips AETHER line missing type', () => {
     const cpp = [
-      '// @aether id="knob1" x="0" y="0" w="80" h="80"',
-      '// @aether id="btn1" type="Button" x="0" y="0" w="100" h="30"',
+      '// AETHER id=knob1 x=0 y=0 w=80 h=80',
+      '// AETHER id=btn1 type=Button x=0 y=0 w=100 h=30',
     ].join('\n');
     const result = parseUIFromCpp(cpp);
     expect(result.components).toHaveLength(1);
     expect(result.components[0].id).toBe('btn1');
   });
 
-  it('skips @aether line with invalid type', () => {
+  it('skips AETHER line with invalid type', () => {
     const cpp = [
-      '// @aether id="led1" type="LED" x="0" y="0" w="20" h="20"',
-      '// @aether id="btn1" type="Button" x="0" y="0" w="100" h="30"',
+      '// AETHER id=led1 type=LED x=0 y=0 w=20 h=20',
+      '// AETHER id=btn1 type=Button x=0 y=0 w=100 h=30',
     ].join('\n');
     const result = parseUIFromCpp(cpp);
     expect(result.components).toHaveLength(1);
@@ -123,9 +121,9 @@ describe('parseUIFromCpp', () => {
 
   it('file with partial tags: valid lines parsed, invalid skipped', () => {
     const cpp = [
-      '// @aether id="knob1" type="Knob" x="10" y="20" w="80" h="80"',
-      '// @aether type="Slider" x="0" y="0" w="100" h="40"',
-      '// @aether id="btn1" type="Button" x="0" y="200" w="100" h="30"',
+      '// AETHER id=knob1 type=Knob x=10 y=20 w=80 h=80',
+      '// AETHER type=Slider x=0 y=0 w=100 h=40',
+      '// AETHER id=btn1 type=Button x=0 y=200 w=100 h=30',
     ].join('\n');
     const result = parseUIFromCpp(cpp);
     expect(result.components).toHaveLength(2);
@@ -133,12 +131,18 @@ describe('parseUIFromCpp', () => {
     expect(result.components[1].id).toBe('btn1');
   });
 
-  it('does not crash on completely malformed @aether line', () => {
+  it('does not crash on completely malformed AETHER line', () => {
     const cpp =
-      '// @aether %%%%garbage%%%%\n// @aether id="k1" type="Knob" x="0" y="0" w="80" h="80"';
+      '// AETHER %%%%garbage%%%%\n// AETHER id=k1 type=Knob x=0 y=0 w=80 h=80';
     const result = parseUIFromCpp(cpp);
     expect(result.components).toHaveLength(1);
     expect(result.components[0].id).toBe('k1');
+  });
+
+  it('ignores params when only some are present (requires all 3)', () => {
+    const cpp = '// AETHER id=k1 type=Knob x=0 y=0 w=80 h=80 min=0 max=1';
+    const result = parseUIFromCpp(cpp);
+    expect(result.components[0].params).toBeUndefined();
   });
 });
 
@@ -146,27 +150,36 @@ describe('round-trip: generateCppFromUI → parseUIFromCpp', () => {
   it('10 knob + 3 slider + 2 button — deep equal per field', () => {
     const spec: UISpec = {
       components: [
-        ...Array.from({ length: 10 }, (_, i) => ({
-          id: `knob${i + 1}`,
-          type: 'Knob' as UiComponentType,
-          position: { x: i * 90, y: 0 },
-          size: { width: 80, height: 80 },
-          params: { min: 0, max: 1, default: 0.5 },
-          color: '#ff0000',
-        })),
-        ...Array.from({ length: 3 }, (_, i) => ({
-          id: `slider${i + 1}`,
-          type: 'Slider' as UiComponentType,
-          position: { x: i * 210, y: 100 },
-          size: { width: 200, height: 40 },
-          params: { min: -12, max: 12, default: 0 },
-        })),
-        ...Array.from({ length: 2 }, (_, i) => ({
-          id: `button${i + 1}`,
-          type: 'Button' as UiComponentType,
-          position: { x: i * 110, y: 200 },
-          size: { width: 100, height: 30 },
-        })),
+        ...Array.from(
+          { length: 10 },
+          (_, i): UISpecComponent => ({
+            id: `knob${i + 1}`,
+            type: 'Knob' as UiComponentType,
+            position: { x: i * 90, y: 0 },
+            size: { width: 80, height: 80 },
+            params: { min: 0, max: 1, default: 0.5 },
+            color: '#ff0000',
+          })
+        ),
+        ...Array.from(
+          { length: 3 },
+          (_, i): UISpecComponent => ({
+            id: `slider${i + 1}`,
+            type: 'Slider' as UiComponentType,
+            position: { x: i * 210, y: 100 },
+            size: { width: 200, height: 40 },
+            params: { min: -12, max: 12, default: 0 },
+          })
+        ),
+        ...Array.from(
+          { length: 2 },
+          (_, i): UISpecComponent => ({
+            id: `button${i + 1}`,
+            type: 'Button' as UiComponentType,
+            position: { x: i * 110, y: 200 },
+            size: { width: 100, height: 30 },
+          })
+        ),
       ],
     };
 
@@ -177,22 +190,6 @@ describe('round-trip: generateCppFromUI → parseUIFromCpp', () => {
     spec.components.forEach((original, i) => {
       expect(parsed.components[i]).toEqual(original);
     });
-  });
-
-  it('preserves partial params (only min defined)', () => {
-    const spec: UISpec = {
-      components: [
-        {
-          id: 'k1',
-          type: 'Knob',
-          position: { x: 0, y: 0 },
-          size: { width: 80, height: 80 },
-          params: { min: -6 },
-        },
-      ],
-    };
-    const parsed = parseUIFromCpp(generateCppFromUI(spec));
-    expect(parsed.components[0].params).toEqual({ min: -6 });
   });
 
   it('preserves component with no optional fields (button)', () => {
