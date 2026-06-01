@@ -104,6 +104,17 @@
             @change="onParamChange('default', $event)"
           />
         </div>
+        <div class="property-row">
+          <span class="property-label">Step</span>
+          <input
+            class="property-input"
+            type="number"
+            step="0.01"
+            min="0"
+            :value="selectedComponent.params?.step ?? 0"
+            @change="onParamChange('step', $event)"
+          />
+        </div>
       </div>
 
       <div class="property-group">
@@ -170,7 +181,10 @@ function onSizeChange(dim: 'width' | 'height', event: Event) {
   }
 }
 
-function onParamChange(param: 'min' | 'max' | 'default', event: Event) {
+function onParamChange(
+  param: 'min' | 'max' | 'default' | 'step',
+  event: Event
+) {
   const value = Number((event.target as HTMLInputElement).value);
   if (selectedComponent.value) {
     store.updateComponentParams(selectedComponent.value.id, { [param]: value });

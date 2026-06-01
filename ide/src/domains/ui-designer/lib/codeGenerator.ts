@@ -1,27 +1,39 @@
-import type { UiComponent, UISpec } from '@/shared/types';
+import type { UiComponent, UISpec, CppSerializerMap } from '@/shared/types';
 
 const AETHER_BEGIN = '// --- AETHER UI BEGIN ---';
 const AETHER_END = '// --- AETHER UI END ---';
 
+const AETHER_SERIALIZERS = {
+  id: (val, out) => out.push(`id=${val}`),
+  type: (val, out) => out.push(`type=${val}`),
+  position: (val, out) => {
+    out.push(`x=${val.x}`);
+    out.push(`y=${val.y}`);
+  },
+  size: (val, out) => {
+    out.push(`w=${val.width}`);
+    out.push(`h=${val.height}`);
+  },
+  params: (val, out) => {
+    if (val === undefined) return;
+    out.push(`min=${val.min}`, `max=${val.max}`, `default=${val.default}`);
+    if (val.step !== undefined) out.push(`step=${val.step}`);
+  },
+  color: (val, out) => {
+    if (val !== undefined) out.push(`color=${val}`);
+  },
+} satisfies CppSerializerMap;
+
 export function generateCppFromUI(spec: UISpec): string {
   const lines: string[] = [AETHER_BEGIN];
   for (const c of spec.components) {
-    const parts = [
-      `id=${c.id}`,
-      `type=${c.type}`,
-      `x=${c.position.x}`,
-      `y=${c.position.y}`,
-      `w=${c.size.width}`,
-      `h=${c.size.height}`,
-    ];
-    if (c.params !== undefined) {
-      parts.push(
-        `min=${c.params.min}`,
-        `max=${c.params.max}`,
-        `default=${c.params.default}`
-      );
-    }
-    if (c.color !== undefined) parts.push(`color=${c.color}`);
+    const parts: string[] = [];
+    AETHER_SERIALIZERS.id(c.id, parts);
+    AETHER_SERIALIZERS.type(c.type, parts);
+    AETHER_SERIALIZERS.position(c.position, parts);
+    AETHER_SERIALIZERS.size(c.size, parts);
+    AETHER_SERIALIZERS.params(c.params, parts);
+    AETHER_SERIALIZERS.color(c.color, parts);
     lines.push(`// AETHER ${parts.join(' ')}`);
     lines.push(
       `${c.id}.setBounds(${c.position.x}, ${c.position.y}, ${c.size.width}, ${c.size.height});`

@@ -10,6 +10,7 @@ import {
   parseUiDocument,
   serializeUiDocument,
 } from '@/domains/ui-designer/lib/uiDocument';
+
 import type {
   DesignerGridStep,
   UiComponent,
@@ -37,6 +38,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const draggingPaletteType = ref<UiComponentType | null>(null);
   const gridStep = ref<DesignerGridStep>(10);
   const snapToGridEnabled = ref(true);
+  const canvasWidth = ref(600);
+  const canvasHeight = ref(400);
 
   const selectedComponent = computed(
     () =>
@@ -48,16 +51,28 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   async function loadDocument(filePath: string) {
     const source = await window.prototypeIDE.readFile(filePath);
     currentDocumentPath.value = filePath;
-    components.value = parseUiDocument(source);
-    selectedComponentId.value = components.value[0]?.id ?? null;
+    const doc = parseUiDocument(source);
+    components.value = doc.components;
+    canvasWidth.value = doc.canvasWidth;
+    canvasHeight.value = doc.canvasHeight;
+    selectedComponentId.value = doc.components[0]?.id ?? null;
   }
 
   async function saveDocument(filePath: string) {
     currentDocumentPath.value = filePath;
     await window.prototypeIDE.writeFile(
       filePath,
-      serializeUiDocument(components.value)
+      serializeUiDocument(
+        components.value,
+        canvasWidth.value,
+        canvasHeight.value
+      )
     );
+  }
+
+  function setCanvasSize(w: number, h: number) {
+    canvasWidth.value = Math.max(100, Math.min(w, 2000));
+    canvasHeight.value = Math.max(100, Math.min(h, 2000));
   }
 
   function addComponent(type: UiComponentType) {
@@ -86,14 +101,19 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   }
 
   function toggleGroupSelection(componentId: string) {
-    const idx = selectionGroup.value.indexOf(componentId);
-    if (idx === -1) {
-      selectionGroup.value = [...selectionGroup.value, componentId];
-    } else {
-      selectionGroup.value = selectionGroup.value.filter(
-        (id) => id !== componentId
-      );
+    let baseGroup = [...selectionGroup.value];
+
+    // Bootstrap: if no group yet, seed it with the currently active component
+    if (baseGroup.length === 0 && selectedComponentId.value !== null) {
+      baseGroup = [selectedComponentId.value];
     }
+
+    const idx = baseGroup.indexOf(componentId);
+    selectionGroup.value =
+      idx === -1
+        ? [...baseGroup, componentId]
+        : baseGroup.filter((id) => id !== componentId);
+
     selectedComponentId.value = componentId;
   }
 
@@ -216,6 +236,9 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectedComponentId,
     selectionGroup,
     clearSelection,
+    canvasWidth,
+    canvasHeight,
+    setCanvasSize,
     setGridStep,
     setSnapToGridEnabled,
     snapToGridEnabled,

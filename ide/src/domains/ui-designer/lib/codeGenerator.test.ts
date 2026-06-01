@@ -46,6 +46,38 @@ describe('generateCppFromUI', () => {
     expect(cpp).toContain('color=#ff0000');
   });
 
+  it('serializes step when present', () => {
+    const spec: UISpec = {
+      components: [
+        {
+          id: 'k1',
+          type: 'Knob',
+          position: { x: 0, y: 0 },
+          size: { width: 80, height: 80 },
+          params: { min: 0, max: 10, default: 1, step: 0.5 },
+        },
+      ],
+    };
+    const cpp = generateCppFromUI(spec);
+    expect(cpp).toContain('step=0.5');
+  });
+
+  it('omits step when not present', () => {
+    const spec: UISpec = {
+      components: [
+        {
+          id: 'k1',
+          type: 'Knob',
+          position: { x: 0, y: 0 },
+          size: { width: 80, height: 80 },
+          params: { min: 0, max: 1, default: 0.5 },
+        },
+      ],
+    };
+    const cpp = generateCppFromUI(spec);
+    expect(cpp).not.toContain('step=');
+  });
+
   it('omits params/color when not present', () => {
     const spec: UISpec = {
       components: [
@@ -144,6 +176,24 @@ describe('parseUIFromCpp', () => {
     const result = parseUIFromCpp(cpp);
     expect(result.components[0].params).toBeUndefined();
   });
+
+  it('parses step when present alongside min/max/default', () => {
+    const cpp =
+      '// AETHER id=k1 type=Knob x=0 y=0 w=80 h=80 min=0 max=10 default=1 step=0.5';
+    const result = parseUIFromCpp(cpp);
+    expect(result.components[0].params).toEqual({
+      min: 0,
+      max: 10,
+      default: 1,
+      step: 0.5,
+    });
+  });
+
+  it('ignores step when min/max/default are absent', () => {
+    const cpp = '// AETHER id=k1 type=Knob x=0 y=0 w=80 h=80 step=0.5';
+    const result = parseUIFromCpp(cpp);
+    expect(result.components[0].params).toBeUndefined();
+  });
 });
 
 describe('round-trip: generateCppFromUI → parseUIFromCpp', () => {
@@ -207,6 +257,27 @@ describe('round-trip: generateCppFromUI → parseUIFromCpp', () => {
     expect(parsed.components[0]).toEqual(spec.components[0]);
     expect(parsed.components[0].params).toBeUndefined();
     expect(parsed.components[0].color).toBeUndefined();
+  });
+
+  it('preserves step in params round-trip', () => {
+    const spec: UISpec = {
+      components: [
+        {
+          id: 'k1',
+          type: 'Knob',
+          position: { x: 0, y: 0 },
+          size: { width: 80, height: 80 },
+          params: { min: -12, max: 12, default: 0, step: 0.1 },
+        },
+      ],
+    };
+    const parsed = parseUIFromCpp(generateCppFromUI(spec));
+    expect(parsed.components[0].params).toEqual({
+      min: -12,
+      max: 12,
+      default: 0,
+      step: 0.1,
+    });
   });
 
   it('round-trip on C++ file with surrounding non-Aether code', () => {
