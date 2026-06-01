@@ -3,6 +3,8 @@ import type {
   UISpec,
   UISpecComponent,
   UiComponentType,
+  UiComponentParams,
+  CppDeserializerMap,
 } from '@/shared/types';
 
 export function parseGeneratedCode(source: string): UiComponent[] {
@@ -58,6 +60,35 @@ function parseAttrs(attrStr: string): Map<string, string> {
   return map;
 }
 
+const AETHER_DESERIALIZERS = {
+  id: (attrs) => attrs.get('id') ?? '',
+  type: (attrs) => (attrs.get('type') ?? '') as UiComponentType,
+  position: (attrs) => ({
+    x: Number(attrs.get('x') ?? 0),
+    y: Number(attrs.get('y') ?? 0),
+  }),
+  size: (attrs) => ({
+    width: Number(attrs.get('w') ?? 100),
+    height: Number(attrs.get('h') ?? 40),
+  }),
+  params: (attrs): UiComponentParams | undefined => {
+    const min = attrs.get('min');
+    const max = attrs.get('max');
+    const def = attrs.get('default');
+    if (min === undefined || max === undefined || def === undefined)
+      return undefined;
+    const result: UiComponentParams = {
+      min: Number(min),
+      max: Number(max),
+      default: Number(def),
+    };
+    const step = attrs.get('step');
+    if (step !== undefined) result.step = Number(step);
+    return result;
+  },
+  color: (attrs) => attrs.get('color'),
+} satisfies CppDeserializerMap;
+
 export function parseUIFromCpp(src: string): UISpec {
   const components: UISpecComponent[] = [];
 
@@ -66,37 +97,22 @@ export function parseUIFromCpp(src: string): UISpec {
     if (!match) continue;
 
     const attrs = parseAttrs(match[1]);
-    const id = attrs.get('id');
-    const type = attrs.get('type') as UiComponentType;
+    const id = AETHER_DESERIALIZERS.id(attrs);
+    const type = AETHER_DESERIALIZERS.type(attrs);
     if (!id || !VALID_TYPES.has(type)) continue;
 
     const component: UISpecComponent = {
       id,
       type,
-      position: {
-        x: Number(attrs.get('x') ?? 0),
-        y: Number(attrs.get('y') ?? 0),
-      },
-      size: {
-        width: Number(attrs.get('w') ?? 100),
-        height: Number(attrs.get('h') ?? 40),
-      },
+      position: AETHER_DESERIALIZERS.position(attrs),
+      size: AETHER_DESERIALIZERS.size(attrs),
     };
 
-    const minVal = attrs.get('min');
-    const maxVal = attrs.get('max');
-    const defVal = attrs.get('default');
-    if (minVal !== undefined && maxVal !== undefined && defVal !== undefined) {
-      component.params = {
-        min: Number(minVal),
-        max: Number(maxVal),
-        default: Number(defVal),
-      };
-    }
+    const params = AETHER_DESERIALIZERS.params(attrs);
+    if (params !== undefined) component.params = params;
 
-    if (attrs.get('color') !== undefined) {
-      component.color = attrs.get('color');
-    }
+    const color = AETHER_DESERIALIZERS.color(attrs);
+    if (color !== undefined) component.color = color;
 
     components.push(component);
   }

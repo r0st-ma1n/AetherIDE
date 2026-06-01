@@ -18,6 +18,32 @@
         </select>
       </label>
 
+      <label class="designer__control">
+        <span class="designer__control-label">W</span>
+        <input
+          class="designer__size-input"
+          type="number"
+          min="100"
+          max="2000"
+          step="10"
+          :value="designerStore.canvasWidth"
+          @change="handleCanvasSizeChange('w', $event)"
+        />
+      </label>
+
+      <label class="designer__control">
+        <span class="designer__control-label">H</span>
+        <input
+          class="designer__size-input"
+          type="number"
+          min="100"
+          max="2000"
+          step="10"
+          :value="designerStore.canvasHeight"
+          @change="handleCanvasSizeChange('h', $event)"
+        />
+      </label>
+
       <label class="designer__toggle">
         <input
           :checked="designerStore.snapToGridEnabled"
@@ -58,7 +84,7 @@
       <div
         ref="canvasElement"
         class="designer__canvas"
-        :style="canvasGridStyle"
+        :style="canvasStyle"
         @mousedown.self="handleCanvasMouseDown"
         @dragenter.prevent
         @dragover.prevent
@@ -142,10 +168,12 @@ const designerStore = useUiDesignerStore();
 const workspaceStore = useWorkspaceStore();
 const canvasElement = ref<HTMLElement | null>(null);
 let stopActivePointerInteraction: (() => void) | null = null;
-const canvasGridStyle = computed(
+const canvasStyle = computed(
   () =>
     ({
       '--designer-grid-step': `${designerStore.gridStep}px`,
+      width: `${designerStore.canvasWidth}px`,
+      height: `${designerStore.canvasHeight}px`,
     }) as Record<string, string>
 );
 
@@ -303,6 +331,15 @@ function handleSnapToggle(event: Event) {
   );
 }
 
+function handleCanvasSizeChange(axis: 'w' | 'h', event: Event) {
+  const value = Number((event.target as HTMLInputElement).value);
+  if (axis === 'w') {
+    designerStore.setCanvasSize(value, designerStore.canvasHeight);
+  } else {
+    designerStore.setCanvasSize(designerStore.canvasWidth, value);
+  }
+}
+
 function handleCanvasMouseDown(event: MouseEvent) {
   if (event.button !== 0) {
     return;
@@ -357,7 +394,9 @@ function startDrag(event: MouseEvent, componentId: string) {
     return;
   }
 
-  designerStore.selectComponent(componentId);
+  if (!event.shiftKey) {
+    designerStore.selectComponent(componentId);
+  }
   stopPointerInteraction();
 
   const offsetX = event.clientX - rect.left - component.position.x;
@@ -564,6 +603,27 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
+.designer__size-input {
+  width: 56px;
+  background: #161d26;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 6px 8px;
+  color: #eef2f7;
+  font-size: 12px;
+  text-align: right;
+  outline: none;
+}
+
+.designer__size-input:focus {
+  border-color: #5ebeff;
+}
+
+.designer__size-input::-webkit-inner-spin-button,
+.designer__size-input::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
 .designer__select {
   min-width: 84px;
   border: 1px solid #334155;
@@ -630,8 +690,6 @@ onBeforeUnmount(() => {
 
 .designer__canvas {
   position: relative;
-  width: 600px;
-  height: 400px;
   background-color: #252526;
   background-image:
     linear-gradient(to right, rgba(117, 152, 182, 0.16) 1px, transparent 1px),
@@ -639,8 +697,9 @@ onBeforeUnmount(() => {
   background-size:
     var(--designer-grid-step, 10px) var(--designer-grid-step, 10px),
     var(--designer-grid-step, 10px) var(--designer-grid-step, 10px);
-  border: 1px solid #3c3c3c;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 1px #3c3c3c,
+    0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .designer__component {

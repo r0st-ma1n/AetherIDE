@@ -24,7 +24,10 @@ import * as monaco from 'monaco-editor';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useEditorStore } from '@/domains/editor/stores/editorStore';
 import { parseGeneratedCode } from '@/domains/ui-designer/lib/codeParser';
-import { serializeUiDocument } from '@/domains/ui-designer/lib/uiDocument';
+import {
+  parseUiDocument,
+  serializeUiDocument,
+} from '@/domains/ui-designer/lib/uiDocument';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import {
   basename,
@@ -97,9 +100,16 @@ async function saveFile() {
     if (uiExists) {
       const components = parseGeneratedCode(content);
       if (components.length > 0) {
+        const existingDoc = parseUiDocument(
+          await window.prototypeIDE.readFile(uiPath)
+        );
         await window.prototypeIDE.writeFile(
           uiPath,
-          serializeUiDocument(components)
+          serializeUiDocument(
+            components,
+            existingDoc.canvasWidth,
+            existingDoc.canvasHeight
+          )
         );
       }
     }

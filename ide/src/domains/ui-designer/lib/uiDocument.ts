@@ -1,5 +1,14 @@
 import type { UiComponent } from '@/shared/types';
 
+export interface UiDocumentData {
+  components: UiComponent[];
+  canvasWidth: number;
+  canvasHeight: number;
+}
+
+const DEFAULT_CANVAS_WIDTH = 600;
+const DEFAULT_CANVAS_HEIGHT = 400;
+
 interface RawUiComponent {
   id: string;
   type: UiComponent['type'];
@@ -28,10 +37,14 @@ function parsePixels(value: string | undefined, fallback: number) {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
-export function parseUiDocument(source: string): UiComponent[] {
-  const parsed = JSON.parse(source) as { components?: RawUiComponent[] };
+export function parseUiDocument(source: string): UiDocumentData {
+  const parsed = JSON.parse(source) as {
+    components?: RawUiComponent[];
+    canvasWidth?: number;
+    canvasHeight?: number;
+  };
 
-  return (parsed.components ?? []).map((component) => ({
+  const components = (parsed.components ?? []).map((component) => ({
     id: component.id,
     type: component.type,
     position: component.position ?? {
@@ -45,11 +58,23 @@ export function parseUiDocument(source: string): UiComponent[] {
     ...(component.params !== undefined ? { params: component.params } : {}),
     ...(component.color !== undefined ? { color: component.color } : {}),
   }));
+
+  return {
+    components,
+    canvasWidth: parsed.canvasWidth ?? DEFAULT_CANVAS_WIDTH,
+    canvasHeight: parsed.canvasHeight ?? DEFAULT_CANVAS_HEIGHT,
+  };
 }
 
-export function serializeUiDocument(components: UiComponent[]) {
+export function serializeUiDocument(
+  components: UiComponent[],
+  canvasWidth: number,
+  canvasHeight: number
+) {
   return JSON.stringify(
     {
+      canvasWidth,
+      canvasHeight,
       components: components.map((component) => ({
         id: component.id,
         type: component.type,
