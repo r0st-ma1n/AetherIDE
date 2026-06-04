@@ -7,8 +7,8 @@
 - `ide/`
   - desktop-приложение на `Electron`
   - окно приложения, `preload`, renderer UI и интеграция с Monaco
-- `ide/backend/`
-  - нативный `C++` backend, который используется IDE
+- `ide/native/`
+  - нативный `C++` модуль, который используется IDE (IPC-мост)
 - `framework/core/`
   - базовый аудио-фреймворк и абстракции для плагинов
 - `framework/core/examples/gain/`
@@ -48,7 +48,7 @@
 
 Не должен зависеть от `Electron` или UI-слоя.
 
-### `ide/backend`
+### `ide/native`
 
 - Нативная логика, которая нужна самой IDE
 - Интеграция между IDE и C++ подсистемой

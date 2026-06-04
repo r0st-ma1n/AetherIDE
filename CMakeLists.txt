@@ -8,4 +8,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(framework/core)
 add_subdirectory(framework/core/examples/gain)
-add_subdirectory(ide/backend)
+add_subdirectory(ide/native)

@@ -7,7 +7,7 @@
 Основные части репозитория:
 
 - `ide/` — desktop-приложение на `Electron` с renderer на `Vue 3 + TypeScript + Pinia + Vite`
-- `ide/backend/` — нативная backend-часть IDE
+- `ide/native/` — нативная C++ часть IDE (IPC-мост с Electron)
 - `framework/core/` — базовый фреймворк и общие аудио-абстракции
 - `framework/core/examples/gain/` — пример использования framework API
 
