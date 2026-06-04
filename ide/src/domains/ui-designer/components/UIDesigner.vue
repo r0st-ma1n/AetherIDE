@@ -105,6 +105,8 @@
             top: `${component.position.y}px`,
             width: `${component.size.width}px`,
             height: `${component.size.height}px`,
+            backgroundColor: component.color ?? '#007acc',
+            borderColor: component.color ?? '#005999',
           }"
           @mousedown="startDrag($event, component.id)"
           @click="handleComponentClick($event, component.id)"
@@ -707,9 +709,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #005999;
+  border: 1px solid;
   border-radius: 4px;
-  background-color: #007acc;
   color: white;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);

@@ -107,7 +107,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
 
     const preferredUiTab =
-      candidates.find((tab) => tab.filePath === 'ide/GainPlugin.ui') ??
+      candidates.find(
+        (tab) => tab.filePath === 'samples/GainPlugin/GainPlugin.ui'
+      ) ??
       candidates.find((tab) => tab.kind === 'designer') ??
       null;
 
