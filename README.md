@@ -1,144 +1,85 @@
-# PrototypeIDE
+# AetherIDE
 
-Прототип визуальной IDE для разработки аудио-плагинов с поддержкой drag-and-drop интерфейса и двусторонней синхронизации между визуальным редактором и кодом.
+Визуальная IDE для разработки аудио-плагинов. Позволяет собирать интерфейс плагина через drag-and-drop и автоматически генерирует синхронизированный C++ код.
 
-## 🎯 Описание
+## Что это
 
-PrototypeIDE - это экспериментальная интегрированная среда разработки, созданная для упрощения процесса создания аудио-плагинов. Проект включает в себя:
+AetherIDE — desktop-приложение на Electron с визуальным дизайнером UI, встроенным редактором кода (Monaco) и собственным C++ фреймворком для аудио-плагинов (Aether).
 
-- **Визуальный UI Designer** - перетаскивайте компоненты (Knob, Slider, Button) на canvas
-- **Code Editor** - встроенный Monaco Editor с подсветкой синтаксиса C++
-- **Двусторонняя синхронизация** - изменения в коде отражаются в визуальном редакторе и наоборот
-- **File Explorer** - навигация по файлам проекта
-- **Audio Plugin Framework** - базовый фреймворк для создания аудио-плагинов на C++
+Ключевые возможности:
 
-## 🚀 Возможности
+- Drag-and-drop редактор компонентов (Knob, Slider, Button) на canvas
+- Двусторонняя синхронизация: изменения в дизайнере генерируют C++ код и наоборот
+- Встроенный Monaco Editor с подсветкой синтаксиса C++
+- Файловый проводник с live-обновлением
+- Собственный C++ фреймворк Aether для написания аудио-плагинов
 
-- ✅ Drag-and-drop компонентов UI
-- ✅ Автоматическая генерация C++ кода
-- ✅ Синхронизация между визуальным редактором и кодом
-- ✅ Встроенный редактор кода с подсветкой синтаксиса
-- ✅ Файловый менеджер с поддержкой различных типов файлов
-- ✅ Сохранение файлов (Ctrl+S / Cmd+S)
-- ✅ Темная тема в стиле VS Code
+## Стек
 
-## 📋 Требования
+| Слой | Технологии |
+|---|---|
+| IDE UI | Vue 3, TypeScript, Pinia, Vite, Monaco Editor |
+| Desktop | Electron |
+| C++ native | CMake, C++20 |
+| Audio framework | Aether (собственный) |
 
-- **Node.js** (v14 или выше)
-- **npm** (v6 или выше)
-- **CMake** (v3.15 или выше)
-- **C++ компилятор** (MSVC, GCC или Clang)
+## Требования
 
-## 🛠️ Установка
+- Node.js 18+
+- npm 9+
+- CMake 3.22+
+- C++20 компилятор (MSVC, GCC, Clang)
 
-### 1. Клонирование репозитория
-
-```bash
-git clone https://github.com/r0st-ma1n/PrototypeIDE.git
-cd PrototypeIDE
-```
-
-### 2. Установка зависимостей IDE
+## Установка и запуск
 
 ```bash
-cd ide
-npm install
-```
+# Установить зависимости
+make ide-install
 
-### 3. Сборка C++ фреймворка (опционально)
-
-```bash
-mkdir build
-cd build
-cmake ..
-cmake --build .
-```
-
-## 🎮 Запуск
-
-### Запуск IDE
-
-Самый удобный способ запуска — использовать `Makefile` в корне проекта:
-
-**Режим разработки (Electron + Vite HMR):**
-```bash
+# Запустить в режиме разработки (Electron + Vite HMR)
 make ide-dev
 ```
 
-**Сборка и запуск всех компонентов (Frontend + C++ Backend):**
+Остальные команды:
+
 ```bash
-make run-all
+make ide-build          # собрать frontend
+make ide-start          # запустить Electron без dev-сервера
+make cmake-configure    # сконфигурировать C++ часть
+make cmake-build        # собрать C++ часть
+make run-all            # собрать всё и запустить
+make test               # полная проверка проекта
 ```
 
-*(Если у вас не установлен `make`, используйте `npm --prefix ide run dev` для запуска фронтенда).*
-
-### Использование
-
-1. **UI Designer** - перетаскивайте компоненты из панели "Components" на canvas
-2. **Code Editor** - переключитесь на вкладку "Code Editor" для просмотра/редактирования кода
-3. **File Explorer** - открывайте файлы проекта через боковую панель
-4. **Сохранение** - используйте Ctrl+S (Cmd+S на Mac) для сохранения открытого файла
-
-## 📁 Структура проекта
+## Структура проекта
 
 ```
-PrototypeIDE/
-├── ide/                          # Electron-приложение IDE
-│   ├── index.html               # Главный HTML файл
-│   ├── main.js                  # Главный процесс Electron
-│   ├── preload.js               # Preload скрипт
-│   ├── package.json             # Зависимости Node.js
-│   └── backend/                 # C++ бэкенд (опционально)
-├── framework/                    # C++ фреймворк для аудио-плагинов
-│   └── core/                    # Основные компоненты фреймворка
-│       ├── include/             # Заголовочные файлы
-│       │   └── aether/
-│       │       ├── AudioBuffer.h
-│       │       ├── Parameter.h
-│       │       ├── ProcessContext.h
-│       │       └── PluginProcessor.h
-│       ├── src/                 # Исходные файлы
-│       │   └── Parameter.cpp
-│       └── examples/            # Примеры плагинов
-│           └── gain/            # Пример Gain плагина
-├── CMakeLists.txt               # Конфигурация CMake
-├── .gitignore                   # Git ignore файл
-└── README.md                    # Этот файл
+AetherIDE/
+├── framework/
+│   └── core/               # C++ Aether framework
+│       ├── include/aether/ # публичный API
+│       ├── src/
+│       └── examples/gain/  # пример плагина
+├── ide/
+│   ├── electron/           # Electron main process и preload
+│   ├── native/             # C++ нативный модуль (IPC-мост)
+│   ├── src/
+│   │   ├── app/            # shell верхнего уровня
+│   │   ├── domains/        # фичи по доменам (editor, files, ui-designer, workspace)
+│   │   └── shared/         # общие типы, утилиты, схемы
+│   └── ...конфиги
+├── samples/
+│   └── GainPlugin/         # пример проекта для IDE
+├── docs/                   # стандарты и правила разработки
+├── CMakeLists.txt
+└── Makefile
 ```
 
-## 🔧 Технологии
+## Документация
 
-- **Frontend**: HTML, CSS, JavaScript
-- **Editor**: Monaco Editor (редактор VS Code)
-- **Desktop Framework**: Electron
-- **Backend**: C++ (CMake)
-- **Audio Processing**: Собственный фреймворк Aether (Audio Plugin Framework)
-
-## 🐛 Известные проблемы
-
-- Backend C++ генератор кода требует сборки проекта
-- Некоторые ошибки кэша Electron при первом запуске (не критично)
-
-## 🤝 Вклад в проект
-
-Проект находится в стадии прототипа. Любые предложения и улучшения приветствуются!
-
-1. Fork проекта
-2. Создайте feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit изменения (`git commit -m 'Add some AmazingFeature'`)
-4. Push в branch (`git push origin feature/AmazingFeature`)
-5. Откройте Pull Request
-
-## 📝 Лицензия
-
-Этот проект является прототипом и предоставляется "как есть" для образовательных целей.
-
-## 👤 Автор
-
-**r0st-ma1n**
-
-- GitHub: [@r0st-ma1n](https://github.com/r0st-ma1n)
-
----
-
-⭐ Если проект вам понравился, поставьте звезду на GitHub!
+- [docs/GIT_CONVENTIONS.md](docs/GIT_CONVENTIONS.md) — ветки, коммиты, PR
+- [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) — общие правила по коду
+- [docs/standards/architecture.md](docs/standards/architecture.md) — границы модулей
+- [docs/standards/javascript-electron.md](docs/standards/javascript-electron.md) — стандарты для Vue/Electron части
+- [docs/standards/cpp-cmake.md](docs/standards/cpp-cmake.md) — стандарты для C++/CMake части
+- [CONTRIBUTING.md](CONTRIBUTING.md) — как вносить изменения

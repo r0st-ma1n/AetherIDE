@@ -1,86 +1,111 @@
 # Git Conventions
 
-Этот документ описывает рабочие правила по веткам, коммитам и pull request для `PrototypeIDE`.
+Правила по веткам, коммитам и pull request для AetherIDE.
 
 ## Модель работы
 
 - Основная ветка: `main`
-- Работа ведется в коротких ветках от `main`
-- Изменения попадают в `main` через pull request
+- Работа ведётся в коротких ветках от `main`
+- Изменения попадают в `main` только через pull request
 
-Прямые коммиты в `main` нежелательны.
+Прямые коммиты в `main` запрещены.
 
 ## Именование веток
 
 Формат:
 
-```text
-<type>/<issue-id>-<short-description>
+```
+<type>/<issue-id>-<короткое-описание>
 ```
 
-Подходящие типы:
+Допустимые типы — те же, что и в коммитах:
 
-- `feature` - новая функциональность
-- `fix` - исправление бага
-- `chore` - инфраструктура, шаблоны, зависимости, конфиги
-- `refactor` - переработка кода без изменения поведения
-- `docs` - только документация
-- `test` - добавление или правка тестов
+| Тип | Когда использовать |
+|---|---|
+| `feat` | новая функциональность |
+| `fix` | исправление бага |
+| `refactor` | переработка без изменения поведения |
+| `chore` | зависимости, конфиги, инфраструктура |
+| `docs` | только документация |
+| `test` | тесты |
+| `ci` | CI/CD пайплайн |
 
 Примеры:
 
-```text
-chore/1-repository-setup-and-standards
-feature/12-add-visual-component-selection
+```
+feat/12-visual-component-selection
 fix/18-handle-missing-plugin-file
-docs/21-update-framework-overview
+refactor/35-project-structure
+chore/7-add-prettier
+docs/21-update-architecture
 ```
 
 ## Коммиты
 
-Используем `Conventional Commits`.
+Используем [Conventional Commits](https://www.conventionalcommits.org/).
 
 Формат:
 
-```text
-type(scope): short description
+```
+<type>(<scope>): <короткое описание>
 ```
 
-Скоуп опционален.
-
-Разрешенные типы:
-
-- `feat`
-- `fix`
-- `docs`
-- `refactor`
-- `test`
-- `chore`
-- `ci`
-- `style`
+Scope опционален. Описание — в нижнем регистре, без точки в конце.
 
 Примеры:
 
-```text
-chore: add issue and pull request templates
-docs: add repository coding standards
-feat(ide): add file explorer selection sync
-fix(framework): clamp parameter default value
 ```
+feat(ui-designer): add multi-select alignment tools
+fix(editor): restore file save on Ctrl+S
+refactor(workspace): move tab state to pinia store
+chore: enforce LF line endings via .gitattributes
+docs: update architecture module boundaries
+ci: add format-check step to workflow
+```
+
+### Правила
+
+- Первая строка — не длиннее 72 символов
+- Если нужен контекст — добавь тело через пустую строку
+- Ссылки на issue в теле: `Closes #12`, `Refs #34`
+- Не описывай КАК сделано — описывай ЧТО и ЗАЧЕМ
 
 ## Pull Request
 
-Каждый PR должен отвечать на 4 вопроса:
+Каждый PR должен отвечать на четыре вопроса:
 
-- Что изменено
-- Зачем это изменено
-- Как это проверить
-- Какие есть ограничения или риски
+1. **Что изменено** — кратко, 1–3 пункта
+2. **Зачем** — задача, issue или контекст
+3. **Как проверить** — воспроизводимые шаги
+4. **Ограничения** — известные риски или что намеренно не сделано
 
-Если меняется UI, желательно приложить скриншот или короткое описание сценария проверки.
+Для UI-изменений — скриншот или описание визуального результата обязательны.
+
+### Чеклист перед merge
+
+```bash
+make ide-format-check   # форматирование
+make ide-lint           # линт
+make ide-typecheck      # типы
+make ide-test           # unit-тесты
+make ide-build          # сборка frontend
+```
+
+Если затронута C++ часть:
+
+```bash
+make cmake-configure
+make cmake-build
+```
+
+Или всё сразу:
+
+```bash
+make test
+```
 
 ## Размер изменений
 
-- Предпочтительны небольшие PR с одной целью.
-- Если задача затрагивает `Electron`, `framework` и документацию сразу, лучше разбить изменения на логические коммиты.
-- Масштабные рефакторинги без функциональной цели нужно заранее согласовывать в issue или описании PR.
+- Предпочтительны небольшие PR с одной чётко обозначенной целью
+- Если задача одновременно затрагивает IDE, framework и документацию — разбивай на логические коммиты внутри одного PR
+- Масштабный рефакторинг без функциональной цели нужно согласовывать в issue заранее
