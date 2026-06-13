@@ -6,6 +6,7 @@ import {
   type AlignType,
   type DistributeAxis,
 } from '@/domains/ui-designer/lib/alignComponents';
+import type { ICommand } from '@/domains/ui-designer/lib/commands';
 import {
   parseUiDocument,
   serializeUiDocument,
@@ -29,6 +30,7 @@ const DEFAULT_COMPONENT_SIZE = {
   width: 100,
   height: 40,
 };
+const MAX_HISTORY = 100;
 
 export const useUiDesignerStore = defineStore('ui-designer', () => {
   const currentDocumentPath = ref<string | null>(null);
@@ -41,12 +43,43 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const canvasWidth = ref(600);
   const canvasHeight = ref(400);
 
+  const undoStack = ref<ICommand[]>([]);
+  const redoStack = ref<ICommand[]>([]);
+
   const selectedComponent = computed(
     () =>
       components.value.find(
         (component) => component.id === selectedComponentId.value
       ) ?? null
   );
+
+  const canUndo = computed(() => undoStack.value.length > 0);
+  const canRedo = computed(() => redoStack.value.length > 0);
+
+  function pushHistory(cmd: ICommand) {
+    undoStack.value.push(cmd);
+    if (undoStack.value.length > MAX_HISTORY) undoStack.value.shift();
+    redoStack.value = [];
+  }
+
+  function executeCommand(cmd: ICommand) {
+    cmd.execute();
+    pushHistory(cmd);
+  }
+
+  function undo() {
+    const cmd = undoStack.value.pop();
+    if (!cmd) return;
+    cmd.undo();
+    redoStack.value.push(cmd);
+  }
+
+  function redo() {
+    const cmd = redoStack.value.pop();
+    if (!cmd) return;
+    cmd.execute();
+    undoStack.value.push(cmd);
+  }
 
   async function loadDocument(filePath: string) {
     const source = await window.prototypeIDE.readFile(filePath);
@@ -56,6 +89,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     canvasWidth.value = doc.canvasWidth;
     canvasHeight.value = doc.canvasHeight;
     selectedComponentId.value = doc.components[0]?.id ?? null;
+    undoStack.value = [];
+    redoStack.value = [];
   }
 
   async function saveDocument(filePath: string) {
@@ -86,8 +121,15 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
       size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
-    components.value.push(next);
-    selectedComponentId.value = next.id;
+    executeCommand({
+      execute() {
+        components.value.push(next);
+        selectedComponentId.value = next.id;
+      },
+      undo() {
+        components.value = components.value.filter((c) => c.id !== next.id);
+      },
+    });
   }
 
   function selectComponent(componentId: string) {
@@ -121,22 +163,46 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     const targets = components.value.filter((c) =>
       selectionGroup.value.includes(c.id)
     );
-    const positions = alignComponents(targets, type);
-    for (const [id, position] of positions) {
-      const comp = components.value.find((c) => c.id === id);
-      if (comp) comp.position = position;
-    }
+    const oldPositions = new Map(targets.map((c) => [c.id, { ...c.position }]));
+    const newPositions = alignComponents(targets, type);
+
+    executeCommand({
+      execute() {
+        for (const [id, position] of newPositions) {
+          const c = components.value.find((item) => item.id === id);
+          if (c) c.position = { ...position };
+        }
+      },
+      undo() {
+        for (const [id, position] of oldPositions) {
+          const c = components.value.find((item) => item.id === id);
+          if (c) c.position = { ...position };
+        }
+      },
+    });
   }
 
   function distributeGroup(axis: DistributeAxis) {
     const targets = components.value.filter((c) =>
       selectionGroup.value.includes(c.id)
     );
-    const positions = distributeComponents(targets, axis);
-    for (const [id, position] of positions) {
-      const comp = components.value.find((c) => c.id === id);
-      if (comp) comp.position = position;
-    }
+    const oldPositions = new Map(targets.map((c) => [c.id, { ...c.position }]));
+    const newPositions = distributeComponents(targets, axis);
+
+    executeCommand({
+      execute() {
+        for (const [id, position] of newPositions) {
+          const c = components.value.find((item) => item.id === id);
+          if (c) c.position = { ...position };
+        }
+      },
+      undo() {
+        for (const [id, position] of oldPositions) {
+          const c = components.value.find((item) => item.id === id);
+          if (c) c.position = { ...position };
+        }
+      },
+    });
   }
 
   function placeComponent(
@@ -150,8 +216,15 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
       size: { ...DEFAULT_COMPONENT_SIZE },
     };
 
-    components.value.push(next);
-    selectedComponentId.value = next.id;
+    executeCommand({
+      execute() {
+        components.value.push(next);
+        selectedComponentId.value = next.id;
+      },
+      undo() {
+        components.value = components.value.filter((c) => c.id !== next.id);
+      },
+    });
   }
 
   function moveComponent(
@@ -159,7 +232,6 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     position: UiComponent['position']
   ) {
     const component = components.value.find((item) => item.id === componentId);
-
     if (component) {
       component.position = position;
     }
@@ -170,11 +242,50 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     bounds: Pick<UiComponent, 'position' | 'size'>
   ) {
     const component = components.value.find((item) => item.id === componentId);
-
     if (component) {
       component.position = bounds.position;
       component.size = bounds.size;
     }
+  }
+
+  function recordMoveCommand(
+    componentId: string,
+    from: UiComponent['position'],
+    to: UiComponent['position']
+  ) {
+    pushHistory({
+      execute() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.position = { ...to };
+      },
+      undo() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.position = { ...from };
+      },
+    });
+  }
+
+  function recordResizeCommand(
+    componentId: string,
+    from: Pick<UiComponent, 'position' | 'size'>,
+    to: Pick<UiComponent, 'position' | 'size'>
+  ) {
+    pushHistory({
+      execute() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) {
+          c.position = { ...to.position };
+          c.size = { ...to.size };
+        }
+      },
+      undo() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) {
+          c.position = { ...from.position };
+          c.size = { ...from.size };
+        }
+      },
+    });
   }
 
   function startPaletteDrag(type: UiComponentType) {
@@ -195,9 +306,18 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   function updateComponentType(componentId: string, type: UiComponentType) {
     const component = components.value.find((item) => item.id === componentId);
-    if (component) {
-      component.type = type;
-    }
+    if (!component) return;
+    const oldType = component.type;
+    executeCommand({
+      execute() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.type = type;
+      },
+      undo() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.type = oldType;
+      },
+    });
   }
 
   function updateComponentParams(
@@ -205,20 +325,41 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     params: Partial<UiComponentParams>
   ) {
     const component = components.value.find((item) => item.id === componentId);
-    if (component) {
-      component.params = { ...component.params, ...params };
-    }
+    if (!component) return;
+    const oldParams = component.params ? { ...component.params } : undefined;
+    const newParams = { ...component.params, ...params };
+    executeCommand({
+      execute() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.params = newParams;
+      },
+      undo() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.params = oldParams;
+      },
+    });
   }
 
   function updateComponentColor(componentId: string, color: string) {
     const component = components.value.find((item) => item.id === componentId);
-    if (component) {
-      component.color = color;
-    }
+    if (!component) return;
+    const oldColor = component.color;
+    executeCommand({
+      execute() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.color = color;
+      },
+      undo() {
+        const c = components.value.find((item) => item.id === componentId);
+        if (c) c.color = oldColor;
+      },
+    });
   }
 
   return {
     alignGroup,
+    canUndo,
+    canRedo,
     components,
     currentDocumentPath,
     distributeGroup,
@@ -230,6 +371,9 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     palette: PALETTE,
     placeComponent,
     moveComponent,
+    recordMoveCommand,
+    recordResizeCommand,
+    redo,
     resizeComponent,
     saveDocument,
     selectedComponent,
@@ -246,6 +390,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     selectComponent,
     toggleGroupSelection,
     startPaletteDrag,
+    undo,
     updateComponentType,
     updateComponentParams,
     updateComponentColor,
