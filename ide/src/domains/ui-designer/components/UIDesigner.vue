@@ -91,6 +91,12 @@
         @drop.prevent="handleDrop"
       >
         <div
+          v-if="selectionBoxVisible"
+          class="designer__selection-box"
+          :style="selectionBoxStyle"
+        ></div>
+
+        <div
           v-for="component in designerStore.components"
           :key="component.id"
           class="designer__component"
@@ -147,6 +153,7 @@ import {
   snapPosition,
   type ResizeDirection,
 } from '@/domains/ui-designer/lib/resizeBounds';
+import { findComponentsInBox } from '@/domains/ui-designer/lib/selectionBox';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import { useTemplateStore } from '@/domains/templates/stores/templateStore';
@@ -170,6 +177,29 @@ const designerStore = useUiDesignerStore();
 const workspaceStore = useWorkspaceStore();
 const canvasElement = ref<HTMLElement | null>(null);
 let stopActivePointerInteraction: (() => void) | null = null;
+
+type SelectionBoxState = {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+};
+const selectionBox = ref<SelectionBoxState | null>(null);
+const selectionBoxVisible = computed(() => {
+  if (!selectionBox.value) return false;
+  const { startX, startY, endX, endY } = selectionBox.value;
+  return Math.abs(endX - startX) >= 2 || Math.abs(endY - startY) >= 2;
+});
+const selectionBoxStyle = computed(() => {
+  if (!selectionBox.value) return {};
+  const { startX, startY, endX, endY } = selectionBox.value;
+  return {
+    left: `${Math.min(startX, endX)}px`,
+    top: `${Math.min(startY, endY)}px`,
+    width: `${Math.abs(endX - startX)}px`,
+    height: `${Math.abs(endY - startY)}px`,
+  };
+});
 const canvasStyle = computed(
   () =>
     ({
@@ -334,6 +364,26 @@ function handleUndoRedo(event: KeyboardEvent) {
   }
 }
 
+function handleClipboard(event: KeyboardEvent) {
+  if (workspaceStore.activeTabId !== props.tab.id) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+
+  const key = event.key.toLowerCase();
+  if (key === 'c') {
+    event.preventDefault();
+    designerStore.copySelection();
+  } else if (key === 'v') {
+    event.preventDefault();
+    designerStore.pasteClipboard();
+  } else if (key === 'd') {
+    event.preventDefault();
+    designerStore.duplicateSelection();
+  } else if (key === 'a') {
+    event.preventDefault();
+    designerStore.selectAll();
+  }
+}
+
 function handleGridStepChange(event: Event) {
   const step = Number(
     (event.target as HTMLSelectElement).value
@@ -357,11 +407,48 @@ function handleCanvasSizeChange(axis: 'w' | 'h', event: Event) {
 }
 
 function handleCanvasMouseDown(event: MouseEvent) {
-  if (event.button !== 0) {
-    return;
-  }
+  if (event.button !== 0 || !canvasElement.value) return;
 
-  designerStore.clearSelection();
+  const rect = canvasElement.value.getBoundingClientRect();
+  const startX = event.clientX - rect.left;
+  const startY = event.clientY - rect.top;
+  let moved = false;
+
+  selectionBox.value = { startX, startY, endX: startX, endY: startY };
+
+  const onMouseMove = (e: MouseEvent) => {
+    const endX = e.clientX - rect.left;
+    const endY = e.clientY - rect.top;
+    selectionBox.value = { startX, startY, endX, endY };
+    moved = Math.abs(endX - startX) >= 1 || Math.abs(endY - startY) >= 1;
+  };
+
+  const onMouseUp = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+
+    if (!moved) {
+      designerStore.clearSelection();
+    } else if (selectionBox.value) {
+      const { startX: sx, startY: sy, endX: ex, endY: ey } = selectionBox.value;
+      const found = findComponentsInBox(designerStore.components, {
+        x: Math.min(sx, ex),
+        y: Math.min(sy, ey),
+        width: Math.abs(ex - sx),
+        height: Math.abs(ey - sy),
+      });
+      if (found.length > 0) {
+        designerStore.setSelectionGroup(found);
+      } else {
+        designerStore.clearSelection();
+      }
+    }
+
+    selectionBox.value = null;
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
 }
 
 function handleDrop(event: DragEvent) {
@@ -601,12 +688,14 @@ onMounted(async () => {
   await loadDocument();
   window.addEventListener('keydown', handleSaveShortcut);
   window.addEventListener('keydown', handleUndoRedo);
+  window.addEventListener('keydown', handleClipboard);
 });
 
 onBeforeUnmount(() => {
   stopPointerInteraction();
   window.removeEventListener('keydown', handleSaveShortcut);
   window.removeEventListener('keydown', handleUndoRedo);
+  window.removeEventListener('keydown', handleClipboard);
 });
 </script>
 
@@ -859,5 +948,12 @@ onBeforeUnmount(() => {
 .designer__resize-handle--w {
   left: -5px;
   cursor: ew-resize;
+}
+
+.designer__selection-box {
+  position: absolute;
+  border: 1px dashed #55b3ff;
+  background-color: rgba(85, 179, 255, 0.08);
+  pointer-events: none;
 }
 </style>
