@@ -46,6 +46,9 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const undoStack = ref<ICommand[]>([]);
   const redoStack = ref<ICommand[]>([]);
 
+  const clipboard = ref<UiComponent[]>([]);
+  const pasteOffset = ref(0);
+
   const selectedComponent = computed(
     () =>
       components.value.find(
@@ -356,6 +359,97 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     });
   }
 
+  function setSelectionGroup(ids: string[]) {
+    selectionGroup.value = [...ids];
+    selectedComponentId.value = ids[ids.length - 1] ?? null;
+  }
+
+  function selectAll() {
+    if (components.value.length === 0) return;
+    selectionGroup.value = components.value.map((c) => c.id);
+    selectedComponentId.value =
+      components.value[components.value.length - 1]?.id ?? null;
+  }
+
+  function copySelection() {
+    const ids =
+      selectionGroup.value.length > 0
+        ? selectionGroup.value
+        : selectedComponentId.value
+          ? [selectedComponentId.value]
+          : [];
+    clipboard.value = ids
+      .map((id) => components.value.find((c) => c.id === id))
+      .filter((c): c is UiComponent => !!c)
+      .map((c) => ({
+        ...c,
+        position: { ...c.position },
+        size: { ...c.size },
+        params: c.params ? { ...c.params } : undefined,
+      }));
+    pasteOffset.value = 0;
+  }
+
+  function pasteClipboard() {
+    if (clipboard.value.length === 0) return;
+    pasteOffset.value += 10;
+    const offset = pasteOffset.value;
+    const timestamp = Date.now();
+    const pasted: UiComponent[] = clipboard.value.map((src, i) => ({
+      ...src,
+      id: `${src.type.toLowerCase()}-${timestamp}-p${i}`,
+      position: { x: src.position.x + offset, y: src.position.y + offset },
+      size: { ...src.size },
+      params: src.params ? { ...src.params } : undefined,
+    }));
+    executeCommand({
+      execute() {
+        for (const c of pasted) components.value.push(c);
+        selectionGroup.value = pasted.map((c) => c.id);
+        selectedComponentId.value = pasted[pasted.length - 1]?.id ?? null;
+      },
+      undo() {
+        const ids = new Set(pasted.map((c) => c.id));
+        components.value = components.value.filter((c) => !ids.has(c.id));
+        selectionGroup.value = [];
+      },
+    });
+  }
+
+  function duplicateSelection() {
+    const ids =
+      selectionGroup.value.length > 0
+        ? selectionGroup.value
+        : selectedComponentId.value
+          ? [selectedComponentId.value]
+          : [];
+    if (ids.length === 0) return;
+    const timestamp = Date.now();
+    const duplicated: UiComponent[] = ids
+      .map((id) => components.value.find((c) => c.id === id))
+      .filter((c): c is UiComponent => !!c)
+      .map((src, i) => ({
+        ...src,
+        id: `${src.type.toLowerCase()}-${timestamp}-d${i}`,
+        position: { x: src.position.x + 10, y: src.position.y + 10 },
+        size: { ...src.size },
+        params: src.params ? { ...src.params } : undefined,
+      }));
+    executeCommand({
+      execute() {
+        for (const c of duplicated) components.value.push(c);
+        selectionGroup.value = duplicated.map((c) => c.id);
+        selectedComponentId.value =
+          duplicated[duplicated.length - 1]?.id ?? null;
+      },
+      undo() {
+        const dupIds = new Set(duplicated.map((c) => c.id));
+        components.value = components.value.filter((c) => !dupIds.has(c.id));
+        selectionGroup.value = [];
+      },
+    });
+  }
+
   return {
     alignGroup,
     canUndo,
@@ -394,5 +488,10 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     updateComponentType,
     updateComponentParams,
     updateComponentColor,
+    copySelection,
+    pasteClipboard,
+    duplicateSelection,
+    selectAll,
+    setSelectionGroup,
   };
 });

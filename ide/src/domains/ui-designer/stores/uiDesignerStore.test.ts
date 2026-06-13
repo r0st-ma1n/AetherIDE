@@ -195,3 +195,121 @@ describe('Undo/Redo — Command Pattern', () => {
     expect(store.components[0]!.color).toBe(colors[100]);
   });
 });
+
+describe('Clipboard — Ctrl+C / Ctrl+V / Ctrl+D', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('AC: repeated paste shifts each copy by +10px from original', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    const id = store.components[0]!.id;
+    const original = { ...store.components[0]!.position };
+
+    store.selectComponent(id);
+    store.copySelection();
+
+    store.pasteClipboard();
+    expect(store.components[1]!.position).toEqual({
+      x: original.x + 10,
+      y: original.y + 10,
+    });
+
+    store.pasteClipboard();
+    expect(store.components[2]!.position).toEqual({
+      x: original.x + 20,
+      y: original.y + 20,
+    });
+
+    store.pasteClipboard();
+    expect(store.components[3]!.position).toEqual({
+      x: original.x + 30,
+      y: original.y + 30,
+    });
+  });
+
+  it('copySelection resets paste offset — first paste after re-copy is always +10', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    const id = store.components[0]!.id;
+    const original = { ...store.components[0]!.position };
+
+    store.selectComponent(id);
+    store.copySelection();
+    store.pasteClipboard(); // +10
+    store.pasteClipboard(); // +20
+
+    // Re-copy the original component → offset resets to 0
+    store.selectComponent(id);
+    store.copySelection();
+    store.pasteClipboard(); // should be +10 again
+
+    const last = store.components[store.components.length - 1]!;
+    expect(last.position).toEqual({ x: original.x + 10, y: original.y + 10 });
+  });
+
+  it('paste is undoable', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    store.selectComponent(store.components[0]!.id);
+    store.copySelection();
+    store.pasteClipboard();
+
+    expect(store.components).toHaveLength(2);
+    store.undo();
+    expect(store.components).toHaveLength(1);
+  });
+
+  it('duplicate adds +10px and is undoable', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Slider');
+    const id = store.components[0]!.id;
+    const original = { ...store.components[0]!.position };
+
+    store.selectComponent(id);
+    store.duplicateSelection();
+
+    expect(store.components).toHaveLength(2);
+    expect(store.components[1]!.position).toEqual({
+      x: original.x + 10,
+      y: original.y + 10,
+    });
+
+    store.undo();
+    expect(store.components).toHaveLength(1);
+  });
+
+  it('paste on empty clipboard is a no-op', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    expect(() => store.pasteClipboard()).not.toThrow();
+    expect(store.components).toHaveLength(1);
+  });
+});
+
+describe('selectAll', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('AC: selects all components including those outside viewport bounds', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    store.addComponent('Slider');
+    store.addComponent('Button');
+
+    store.selectAll();
+
+    expect(store.selectionGroup).toHaveLength(3);
+    for (const c of store.components) {
+      expect(store.selectionGroup).toContain(c.id);
+    }
+  });
+
+  it('selectAll on empty canvas is a no-op', () => {
+    const store = useUiDesignerStore();
+    expect(() => store.selectAll()).not.toThrow();
+    expect(store.selectionGroup).toHaveLength(0);
+  });
+});
