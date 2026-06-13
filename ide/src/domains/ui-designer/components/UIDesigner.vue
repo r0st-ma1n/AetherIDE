@@ -320,6 +320,20 @@ function handleSaveShortcut(event: KeyboardEvent) {
   }
 }
 
+function handleUndoRedo(event: KeyboardEvent) {
+  if (workspaceStore.activeTabId !== props.tab.id) return;
+  if (!(event.ctrlKey || event.metaKey)) return;
+
+  const key = event.key.toLowerCase();
+  if (key === 'z' && !event.shiftKey) {
+    event.preventDefault();
+    designerStore.undo();
+  } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+    event.preventDefault();
+    designerStore.redo();
+  }
+}
+
 function handleGridStepChange(event: Event) {
   const step = Number(
     (event.target as HTMLSelectElement).value
@@ -401,6 +415,7 @@ function startDrag(event: MouseEvent, componentId: string) {
   }
   stopPointerInteraction();
 
+  const initialPosition = { ...component.position };
   const offsetX = event.clientX - rect.left - component.position.x;
   const offsetY = event.clientY - rect.top - component.position.y;
 
@@ -438,6 +453,15 @@ function startDrag(event: MouseEvent, componentId: string) {
   };
 
   const onMouseUp = () => {
+    const finalPosition = component.position;
+    if (
+      finalPosition.x !== initialPosition.x ||
+      finalPosition.y !== initialPosition.y
+    ) {
+      designerStore.recordMoveCommand(componentId, initialPosition, {
+        ...finalPosition,
+      });
+    }
     stopPointerInteraction();
   };
 
@@ -511,19 +535,35 @@ function startResize(
     });
   };
 
-  const onMouseUp = () => {
+  const onMouseUpResize = () => {
+    const finalBounds = {
+      position: { ...component.position },
+      size: { ...component.size },
+    };
+    if (
+      finalBounds.position.x !== initialBounds.position.x ||
+      finalBounds.position.y !== initialBounds.position.y ||
+      finalBounds.size.width !== initialBounds.size.width ||
+      finalBounds.size.height !== initialBounds.size.height
+    ) {
+      designerStore.recordResizeCommand(
+        componentId,
+        initialBounds,
+        finalBounds
+      );
+    }
     stopPointerInteraction();
   };
 
   stopActivePointerInteraction = () => {
     cancelAnimationFrame(rafId);
     window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('mouseup', onMouseUpResize);
     stopActivePointerInteraction = null;
   };
 
   window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mouseup', onMouseUpResize);
 }
 
 function handleComponentClick(event: MouseEvent, componentId: string) {
@@ -560,11 +600,13 @@ watch(
 onMounted(async () => {
   await loadDocument();
   window.addEventListener('keydown', handleSaveShortcut);
+  window.addEventListener('keydown', handleUndoRedo);
 });
 
 onBeforeUnmount(() => {
   stopPointerInteraction();
   window.removeEventListener('keydown', handleSaveShortcut);
+  window.removeEventListener('keydown', handleUndoRedo);
 });
 </script>
 

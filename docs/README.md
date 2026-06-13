@@ -1,16 +1,12 @@
 # Docs
 
-Документация по устройству репозитория и правилам разработки `PrototypeIDE`.
+Стандарты и правила разработки AetherIDE.
 
-## Что здесь лежит
+## Содержание
 
-- [CODING_STANDARDS.md](./CODING_STANDARDS.md) - единые правила по коду и структуре проекта
-- [GIT_CONVENTIONS.md](./GIT_CONVENTIONS.md) - правила по веткам, коммитам и pull request
-- [standards/architecture.md](./standards/architecture.md) - границы модулей и устройство приложения
-- [standards/javascript-electron.md](./standards/javascript-electron.md) - стандарты для `Electron`, `renderer` и `preload`
-- [standards/cpp-cmake.md](./standards/cpp-cmake.md) - стандарты для `C++`, `Aether` и `CMake`
-- [standards/testing.md](./standards/testing.md) - минимальные правила тестирования и проверки изменений
-
-## Принцип
-
-Документация в этой папке должна помогать быстрее вносить изменения в проект. Если правило не помогает разработке `PrototypeIDE`, его не нужно добавлять.
+- [GIT_CONVENTIONS.md](./GIT_CONVENTIONS.md) — ветки, коммиты, pull request
+- [CODING_STANDARDS.md](./CODING_STANDARDS.md) — общие правила по коду и структуре
+- [standards/architecture.md](./standards/architecture.md) — границы модулей и устройство приложения
+- [standards/javascript-electron.md](./standards/javascript-electron.md) — стандарты для Vue 3, TypeScript, Pinia, Electron
+- [standards/cpp-cmake.md](./standards/cpp-cmake.md) — стандарты для C++ и CMake
+- [standards/testing.md](./standards/testing.md) — правила тестирования и проверки изменений

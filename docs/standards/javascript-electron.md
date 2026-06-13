@@ -1,60 +1,102 @@
-# JavaScript and Electron Standards
+# JavaScript / TypeScript и Electron
 
 Стандарты для кода в `ide/`.
 
+## Стек
+
+- **Renderer**: Vue 3 (Composition API), TypeScript, Pinia, Vite
+- **Main process**: Electron (`ide/electron/main/index.cjs`)
+- **Preload**: Electron contextBridge (`ide/electron/preload/index.cjs`)
+- **Editor**: Monaco Editor
+- **Тесты**: Vitest
+
 ## Структура ответственности
 
-- `main.js` - только main process логика
-- `preload.js` - только bridge и безопасный API между мирами
-- код renderer - только UI и состояние интерфейса
+| Слой | Файлы | Отвечает за |
+|---|---|---|
+| Main process | `electron/main/` | окно, lifecycle, меню, IPC-handlers, файловая система |
+| Preload | `electron/preload/` | безопасный bridge между main и renderer |
+| Renderer | `src/` | UI, состояние интерфейса, логика доменов |
 
-Если кусок кода требует filesystem, процессов или системных API, он не должен появляться в renderer напрямую.
+Если код требует Node API, `fs`, дочерних процессов или системных вызовов — он не должен появляться в renderer напрямую. Всё через preload/IPC.
 
-## Именование
+## Структура `src/`
 
-- Переменные и функции: `camelCase`
-- Конструкторы и классы: `PascalCase`
-- Константы верхнего уровня: `UPPER_SNAKE_CASE`
-- Имена IPC-каналов: `domain:action`
+Renderer организован по доменам:
 
-Примеры:
-
-```text
-plugin:load
-file:save
-editor:sync
+```
+src/
+├── app/            # AppShell, layout верхнего уровня
+├── domains/        # фичи, разбитые по предметным областям
+│   ├── editor/     # Monaco-редактор
+│   ├── files/      # файловый проводник
+│   ├── templates/  # шаблоны плагинов
+│   ├── ui-designer/# визуальный дизайнер
+│   └── workspace/  # вкладки и рабочее пространство
+└── shared/         # общие типы, утилиты, схемы
 ```
 
-## Правила по коду
+Новую фичу добавляй в соответствующий домен, а не в `shared`. В `shared` — только то, что реально нужно нескольким доменам.
 
-- Предпочитать небольшие функции с одной зоной ответственности.
-- Не хранить большие inline-HTML/CSS/JS фрагменты в строках без крайней необходимости.
-- Не дублировать состояние одновременно в нескольких местах без явного источника истины.
-- Для DOM-элементов использовать понятные имена, связанные с ролью в интерфейсе.
-- Любое взаимодействие renderer с системными возможностями должно идти через `preload`.
+Каждый домен содержит:
+
+```
+<domain>/
+├── components/   # Vue-компоненты
+├── lib/          # чистые функции (без side effects)
+└── stores/       # Pinia stores
+```
+
+## Vue 3
+
+- Использовать только Composition API (`<script setup>`)
+- Состояние — через Pinia stores, не через `provide/inject` или props-drilling
+- Вычисляемые значения — `computed()`, не методы
+- Реактивные коллекции — `ref<T[]>`, не `reactive`
+- Компоненты именовать в `PascalCase`, файлы — тоже
+
+## TypeScript
+
+- `strict: true` — обязателен
+- Не использовать `any`; если тип неизвестен — `unknown` с явной проверкой
+- Экспортировать типы через `export type`, не `export`
+- Общие типы домена держать в `shared/types/index.ts`
+
+## Pinia
+
+- Один store на домен или логическую сущность
+- Stores — в `stores/` внутри домена
+- Экспортировать только через `use<Name>Store()`
+- Не хранить производные данные — использовать `computed`
+
+## IPC-каналы
+
+Формат: `domain:action`
+
+```
+file:read
+file:write
+project:list-files
+```
+
+Каждый новый IPC-канал должен быть:
+1. зарегистрирован в `electron/main/index.cjs` через `ipcMain.handle`
+2. проброшен в `electron/preload/index.cjs` через `contextBridge`
+3. типизирован на стороне renderer
 
 ## Безопасность Electron
 
-- Не включать лишние возможности окна без причины.
-- `preload` API должен быть минимальным и явным.
-- Не пробрасывать в renderer универсальные filesystem/helper API "на всякий случай".
-- Любую новую bridge-функцию описывать через ее назначение, входы и ожидаемый результат.
+- `contextIsolation: true`, `nodeIntegration: false` — не менять
+- Preload API должен быть минимальным: только то, что реально нужно renderer
+- Не пробрасывать универсальный `fs` или `shell` "на всякий случай"
 
-## Работа с UI и редактором
+## Форматирование и линт
 
-- Логика visual editor и логика code editor должны быть разделены хотя бы на уровне функций и блоков состояния.
-- Синхронизация между визуальным представлением и кодом должна иметь один определенный поток данных для каждого сценария.
-- Любые magic numbers в координатах, размерах и поведении canvas стоит выносить в именованные константы.
+```bash
+make ide-format        # Prettier --write
+make ide-format-check  # Prettier --check (в CI)
+make ide-lint          # ESLint
+make ide-typecheck     # vue-tsc
+```
 
-## Ошибки и диагностика
-
-- Для ожидаемых пользовательских ошибок показывать понятное сообщение, а не только писать в консоль.
-- `console.log` допустим во время разработки, но перед merge временный шум должен быть удален.
-- Ошибки IPC и файловых операций должны обрабатываться явно.
-
-## Форматирование
-
-- Для этой части проекта стоит ввести `Prettier`.
-- Для проверок стиля стоит ввести `ESLint`.
-- Использовать команды `npm run format`, `npm run format:check` и `npm run lint` из `ide/`.
-- До подключения автоматизации придерживаться одного стиля отступов, пустых строк и порядка импортов в рамках файла.
+Конфиги: `.prettierrc.json` (корень), `eslint.config.mjs` (ide/).

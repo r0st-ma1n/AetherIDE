@@ -1,6 +1,6 @@
 # Coding Standards
 
-Этот документ фиксирует базовые стандарты разработки для `PrototypeIDE`. Проект состоит из двух частей:
+Этот документ фиксирует базовые стандарты разработки для `AetherIDE`. Проект состоит из двух частей:
 
 - `ide/` - desktop IDE на `Electron`
 - `framework/` и `ide/native/` - `C++` код на `CMake`
@@ -17,7 +17,7 @@
 ## Структура репозитория
 
 ```text
-PrototypeIDE/
+AetherIDE/
 ├── docs/                  # стандарты, архитектурные заметки, процессы
 ├── framework/             # core framework и примеры аудио-плагинов
 ├── ide/                   # Electron IDE, preload, renderer, backend bridge

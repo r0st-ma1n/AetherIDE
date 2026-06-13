@@ -1,176 +1,87 @@
 # Contributing
 
-Этот документ описывает, как вносить изменения в `PrototypeIDE` и что нужно проверить перед созданием `PR`.
+Как вносить изменения в AetherIDE.
 
-## Scope
+## Структура репозитория
 
-Основные части репозитория:
-
-- `ide/` — desktop-приложение на `Electron` с renderer на `Vue 3 + TypeScript + Pinia + Vite`
-- `ide/native/` — нативная C++ часть IDE (IPC-мост с Electron)
-- `framework/core/` — базовый фреймворк и общие аудио-абстракции
+- `ide/` — Electron-приложение с Vue 3 renderer
+- `ide/native/` — C++ нативный модуль (IPC-мост)
+- `framework/core/` — C++ Aether framework
 - `framework/core/examples/gain/` — пример использования framework API
+- `samples/GainPlugin/` — пример проекта, открываемого в IDE
+- `docs/` — стандарты и правила разработки
 
-Перед началом работы полезно прочитать:
+Перед началом работы стоит прочитать:
 
-- `docs/standards/architecture.md`
-- `docs/standards/javascript-electron.md`
+- [docs/standards/architecture.md](docs/standards/architecture.md)
+- [docs/GIT_CONVENTIONS.md](docs/GIT_CONVENTIONS.md)
 
-## Branching
-
-Рекомендуемый формат веток:
-
-- `feat/<issue>-short-name`
-- `fix/<issue>-short-name`
-- `refactor/<issue>-short-name`
-- `chore/<issue>-short-name`
-
-Примеры:
-
-- `feat/5-port-react-prototype-to-vue3`
-- `fix/12-code-editor-click-lock`
-
-## Commit Messages
-
-Предпочтительный формат:
-
-```text
-type(scope): short summary
-```
-
-Примеры:
-
-```text
-feat(ide): migrate core prototype flows to vue
-fix(ide): restore file editor interaction
-refactor(ide): move renderer state to pinia
-chore: fix workflow checks
-```
-
-Рекомендуемые типы:
-
-- `feat`
-- `fix`
-- `refactor`
-- `chore`
-- `ci`
-
-## Local Setup
-
-Установка frontend-зависимостей:
+## Локальная разработка
 
 ```bash
-make ide-install
+make ide-install   # установить зависимости
+make ide-dev       # запустить Electron + Vite HMR
 ```
 
-Запуск frontend в dev-режиме:
+Сборка:
 
 ```bash
-make ide-dev
+make ide-build     # собрать frontend
+make cmake-configure && make cmake-build  # собрать C++ часть
+make run-all       # собрать всё и запустить
 ```
 
-Сборка frontend:
+## Проверки перед PR
 
 ```bash
-make ide-build
+make ide-format-check   # форматирование (Prettier)
+make ide-lint           # линт (ESLint)
+make ide-typecheck      # типы (vue-tsc)
+make ide-test           # unit-тесты (Vitest)
+make ide-build          # сборка frontend
 ```
 
-Запуск desktop-приложения:
+Если затронута C++ часть (`framework/` или `ide/native/`):
 
 ```bash
-make ide-start
+make cmake-configure
+make cmake-build
 ```
 
-Полный запуск с backend и frontend:
-
-```bash
-make run-all
-```
-
-## Quality Checks
-
-Перед `PR` нужно прогнать минимум:
-
-```bash
-make ide-format-check
-make ide-lint
-make ide-typecheck
-make ide-build
-```
-
-Общая проверка проекта:
+Всё сразу:
 
 ```bash
 make test
 ```
 
-Важно:
+## Правила для IDE (Vue/TypeScript)
 
-- `make test` включает `cmake-configure` и `cmake-build`
-- backend-сборка может зависеть от внешних зависимостей и сетевого доступа
+- Использовать Vue 3 Composition API (`<script setup>`)
+- Не использовать Node API в renderer — только через preload/IPC
+- Новые фичи добавлять в соответствующий домен (`src/domains/`)
+- Состояние — через Pinia stores
 
-## Frontend Rules
+## Правила для Electron
 
-Для `ide/`:
+- `main` — окно, lifecycle, системные операции
+- `preload` — узкий bridge, только необходимое
+- IPC-каналы именовать в формате `domain:action`
 
-- использовать `Vue 3 + TypeScript + Pinia`
-- не дублировать состояние без явного source of truth
-- renderer не должен использовать Node API напрямую
-- filesystem и системные операции должны идти только через `preload`/IPC
-- новые renderer-фичи по возможности добавлять в доменные модули, а не в случайные shared-файлы
+## Pull Request
 
-## Electron Rules
+В каждом PR:
 
-- `main` отвечает за окно, menu, lifecycle и системные операции
-- `preload` должен оставаться узким bridge-слоем
-- новые IPC-каналы именовать в формате `domain:action`
-
-Примеры:
-
-```text
-file:read
-file:write
-project:list-files
-```
-
-## Pull Requests
-
-В каждом `PR` желательно:
-
-- коротко описать, что изменено и зачем
-- указать связанные issue
+- кратко описать что изменено и зачем
+- указать связанные issue (`Closes #N`)
 - описать сценарий ручной проверки
-- приложить скриншоты для UI-изменений, либо явно описать результат
+- для UI-изменений — приложить скриншот
 
-Перед merge нужно убедиться:
+## Если нашёл баг
 
-- форматирование проходит
-- линт проходит
-- typecheck проходит
-- frontend собирается
-- если затронут backend, `cmake` конфигурация и сборка тоже проходят
+В issue укажи:
 
-## When Updating Documentation
-
-Обновляй документацию, если изменились:
-
-- команды запуска или сборки
-- структура проекта
-- архитектурные границы
-- workflow contribution / review
-
-Минимальный список файлов, которые стоит проверить:
-
-- `README.md`
-- `CONTRIBUTING.md`
-- `docs/standards/*.md`
-
-## Reporting Issues
-
-Если заводишь bug issue, полезно указать:
-
-- что ожидалось
-- что произошло фактически
+- ожидаемое поведение
+- фактическое поведение
 - шаги воспроизведения
 - затронутый файл, экран или модуль
-- приложенный скриншот или лог, если проблема UI/runtime
+- скриншот или лог (если применимо)
