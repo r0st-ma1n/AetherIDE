@@ -171,7 +171,10 @@ describe('Undo/Redo — Command Pattern', () => {
     const id = store.components[0]!.id;
 
     // 101 color updates — each pushes one command; the 1st (undefined→#000000) gets evicted
-    const colors = Array.from({ length: 101 }, (_, i) => `#${i.toString().padStart(6, '0')}`);
+    const colors = Array.from(
+      { length: 101 },
+      (_, i) => `#${i.toString().padStart(6, '0')}`
+    );
     for (const color of colors) {
       store.updateComponentColor(id, color);
     }

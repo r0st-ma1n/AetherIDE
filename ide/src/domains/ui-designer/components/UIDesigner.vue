@@ -546,7 +546,11 @@ function startResize(
       finalBounds.size.width !== initialBounds.size.width ||
       finalBounds.size.height !== initialBounds.size.height
     ) {
-      designerStore.recordResizeCommand(componentId, initialBounds, finalBounds);
+      designerStore.recordResizeCommand(
+        componentId,
+        initialBounds,
+        finalBounds
+      );
     }
     stopPointerInteraction();
   };
