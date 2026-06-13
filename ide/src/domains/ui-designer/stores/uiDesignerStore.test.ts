@@ -164,4 +164,31 @@ describe('Undo/Redo — Command Pattern', () => {
     store.redo();
     expect(store.components[0]!.color).toBe('#ff0000');
   });
+
+  it('stack cap: 101 actions keep only 100, oldest is dropped, remaining 100 undo/redo without error', () => {
+    const store = useUiDesignerStore();
+    store.addComponent('Knob');
+    const id = store.components[0]!.id;
+
+    // 101 color updates — each pushes one command; the 1st (undefined→#000000) gets evicted
+    const colors = Array.from({ length: 101 }, (_, i) => `#${i.toString().padStart(6, '0')}`);
+    for (const color of colors) {
+      store.updateComponentColor(id, color);
+    }
+
+    // 100 undos should exhaust the stack
+    for (let i = 0; i < 100; i++) {
+      store.undo();
+    }
+    expect(store.canUndo).toBe(false);
+    // oldest evicted command was undefined→colors[0], so color[0] is the irrecoverable floor
+    expect(store.components[0]!.color).toBe(colors[0]);
+
+    // 100 redos should restore up to the final color
+    for (let i = 0; i < 100; i++) {
+      store.redo();
+    }
+    expect(store.canRedo).toBe(false);
+    expect(store.components[0]!.color).toBe(colors[100]);
+  });
 });
