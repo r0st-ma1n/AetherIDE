@@ -1,4 +1,4 @@
-import {
+2import {
   Callout,
   Card,
   CardBody,
@@ -130,7 +130,7 @@ const TASKS: Task[] = [
     ],
     dependsOn: ["G2-T1"],
     priority: "P1",
-    status: "depends",
+    status: "ready",
   },
   {
     id: "G2-T3",
@@ -164,7 +164,7 @@ const TASKS: Task[] = [
     ],
     dependsOn: ["G1-T1"],
     priority: "P0",
-    status: "depends",
+    status: "ready",
   },
   {
     id: "D1-T2",
@@ -242,8 +242,12 @@ export default function AetherIdeP2Backlog() {
       </Row>
 
       <Callout tone="info" title="Start here">
-        G1-T1 → G1-T2 (IDE contract compiles), затем G2-T1 и D1 параллельно.
-        Не начинать CLAP/VST3 до widget tree.
+        G1-T1/T2 и G2-T1 готовы (widget tree + hit-testing компилируются и
+        покрыты widget_host_test). В работу можно брать G2-T2 (offscreen
+        renderer) и D1-T1 (parameter smoothing) параллельно — оба
+        разблокированы. D1-T2 (MIDI buffer) не имеет зависимостей и тоже
+        готов к старту. G2-T3 и D2-T1 ждут D1-T1. Не начинать CLAP/VST3 до
+        widget tree — оно уже есть, но GUI runtime ещё не отрисовывает.
       </Callout>
 
       <Row gap={8} wrap>

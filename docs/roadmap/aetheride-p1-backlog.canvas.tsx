@@ -21,7 +21,7 @@ import {
 } from "cursor/canvas";
 
 type StreamId = "all" | "S1" | "S2" | "S3" | "S4" | "S5";
-type TaskStatus = "blocked" | "ready" | "depends";
+type TaskStatus = "blocked" | "ready" | "depends" | "done";
 type Priority = "P0" | "P1" | "P2";
 
 type Task = {
@@ -100,7 +100,7 @@ const TASKS: Task[] = [
       "ide/src/domains/files/stores/fileExplorerStore.ts",
     ],
     priority: "P0",
-    status: "ready",
+    status: "done",
   },
   {
     id: "S1-T2",
@@ -125,7 +125,7 @@ const TASKS: Task[] = [
       "ide/src/domains/workspace/stores/workspaceStore.ts",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S1-T3",
@@ -149,7 +149,7 @@ const TASKS: Task[] = [
       "ide/src/domains/workspace/stores/workspaceStore.ts",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S1-T4",
@@ -174,7 +174,7 @@ const TASKS: Task[] = [
       "ide/electron/main/index.cjs",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S1-T5",
@@ -198,7 +198,7 @@ const TASKS: Task[] = [
       "ide/src/domains/editor/stores/editorStore.ts",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S2-T1",
@@ -224,7 +224,7 @@ const TASKS: Task[] = [
       "ide/src/shared/schemas/validateAetherProject.ts",
     ],
     priority: "P0",
-    status: "ready",
+    status: "done",
   },
   {
     id: "S2-T2",
@@ -252,7 +252,7 @@ const TASKS: Task[] = [
       "samples/GainPlugin/",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S2-T3",
@@ -274,7 +274,7 @@ const TASKS: Task[] = [
       "ide/src/shared/schemas/validateAetherProject.ts",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S3-T1",
@@ -300,7 +300,7 @@ const TASKS: Task[] = [
       "ide/src/domains/editor/components/CodeEditor.vue",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S3-T2",
@@ -327,7 +327,7 @@ const TASKS: Task[] = [
       "samples/GainPlugin/GainPlugin.cpp",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S3-T3",
@@ -350,7 +350,7 @@ const TASKS: Task[] = [
       "samples/GainPlugin/",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S4-T1",
@@ -375,7 +375,7 @@ const TASKS: Task[] = [
       "ide/electron/main/index.cjs",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S4-T2",
@@ -399,7 +399,7 @@ const TASKS: Task[] = [
       "ide/src/domains/templates/",
     ],
     priority: "P0",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S5-T1",
@@ -424,7 +424,7 @@ const TASKS: Task[] = [
       "ide/src/vite-env.d.ts",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
   {
     id: "S5-T2",
@@ -448,7 +448,7 @@ const TASKS: Task[] = [
       "ide/src/domains/workspace/",
     ],
     priority: "P1",
-    status: "depends",
+    status: "done",
   },
 ];
 
@@ -459,12 +459,14 @@ function priorityTone(p: Priority): "deleted" | "warning" | "neutral" {
 }
 
 function statusLabel(s: TaskStatus): string {
+  if (s === "done") return "Done";
   if (s === "ready") return "Ready";
   if (s === "depends") return "Waiting deps";
   return "Blocked";
 }
 
 function statusTone(s: TaskStatus): "success" | "warning" | "neutral" {
+  if (s === "done") return "success";
   if (s === "ready") return "success";
   if (s === "depends") return "warning";
   return "neutral";
@@ -485,7 +487,7 @@ export default function AetherIdeP1Backlog() {
   const selected =
     TASKS.find((t) => t.id === taskId) ?? filtered[0] ?? TASKS[0];
 
-  const readyCount = TASKS.filter((t) => t.status === "ready").length;
+  const doneCount = TASKS.filter((t) => t.status === "done").length;
   const p0Count = TASKS.filter((t) => t.priority === "P0").length;
 
   return (
@@ -495,7 +497,8 @@ export default function AetherIdeP1Backlog() {
         <Text tone="secondary">
           Подробный backlog без дат. Цель фазы: из прототипа над monorepo —
           IDE с Open/New/Save, единым документом, стабильным codegen и сборкой
-          из UI.
+          из UI. Статус: фаза завершена (Aug 2026), все задачи в рабочем
+          дереве и закоммичены на refactor/35-project-structure.
         </Text>
       </Stack>
 
@@ -503,13 +506,15 @@ export default function AetherIdeP1Backlog() {
         <Stat value={`${TASKS.length}`} label="Tasks in P1" />
         <Stat value={`${STREAMS.length}`} label="Workstreams" tone="info" />
         <Stat value={`${p0Count}`} label="Must-have (P0)" tone="warning" />
-        <Stat value={`${readyCount}`} label="Ready now" tone="success" />
+        <Stat value={`${doneCount}/${TASKS.length}`} label="Done" tone="success" />
       </Grid>
 
-      <Callout tone="info" title="Правило порядка">
-        Не начинать S4/S5 раньше стабильного root + document model. Wizard и
-        Build panel на гнилом Open/codegen только закрепят долг. S2 и S3 можно
-        частично параллелить с S1 после S1-T1.
+      <Callout tone="success" title="P1 закрыта">
+        Все 15 задач S1–S5 реализованы: project root/Open/Recent, канон
+        UISpec + .aether с версионированием, AETHER-маркеры с round-trip,
+        New Project wizard + scaffold, Build panel с IPC-стримингом логов.
+        Осталось: `make test` зелёный, ветка не смёржена в main. Следующий
+        фронт работы — P2 (Aether Core), см. p2-backlog.
       </Callout>
 
       <Row gap={8} wrap>
@@ -798,29 +803,29 @@ export default function AetherIdeP1Backlog() {
             ) : null}
 
             <Card>
-              <CardHeader>Стартовый набор (без дат)</CardHeader>
+              <CardHeader>Статус закрытия фазы</CardHeader>
               <CardBody>
                 <Stack gap={8}>
-                  <Text weight="semibold">Сейчас Ready</Text>
+                  <Text weight="semibold">Реализовано</Text>
                   <Text size="small" tone="secondary">
-                    S1-T1 Project root · S2-T1 Canonical model
+                    Все S1–S5, включая wizard, build panel и fixture regression
                   </Text>
-                  <Text weight="semibold">Сразу после них</Text>
+                  <Text weight="semibold">Не сделано</Text>
                   <Text size="small" tone="secondary">
-                    S1-T2 Open Project · S2-T2 .aether · S3-T1 markers
+                    Мёрж refactor/35-project-structure в main
                   </Text>
-                  <Text weight="semibold">Закрытие фазы</Text>
+                  <Text weight="semibold">Дальше</Text>
                   <Text size="small" tone="secondary">
-                    Wizard + Build panel + fixture regression
+                    P2: GUI runtime (offscreen renderer) + DSP/MIDI
                   </Text>
                 </Stack>
               </CardBody>
             </Card>
 
-            <Callout tone="danger" title="Главный долг прямо сейчас">
-              Два codegen-пути и два формата (.ui vs .aether). Пока не сведены
-              к одному протоколу маркеров и одному document format — Save будет
-              оставаться хрупким.
+            <Callout tone="success" title="Бывший главный долг — закрыт">
+              Два codegen-пути и два формата (.ui vs .aether) сведены к одному
+              протоколу AETHER-маркеров и единому .aether документу
+              (S2-T1/T2, S3-T1/T2). Save больше не хрупкий по этому пункту.
             </Callout>
           </Stack>
         </Grid>
@@ -839,12 +844,13 @@ export default function AetherIdeP1Backlog() {
 
       <Row>
         <Text size="small" tone="tertiary">
-          Основано на inventory текущего кода: electron hard-coded root, .ui
-          persistence, schema-only .aether, dual codegen, native build stub
+          Обновлено по факту коммитов на refactor/35-project-structure
+          (fix gitignore → feat/shared → framework → ui-designer → templates
+          → electron → workspace → build)
         </Text>
         <Spacer />
         <Text size="small" tone="tertiary">
-          Без дат · P1 only
+          P1 done · Aug 2026
         </Text>
       </Row>
     </Stack>

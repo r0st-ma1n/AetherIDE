@@ -136,8 +136,8 @@ const MILESTONES: Milestone[] = [
       "Recent projects, dirty-state и autosave",
       "Единый source of truth: убрать дубли UISpec / AetherProject / UiComponent",
     ],
-    status: "next",
-    quarter: "Q3 2026",
+    status: "done",
+    quarter: "готово",
   },
   {
     id: "p1-build",
@@ -151,8 +151,8 @@ const MILESTONES: Milestone[] = [
       "Проблемы CMake → кликабельные diagnostics",
       "Заменить naive string-patch в native на TS codegen path",
     ],
-    status: "planned",
-    quarter: "Q3 2026",
+    status: "done",
+    quarter: "готово",
   },
   {
     id: "p1-codegen",
@@ -166,37 +166,37 @@ const MILESTONES: Milestone[] = [
       "Round-trip тесты на samples/GainPlugin",
       "Миграции schema version для .aether",
     ],
-    status: "next",
-    quarter: "Q3 2026",
+    status: "done",
+    quarter: "готово",
   },
   {
     id: "p2-gui",
     phase: "P2",
     track: "Framework",
     title: "Aether GUI runtime",
-    why: "IDE рисует компоненты, но C++ framework ещё не рендерит UI плагина.",
+    why: "Widget tree и hit-testing уже есть; рендер и automation-linking — нет.",
     items: [
-      "Widget tree: Knob, Slider, Button, Label, Panel",
-      "Layout + hit-testing + mouse/keyboard events",
-      "Связка widget ↔ parameter (automation-ready)",
-      "Offscreen / software renderer для headless тестов",
+      "Widget tree: Knob, Slider, Button (готово, widget_host_test)",
+      "Layout + hit-testing + mouse/keyboard events (готово)",
+      "Связка widget ↔ parameter (automation-ready) — в работе",
+      "Offscreen / software renderer для headless тестов — в работе",
     ],
-    status: "planned",
-    quarter: "Q4 2026",
+    status: "partial",
+    quarter: "в работе",
   },
   {
     id: "p2-dsp",
     phase: "P2",
     track: "Framework",
     title: "DSP primitives",
-    why: "Без базовых блоков пользователи пишут всё с нуля.",
+    why: "Без базовых блоков пользователи пишут всё с нуля. Smoothing и MIDI не имеют незакрытых зависимостей — можно начинать сейчас.",
     items: [
-      "MIDI buffer + note events",
-      "Smoothing / ramp для параметров",
+      "MIDI buffer + note events (готово к старту, зависимостей нет)",
+      "Smoothing / ramp для параметров (готово к старту, зависит от G1-T1 done)",
       "Базовые DSP: gain, filter, delay, oscillator",
       "Unit-тесты processBlock детерминированно",
     ],
-    status: "planned",
+    status: "next",
     quarter: "Q4 2026",
   },
   {
@@ -328,7 +328,7 @@ export default function AetherIdeRoadmap() {
   const [phase, setPhase] = useCanvasState<PhaseId>("phase", "all");
   const [selectedId, setSelectedId] = useCanvasState<string>(
     "selectedMilestone",
-    "p1-project"
+    "p2-gui"
   );
 
   const filtered =
@@ -364,10 +364,13 @@ export default function AetherIdeRoadmap() {
         <Stat value="6" label="Phases to ship" />
       </Grid>
 
-      <Callout tone="info" title="Стратегический порядок">
-        Сначала стабилизировать проектный цикл и codegen (P1), затем нарастить
-        Aether GUI/DSP (P2), и только потом таргетировать форматы хостов (P3).
-        Live preview без собственного runtime будет хрупким.
+      <Callout tone="success" title="P1 закрыта, фокус — P2">
+        Проектный цикл и codegen (P1) стабилизированы: root/Open/Save,
+        Recent, dirty-guards, wizard, build panel, AETHER-маркеры — всё
+        реализовано и закоммичено на refactor/35-project-structure (ветка
+        ещё не смёржена в main). Дальше — нарастить Aether GUI/DSP (P2), и
+        только потом таргетировать форматы хостов (P3). Live preview без
+        собственного runtime будет хрупким.
       </Callout>
 
       <Stack gap={8}>
@@ -494,17 +497,17 @@ export default function AetherIdeRoadmap() {
             <CardHeader>Ближайшие 90 дней</CardHeader>
             <CardBody>
               <Stack gap={8}>
-                <Text weight="semibold">1. Project lifecycle</Text>
+                <Text weight="semibold">1. Offscreen renderer (G2-T2)</Text>
                 <Text size="small" tone="secondary">
-                  New/Open/Save, recent projects, одна модель документа.
+                  RGBA-буфер + paint() для Knob/Slider/Button, разблокирован.
                 </Text>
-                <Text weight="semibold">2. Stable codegen markers</Text>
+                <Text weight="semibold">2. Parameter smoothing + MIDI (D1)</Text>
                 <Text size="small" tone="secondary">
-                  Не ломать ручной C++ при правках в дизайнере.
+                  SmoothedValue/listeners и MidiBuffer — оба готовы к старту.
                 </Text>
-                <Text weight="semibold">3. Build panel</Text>
+                <Text weight="semibold">3. Widget ↔ parameter (G2-T3)</Text>
                 <Text size="small" tone="secondary">
-                  CMake из IDE с читаемыми ошибками вместо stub native.
+                  Automation-ready связка после D1-T1; открывает DSP (D2).
                 </Text>
               </Stack>
             </CardBody>
@@ -556,12 +559,12 @@ export default function AetherIdeRoadmap() {
 
       <Row>
         <Text size="small" tone="tertiary">
-          Источник: текущий README, architecture.md, git history (designer
-          MVP), framework/core API, ide/native stub
+          Источник: git log refactor/35-project-structure, framework/core
+          API, ide/electron main process, p1/p2-backlog canvases
         </Text>
         <Spacer />
         <Text size="small" tone="tertiary">
-          Обновлено: Jul 2026
+          Обновлено: Aug 2026 — P1 done, P2 в работе
         </Text>
       </Row>
     </Stack>
