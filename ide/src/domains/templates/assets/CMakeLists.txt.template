@@ -1,5 +1,30 @@
-cmake_minimum_required(VERSION 3.15)
-project({{className}} VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.22)
+project({{className}} VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Optional: when the project lives inside/near the monorepo, reuse aether_core.
+if (NOT TARGET aether_core)
+  set(_aether_candidates
+    "${CMAKE_CURRENT_SOURCE_DIR}/../framework/core"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../framework/core"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../framework/core"
+  )
+  foreach(_candidate IN LISTS _aether_candidates)
+    if (EXISTS "${_candidate}/CMakeLists.txt")
+      add_subdirectory("${_candidate}" "${CMAKE_BINARY_DIR}/aether_core")
+      break()
+    endif()
+  endforeach()
+endif()
+
+if (NOT TARGET aether_core)
+  message(FATAL_ERROR
+    "aether_core not found. Place this project near the AetherIDE monorepo "
+    "or add aether_core before including this CMakeLists.txt.")
+endif()
 
 add_library({{className}} SHARED
     {{className}}.cpp

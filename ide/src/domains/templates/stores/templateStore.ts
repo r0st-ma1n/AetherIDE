@@ -1,3 +1,9 @@
+import defaultHeader from '../assets/DefaultPlugin.h.template?raw';
+import defaultCpp from '../assets/DefaultPlugin.cpp.template?raw';
+import knobTemplate from '../assets/Knob.template?raw';
+import sliderTemplate from '../assets/Slider.template?raw';
+import buttonTemplate from '../assets/Button.template?raw';
+import labelTemplate from '../assets/Label.template?raw';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
@@ -9,47 +15,36 @@ export interface TemplateData {
   components: Record<string, string>;
 }
 
+const BUNDLED_TEMPLATES: TemplateData = {
+  header: defaultHeader,
+  cpp: defaultCpp,
+  components: {
+    Knob: knobTemplate,
+    Slider: sliderTemplate,
+    Button: buttonTemplate,
+    Label: labelTemplate,
+  },
+};
+
 export const useTemplateStore = defineStore('templates', () => {
   const currentPluginType = ref<PluginType>('Effect');
-  const loadedTemplates = ref<Record<string, TemplateData>>({});
+  const loadedTemplates = ref<Partial<Record<PluginType, TemplateData>>>({});
 
   async function loadTemplateForType(type: PluginType): Promise<TemplateData> {
-    if (loadedTemplates.value[type]) {
-      return loadedTemplates.value[type];
+    const cached = loadedTemplates.value[type];
+    if (cached) {
+      return cached;
     }
 
-    const basePath = import.meta.env.DEV
-      ? 'ide/src/domains/templates/assets'
-      : 'ide/dist/templates';
-
-    try {
-      const header = await window.prototypeIDE.readFile(
-        `${basePath}/DefaultPlugin.h.template`
-      );
-      const cpp = await window.prototypeIDE.readFile(
-        `${basePath}/DefaultPlugin.cpp.template`
-      );
-
-      const components: Record<string, string> = {};
-      const componentNames = ['Knob', 'Slider', 'Button', 'Label'];
-
-      for (const name of componentNames) {
-        try {
-          components[name] = await window.prototypeIDE.readFile(
-            `${basePath}/${name}.template`
-          );
-        } catch (e) {
-          console.warn(`Template for component ${name} not found.`);
-        }
-      }
-
-      const templateData = { header, cpp, components };
-      loadedTemplates.value[type] = templateData;
-      return templateData;
-    } catch (error) {
-      console.error(`Failed to load templates for ${type}:`, error);
-      throw error;
-    }
+    // Bundled via Vite (?raw) — does not depend on project-root file:read.
+    // Effect/Instrument share UI templates; type is stored on the .aether project.
+    const templateData: TemplateData = {
+      header: BUNDLED_TEMPLATES.header,
+      cpp: BUNDLED_TEMPLATES.cpp,
+      components: { ...BUNDLED_TEMPLATES.components },
+    };
+    loadedTemplates.value[type] = templateData;
+    return loadedTemplates.value[type]!;
   }
 
   function setPluginType(type: PluginType) {
