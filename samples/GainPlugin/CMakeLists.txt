@@ -4,6 +4,7 @@ project(GainPlugin LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Prefer the monorepo framework when this sample is opened as a project root.
 set(AETHER_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../framework/core")
