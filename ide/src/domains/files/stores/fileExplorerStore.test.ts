@@ -58,5 +58,26 @@ describe('fileExplorerStore', () => {
     await store.loadEntries();
     expect(store.error).toBe('IPC error');
     expect(store.isLoading).toBe(false);
+    expect(store.entries).toHaveLength(0);
+    expect(store.tree).toHaveLength(0);
+  });
+
+  it('clearEntries resets tree state', () => {
+    const store = useFileExplorerStore();
+    store.tree = [makeFile('a')];
+    store.entries = [
+      {
+        id: 'a',
+        title: 'a',
+        filePath: 'a',
+        kind: 'code',
+        isDirty: false,
+      },
+    ];
+    store.openDirectory('src');
+    store.clearEntries();
+    expect(store.tree).toHaveLength(0);
+    expect(store.entries).toHaveLength(0);
+    expect(store.expandedDirectories).toEqual({});
   });
 });

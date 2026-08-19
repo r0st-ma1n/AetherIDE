@@ -92,6 +92,14 @@ public:
     );
 
     /**
+     * @brief Returns the parameter with the given id, or nullptr if missing.
+     */
+    AudioProcessorParameter* findFloat(const std::string& id);
+
+    /** @copydoc findFloat(const std::string&) */
+    const AudioProcessorParameter* findFloat(const std::string& id) const;
+
+    /**
      * @brief Returns the parameter with the given id.
      * @throws std::runtime_error if not found.
      */

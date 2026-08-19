@@ -13,7 +13,15 @@ function loadPersisted(): PersistedState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
+    const parsed = JSON.parse(raw) as PersistedState;
+    return {
+      activeTabId: parsed.activeTabId ?? null,
+      tabs: (parsed.tabs ?? []).map((tab) => ({
+        ...tab,
+        // Never restore dirty flags — buffers are not persisted.
+        isDirty: false,
+      })),
+    };
   } catch {
     return null;
   }
@@ -21,7 +29,16 @@ function loadPersisted(): PersistedState | null {
 
 function savePersisted(state: PersistedState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        activeTabId: state.activeTabId,
+        tabs: state.tabs.map((tab) => ({
+          ...tab,
+          isDirty: false,
+        })),
+      })
+    );
   } catch {
     // Ignore storage errors (private browsing, quota exceeded)
   }
@@ -38,6 +55,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const activeTab = computed(
     () => tabs.value.find((tab) => tab.id === activeTabId.value) ?? null
   );
+
+  const dirtyTabs = computed(() => tabs.value.filter((tab) => tab.isDirty));
+  const hasDirtyTabs = computed(() => dirtyTabs.value.length > 0);
 
   watch(
     [tabs, activeTabId],
@@ -100,6 +120,23 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  function clearTabs() {
+    tabs.value = [];
+    activeTabId.value = null;
+  }
+
+  function pruneMissingTabs(validPaths: Iterable<string>) {
+    const allowed = new Set(validPaths);
+    tabs.value = tabs.value.filter((tab) => allowed.has(tab.filePath));
+
+    if (
+      activeTabId.value != null &&
+      !tabs.value.some((tab) => tab.id === activeTabId.value)
+    ) {
+      activeTabId.value = tabs.value[0]?.id ?? null;
+    }
+  }
+
   function initializeTabs(candidates: WorkspaceTab[]) {
     // Skip if tabs were restored from localStorage
     if (tabs.value.length > 0 || candidates.length === 0) {
@@ -107,16 +144,13 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
 
     const preferredUiTab =
-      candidates.find(
-        (tab) => tab.filePath === 'samples/GainPlugin/GainPlugin.ui'
-      ) ??
+      candidates.find((tab) => tab.filePath.endsWith('.aether')) ??
+      candidates.find((tab) => tab.filePath.endsWith('.ui')) ??
       candidates.find((tab) => tab.kind === 'designer') ??
       null;
 
     const preferredCodeTab =
-      candidates.find(
-        (tab) => tab.filePath === 'framework/core/examples/gain/GainPlugin.h'
-      ) ??
+      candidates.find((tab) => tab.filePath.endsWith('.h')) ??
       candidates.find((tab) => tab.kind === 'code') ??
       null;
 
@@ -147,16 +181,20 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   return {
-    tabs,
     activeTab,
     activeTabId,
+    clearTabs,
     closeTab,
+    dirtyTabs,
+    hasDirtyTabs,
+    initializeTabs,
     markDirty,
     moveTab,
-    initializeTabs,
     openTab,
+    pruneMissingTabs,
     setActiveTab,
     showToast,
+    tabs,
     toastMessage,
   };
 });

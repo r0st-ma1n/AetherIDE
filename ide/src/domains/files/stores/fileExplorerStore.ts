@@ -40,6 +40,13 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
     return result;
   });
 
+  function clearEntries() {
+    entries.value = [];
+    tree.value = [];
+    expandedDirectories.value = {};
+    error.value = null;
+  }
+
   async function loadEntries() {
     isLoading.value = true;
     error.value = null;
@@ -54,6 +61,8 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
           ? loadError.message
           : 'Unable to load project files.';
       error.value = message;
+      entries.value = [];
+      tree.value = [];
     } finally {
       isLoading.value = false;
     }
@@ -76,14 +85,15 @@ export const useFileExplorerStore = defineStore('file-explorer', () => {
   }
 
   return {
-    error,
+    clearEntries,
+    closeDirectory,
     entries,
+    error,
     expandedDirectories,
     flattenedEntryMap,
-    isLoading,
     isDirectoryExpanded,
+    isLoading,
     loadEntries,
-    closeDirectory,
     openDirectory,
     tree,
     toggleDirectory,

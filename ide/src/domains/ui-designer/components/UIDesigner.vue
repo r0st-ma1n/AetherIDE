@@ -141,10 +141,12 @@ import type {
   AlignType,
   DistributeAxis,
 } from '@/domains/ui-designer/lib/alignComponents';
+import { registerTabSaveHandler } from '@/domains/workspace/lib/tabSaveRegistry';
 import {
-  generatePluginCode,
-  validateCppSyntax,
-} from '@/domains/ui-designer/lib/codeGenerator';
+  generateLinkedPluginSources,
+  buildLinkedPluginPaths,
+  readOptionalFile,
+} from '@/domains/ui-designer/lib/uiSync';
 import {
   clampPositionToCanvas,
   getResizedBounds,
@@ -175,8 +177,10 @@ const props = defineProps<{
 
 const designerStore = useUiDesignerStore();
 const workspaceStore = useWorkspaceStore();
+const templateStore = useTemplateStore();
 const canvasElement = ref<HTMLElement | null>(null);
 let stopActivePointerInteraction: (() => void) | null = null;
+let unregisterSaveHandler: (() => void) | null = null;
 
 type SelectionBoxState = {
   startX: number;
@@ -246,98 +250,73 @@ const DEFAULT_COMPONENT_SIZE = {
 };
 
 async function loadDocument() {
-  await designerStore.loadDocument(props.tab.filePath);
-  workspaceStore.markDirty(props.tab.id, false);
+  try {
+    await designerStore.loadDocument(props.tab.filePath);
+    workspaceStore.markDirty(props.tab.id, false);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load document.';
+    workspaceStore.showToast(message);
+  }
 }
 
 async function saveDocument() {
-  await designerStore.saveDocument(props.tab.filePath);
-
-  const baseDir = dirname(props.tab.filePath);
-  const baseName = basenameWithoutExt(props.tab.filePath);
-  const headerPath = joinPath(baseDir, `${baseName}.h`);
-  const cppPath = joinPath(baseDir, `${baseName}.cpp`);
-
-  let existingHeader = '';
-  let existingCpp = '';
-
-  // Загружаем шаблоны (в реальном приложении пути вычисляются относительно корня)
-  const templatesDir = joinPath(
-    dirname(dirname(dirname(baseDir))),
-    'templates'
-  );
-
-  let templates = {
-    header: '',
-    cpp: '',
-    components: {} as Record<string, string>,
-  };
-
-  if (window.prototypeIDE.readFile) {
-    try {
-      templates.header =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'plugin/PluginName.h.template')
-        )) || '';
-      templates.cpp =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'plugin/PluginName.cpp.template')
-        )) || '';
-
-      templates.components['Knob'] =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'components/Knob.template')
-        )) || '';
-      templates.components['Slider'] =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'components/Slider.template')
-        )) || '';
-      templates.components['Button'] =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'components/Button.template')
-        )) || '';
-      templates.components['Label'] =
-        (await window.prototypeIDE.readFile(
-          joinPath(templatesDir, 'components/Label.template')
-        )) || '';
-    } catch (e) {
-      workspaceStore.showToast('Failed to load templates!');
-      console.error(e);
-      return;
-    }
-  }
-
-  // Пытаемся прочитать существующие файлы, чтобы сохранить код пользователя
   try {
-    if (window.prototypeIDE.readFile) {
-      existingHeader = (await window.prototypeIDE.readFile(headerPath)) || '';
-      existingCpp = (await window.prototypeIDE.readFile(cppPath)) || '';
+    await designerStore.saveDocument(props.tab.filePath);
+
+    const paths = buildLinkedPluginPaths(
+      props.tab.filePath,
+      joinPath,
+      dirname,
+      basenameWithoutExt
+    );
+
+    const templates = await templateStore.loadTemplateForType(
+      templateStore.currentPluginType
+    );
+
+    const existingHeader = await readOptionalFile(
+      paths.headerPath,
+      (path) => window.prototypeIDE.readFile(path),
+      (path) => window.prototypeIDE.fileExists(path)
+    );
+    const existingCpp = await readOptionalFile(
+      paths.cppPath,
+      (path) => window.prototypeIDE.readFile(path),
+      (path) => window.prototypeIDE.fileExists(path)
+    );
+
+    const { headerCode, cppCode } = generateLinkedPluginSources({
+      components: designerStore.components,
+      className: paths.className,
+      templates,
+      existingHeader,
+      existingCpp,
+    });
+
+    await window.prototypeIDE.writeFile(paths.headerPath, headerCode);
+    await window.prototypeIDE.writeFile(paths.cppPath, cppCode);
+
+    for (const linkedPath of [paths.headerPath, paths.cppPath]) {
+      const linkedTab = workspaceStore.tabs.find(
+        (tab) => tab.filePath === linkedPath
+      );
+      if (linkedTab?.isDirty) {
+        workspaceStore.showToast(
+          `Unsaved edits in ${linkedTab.title} were overwritten (last-save-wins)`
+        );
+        workspaceStore.markDirty(linkedTab.id, false);
+      }
     }
-  } catch {}
 
-  const { headerCode, cppCode } = generatePluginCode(
-    designerStore.components,
-    baseName,
-    templates,
-    existingHeader,
-    existingCpp
-  );
-
-  // Базовая проверка синтаксиса перед записью
-  const headerValidation = validateCppSyntax(headerCode);
-  const cppValidation = validateCppSyntax(cppCode);
-
-  if (!headerValidation.valid || !cppValidation.valid) {
-    const errorMsg = headerValidation.error || cppValidation.error;
-    workspaceStore.showToast(`Generation Error: ${errorMsg}`);
-    console.error(`Syntax Error in generated code:`, errorMsg);
-    return;
+    workspaceStore.markDirty(props.tab.id, false);
+    workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to save document.';
+    workspaceStore.showToast(message);
+    console.error(error);
   }
-
-  await window.prototypeIDE.writeFile(headerPath, headerCode);
-  await window.prototypeIDE.writeFile(cppPath, cppCode);
-  workspaceStore.markDirty(props.tab.id, false);
-  workspaceStore.showToast(`Saved ${basename(props.tab.filePath)}`);
 }
 
 function handleSaveShortcut(event: KeyboardEvent) {
@@ -684,7 +663,32 @@ watch(
   }
 );
 
+const unsubscribeFileWatch = window.prototypeIDE.onFileChanged(
+  async (changedPath: string) => {
+    if (changedPath !== props.tab.filePath) {
+      return;
+    }
+    if (workspaceStore.activeTab?.id === props.tab.id && props.tab.isDirty) {
+      return;
+    }
+    const tab = workspaceStore.tabs.find((item) => item.id === props.tab.id);
+    if (tab?.isDirty) {
+      return;
+    }
+    await loadDocument();
+  }
+);
+
+watch(
+  () => props.tab.id,
+  (tabId) => {
+    unregisterSaveHandler?.();
+    unregisterSaveHandler = registerTabSaveHandler(tabId, saveDocument);
+  }
+);
+
 onMounted(async () => {
+  unregisterSaveHandler = registerTabSaveHandler(props.tab.id, saveDocument);
   await loadDocument();
   window.addEventListener('keydown', handleSaveShortcut);
   window.addEventListener('keydown', handleUndoRedo);
@@ -693,6 +697,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   stopPointerInteraction();
+  unsubscribeFileWatch();
+  unregisterSaveHandler?.();
+  unregisterSaveHandler = null;
   window.removeEventListener('keydown', handleSaveShortcut);
   window.removeEventListener('keydown', handleUndoRedo);
   window.removeEventListener('keydown', handleClipboard);

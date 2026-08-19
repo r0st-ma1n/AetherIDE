@@ -1,17 +1,26 @@
 <template>
   <div class="ide-shell">
     <aside class="ide-shell__left">
-      <FileExplorer />
+      <FileExplorer @new-project="showNewProject = true" />
       <ComponentPalette />
     </aside>
 
     <main class="ide-shell__main">
-      <WorkspaceView />
+      <div class="ide-shell__workspace">
+        <WorkspaceView />
+      </div>
+      <BuildPanel />
     </main>
 
     <aside class="ide-shell__right">
       <PropertiesPanel />
     </aside>
+
+    <NewProjectWizard
+      :open="showNewProject"
+      @cancel="showNewProject = false"
+      @created="onProjectCreated"
+    />
 
     <div v-if="workspaceStore.toastMessage" class="ide-shell__toast">
       {{ workspaceStore.toastMessage }}
@@ -75,12 +84,23 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import FileExplorer from '@/domains/files/components/FileExplorer.vue';
+import BuildPanel from '@/domains/build/components/BuildPanel.vue';
+import NewProjectWizard from '@/domains/templates/components/NewProjectWizard.vue';
 import ComponentPalette from '@/domains/ui-designer/components/ComponentPalette.vue';
 import PropertiesPanel from '@/domains/ui-designer/components/PropertiesPanel.vue';
 import WorkspaceView from '@/domains/workspace/components/WorkspaceView.vue';
+import { useBuildStore } from '@/domains/build/stores/buildStore';
+import {
+  requestCloseProject,
+  requestQuitApp,
+  saveActiveTab,
+  saveAllDirtyTabs,
+} from '@/domains/workspace/lib/unsavedGuard';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 
 const workspaceStore = useWorkspaceStore();
+const buildStore = useBuildStore();
+const showNewProject = ref(false);
 const isDebugVisible = ref(false);
 const debugPanelPosition = reactive({
   x: 20,
@@ -90,6 +110,13 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 let isDraggingDebug = false;
 let removeDebugToggleListener: (() => void) | null = null;
+let removeQuitListener: (() => void) | null = null;
+let removeCloseProjectListener: (() => void) | null = null;
+let removeNewProjectListener: (() => void) | null = null;
+let removeSaveListener: (() => void) | null = null;
+let removeSaveAllListener: (() => void) | null = null;
+let removeBuildListener: (() => void) | null = null;
+let removeBuildStopListener: (() => void) | null = null;
 
 const debugState = reactive({
   pointer: {
@@ -205,6 +232,16 @@ function toggleDebugPanel() {
   isDebugVisible.value = !isDebugVisible.value;
 }
 
+function onProjectCreated(payload: {
+  projectRoot: string;
+  aetherPath: string;
+}) {
+  showNewProject.value = false;
+  workspaceStore.showToast(
+    `Created ${payload.aetherPath} in ${payload.projectRoot}`
+  );
+}
+
 onMounted(() => {
   window.addEventListener('pointermove', handlePointerMove, true);
   window.addEventListener('pointerdown', handlePointerDown, true);
@@ -215,6 +252,29 @@ onMounted(() => {
   window.addEventListener('unhandledrejection', handleUnhandledRejection);
   removeDebugToggleListener =
     window.prototypeIDE.onToggleDebugPanel(toggleDebugPanel);
+  removeQuitListener = window.prototypeIDE.onQuitRequested(() => {
+    void requestQuitApp();
+  });
+  removeCloseProjectListener = window.prototypeIDE.onCloseProjectRequested(
+    () => {
+      void requestCloseProject();
+    }
+  );
+  removeNewProjectListener = window.prototypeIDE.onNewProjectRequested(() => {
+    showNewProject.value = true;
+  });
+  removeSaveListener = window.prototypeIDE.onSaveRequested(() => {
+    void saveActiveTab();
+  });
+  removeSaveAllListener = window.prototypeIDE.onSaveAllRequested(() => {
+    void saveAllDirtyTabs();
+  });
+  removeBuildListener = window.prototypeIDE.onBuildRequested(() => {
+    void buildStore.startBuild();
+  });
+  removeBuildStopListener = window.prototypeIDE.onBuildStopRequested(() => {
+    void buildStore.stopBuild();
+  });
 });
 
 onBeforeUnmount(() => {
@@ -227,6 +287,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('unhandledrejection', handleUnhandledRejection);
   removeDebugToggleListener?.();
   removeDebugToggleListener = null;
+  removeQuitListener?.();
+  removeQuitListener = null;
+  removeCloseProjectListener?.();
+  removeCloseProjectListener = null;
+  removeNewProjectListener?.();
+  removeNewProjectListener = null;
+  removeSaveListener?.();
+  removeSaveListener = null;
+  removeSaveAllListener?.();
+  removeSaveAllListener = null;
+  removeBuildListener?.();
+  removeBuildListener = null;
+  removeBuildStopListener?.();
+  removeBuildStopListener = null;
 });
 </script>
 
@@ -270,6 +344,14 @@ onBeforeUnmount(() => {
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ide-shell__workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
 }

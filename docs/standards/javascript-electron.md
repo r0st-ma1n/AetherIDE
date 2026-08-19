@@ -12,11 +12,11 @@
 
 ## Структура ответственности
 
-| Слой | Файлы | Отвечает за |
-|---|---|---|
-| Main process | `electron/main/` | окно, lifecycle, меню, IPC-handlers, файловая система |
-| Preload | `electron/preload/` | безопасный bridge между main и renderer |
-| Renderer | `src/` | UI, состояние интерфейса, логика доменов |
+| Слой         | Файлы               | Отвечает за                                           |
+| ------------ | ------------------- | ----------------------------------------------------- |
+| Main process | `electron/main/`    | окно, lifecycle, меню, IPC-handlers, файловая система |
+| Preload      | `electron/preload/` | безопасный bridge между main и renderer               |
+| Renderer     | `src/`              | UI, состояние интерфейса, логика доменов              |
 
 Если код требует Node API, `fs`, дочерних процессов или системных вызовов — он не должен появляться в renderer напрямую. Всё через preload/IPC.
 
@@ -80,6 +80,7 @@ project:list-files
 ```
 
 Каждый новый IPC-канал должен быть:
+
 1. зарегистрирован в `electron/main/index.cjs` через `ipcMain.handle`
 2. проброшен в `electron/preload/index.cjs` через `contextBridge`
 3. типизирован на стороне renderer

@@ -8,11 +8,29 @@
     "version": {
       "type": "integer",
       "minimum": 1,
-      "description": "Schema version, increment to trigger migrations"
+      "maximum": 1,
+      "description": "Schema version; must match CURRENT_AETHER_SCHEMA_VERSION after migrate"
     },
     "components": {
       "type": "array",
       "items": { "$ref": "#/definitions/component" }
+    },
+    "canvasWidth": {
+      "type": "number",
+      "minimum": 100,
+      "maximum": 2000,
+      "description": "Designer canvas width in pixels"
+    },
+    "canvasHeight": {
+      "type": "number",
+      "minimum": 100,
+      "maximum": 2000,
+      "description": "Designer canvas height in pixels"
+    },
+    "pluginType": {
+      "type": "string",
+      "enum": ["Effect", "Instrument"],
+      "description": "Plugin category chosen in New Project wizard"
     }
   },
   "definitions": {

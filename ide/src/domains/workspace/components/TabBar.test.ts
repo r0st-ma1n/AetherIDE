@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TabBar from './TabBar.vue';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 
@@ -42,6 +42,7 @@ describe('TabBar', () => {
 
     const wrapper = mount(TabBar);
     await wrapper.findAll('.tab__close')[0]?.trigger('click');
+    await Promise.resolve();
     expect(store.tabs).toHaveLength(1);
     expect(store.tabs[0]?.id).toBe('t2');
   });
@@ -57,6 +58,22 @@ describe('TabBar', () => {
     expect(store.activeTabId).toBe('t1');
   });
 
+  it('prompts before closing a dirty tab and cancels when requested', async () => {
+    vi.mocked(window.prototypeIDE.confirmUnsaved).mockResolvedValueOnce(
+      'cancel'
+    );
+    const store = useWorkspaceStore();
+    store.openTab(makeTab('t1', 'alpha.ts'));
+    store.markDirty('t1', true);
+
+    const wrapper = mount(TabBar);
+    await wrapper.find('.tab__close').trigger('click');
+    await Promise.resolve();
+
+    expect(window.prototypeIDE.confirmUnsaved).toHaveBeenCalled();
+    expect(store.tabs).toHaveLength(1);
+  });
+
   it('closes the active tab on Ctrl+W', async () => {
     const store = useWorkspaceStore();
     store.openTab(makeTab('t1', 'alpha.ts'));
@@ -68,6 +85,7 @@ describe('TabBar', () => {
     window.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'w', ctrlKey: true, bubbles: true })
     );
+    await Promise.resolve();
 
     expect(store.tabs.find((t) => t.id === 't2')).toBeUndefined();
   });

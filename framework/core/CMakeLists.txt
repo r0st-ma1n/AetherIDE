@@ -17,3 +17,9 @@ target_include_directories(aether_core
 )
 
 target_link_libraries(aether_core PUBLIC clap)
+
+add_executable(widget_host_test
+    tests/widget_host_test.cpp
+)
+target_link_libraries(widget_host_test PRIVATE aether_core)
+add_test(NAME widget_host_test COMMAND widget_host_test)

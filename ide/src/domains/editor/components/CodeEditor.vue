@@ -23,11 +23,14 @@
 import * as monaco from 'monaco-editor';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useEditorStore } from '@/domains/editor/stores/editorStore';
-import { parseGeneratedCode } from '@/domains/ui-designer/lib/codeParser';
 import {
-  parseUiDocument,
-  serializeUiDocument,
-} from '@/domains/ui-designer/lib/uiDocument';
+  buildAetherDocumentFromCpp,
+  buildLinkedPluginPaths,
+  loadExistingAetherCanvas,
+  serializeAetherFromSpec,
+} from '@/domains/ui-designer/lib/uiSync';
+import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
+import { registerTabSaveHandler } from '@/domains/workspace/lib/tabSaveRegistry';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import {
   basename,
@@ -43,12 +46,14 @@ const props = defineProps<{
 
 const editorStore = useEditorStore();
 const workspaceStore = useWorkspaceStore();
+const designerStore = useUiDesignerStore();
 const containerRef = ref<HTMLElement | null>(null);
 const currentLine = ref(1);
 const currentCol = ref(1);
 const lineCount = ref(1);
 
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+let unregisterSaveHandler: (() => void) | null = null;
 
 const fileName = computed(() => basename(props.tab.filePath));
 const languageLabel = computed(() =>
@@ -85,33 +90,92 @@ async function loadFile() {
   }
 }
 
+async function syncDesignerFromCppSource(cppSource: string) {
+  const paths = buildLinkedPluginPaths(
+    props.tab.filePath,
+    joinPath,
+    dirname,
+    basenameWithoutExt
+  );
+
+  const aetherExists = await window.prototypeIDE.fileExists(paths.aetherPath);
+  if (!aetherExists) {
+    return;
+  }
+
+  const canvas = await loadExistingAetherCanvas(
+    paths.aetherPath,
+    (path) => window.prototypeIDE.readFile(path),
+    (path) => window.prototypeIDE.fileExists(path)
+  );
+  const doc = buildAetherDocumentFromCpp(cppSource, canvas);
+  if (!doc) {
+    return;
+  }
+
+  await window.prototypeIDE.writeFile(
+    paths.aetherPath,
+    serializeAetherFromSpec(
+      paths.aetherPath,
+      { components: doc.components },
+      doc.canvasWidth,
+      doc.canvasHeight
+    )
+  );
+
+  const designerTab = workspaceStore.tabs.find(
+    (tab) => tab.filePath === paths.aetherPath && tab.kind === 'designer'
+  );
+
+  if (!designerTab) {
+    return;
+  }
+
+  if (designerTab.isDirty) {
+    workspaceStore.showToast(
+      'Code save overwrote unsaved designer changes (last-save-wins)'
+    );
+  }
+
+  if (
+    designerStore.currentDocumentPath === paths.aetherPath ||
+    designerTab.id === workspaceStore.activeTabId
+  ) {
+    designerStore.applyDocument(doc, paths.aetherPath);
+  }
+
+  workspaceStore.markDirty(designerTab.id, false);
+}
+
 async function saveFile() {
   if (!editor) return;
   const content = editor.getValue();
   editorStore.setDocumentContent(props.tab.filePath, content);
   await window.prototypeIDE.writeFile(props.tab.filePath, content);
 
-  if (props.tab.filePath.endsWith('.h')) {
-    const baseDir = dirname(props.tab.filePath);
-    const baseName = basenameWithoutExt(props.tab.filePath);
-    const uiPath = joinPath(baseDir, `${baseName}.ui`);
-    const uiExists = await window.prototypeIDE.fileExists(uiPath);
+  const isCpp = props.tab.filePath.endsWith('.cpp');
+  const isHeader = props.tab.filePath.endsWith('.h');
 
-    if (uiExists) {
-      const components = parseGeneratedCode(content);
-      if (components.length > 0) {
-        const existingDoc = parseUiDocument(
-          await window.prototypeIDE.readFile(uiPath)
+  if (isCpp || isHeader) {
+    try {
+      let cppSource = content;
+      if (isHeader) {
+        const paths = buildLinkedPluginPaths(
+          props.tab.filePath,
+          joinPath,
+          dirname,
+          basenameWithoutExt
         );
-        await window.prototypeIDE.writeFile(
-          uiPath,
-          serializeUiDocument(
-            components,
-            existingDoc.canvasWidth,
-            existingDoc.canvasHeight
-          )
-        );
+        cppSource = await window.prototypeIDE.readFile(paths.cppPath);
       }
+      await syncDesignerFromCppSource(cppSource);
+    } catch (error) {
+      console.error('Failed to sync designer from code:', error);
+      workspaceStore.showToast(
+        error instanceof Error
+          ? error.message
+          : 'Failed to sync designer from code.'
+      );
     }
   }
 
@@ -139,6 +203,8 @@ function onKeyDown(event: KeyboardEvent) {
 
 onMounted(async () => {
   if (!containerRef.value) return;
+
+  unregisterSaveHandler = registerTabSaveHandler(props.tab.id, saveFile);
 
   editor = monaco.editor.create(containerRef.value, {
     value: '',
@@ -178,12 +244,19 @@ watch(
   }
 );
 
+watch(
+  () => props.tab.id,
+  (tabId) => {
+    unregisterSaveHandler?.();
+    unregisterSaveHandler = registerTabSaveHandler(tabId, saveFile);
+  }
+);
+
 const unsubscribeFileWatch = window.prototypeIDE.onFileChanged(
   async (changedPath: string) => {
-    // Reload only if this tab's file was changed externally (not by our own save)
     if (
       changedPath === props.tab.filePath &&
-      !workspaceStore.activeTab?.isDirty
+      !workspaceStore.tabs.find((tab) => tab.id === props.tab.id)?.isDirty
     ) {
       await loadFile();
     }
@@ -193,6 +266,8 @@ const unsubscribeFileWatch = window.prototypeIDE.onFileChanged(
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown);
   unsubscribeFileWatch();
+  unregisterSaveHandler?.();
+  unregisterSaveHandler = null;
   editor?.dispose();
   editor = null;
 });
@@ -200,66 +275,58 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .code-editor {
-  display: grid;
+  display: flex;
   flex: 1;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  min-width: 0;
+  flex-direction: column;
   min-height: 0;
-  background: linear-gradient(180deg, #20242b 0%, #1a1d22 100%);
+  background: #1e1e1e;
 }
 
 .code-editor__header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #2b313a;
+  gap: 12px;
+  align-items: center;
   padding: 10px 14px;
-  background-color: rgba(20, 22, 27, 0.92);
+  border-bottom: 1px solid #2c323a;
+  color: #c8d1dc;
+  font-size: 12px;
 }
 
 .code-editor__file {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
 .code-editor__file strong {
-  color: #eef2f7;
-  font-size: 13px;
+  color: #e8eef7;
 }
 
 .code-editor__file span {
   overflow: hidden;
-  color: #7f8a99;
-  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #8b949e;
 }
 
 .code-editor__language {
-  border: 1px solid #334155;
-  border-radius: 999px;
-  padding: 4px 10px;
-  background-color: #18212c;
-  color: #8bd5ff;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  color: #8b949e;
 }
 
 .code-editor__surface {
-  min-width: 0;
+  flex: 1;
   min-height: 0;
-  overflow: hidden;
 }
 
 .code-editor__status {
   display: flex;
-  gap: 18px;
-  align-items: center;
-  border-top: 1px solid #2b313a;
-  padding: 7px 14px;
-  background-color: #12161b;
-  color: #8b95a5;
+  gap: 16px;
+  padding: 6px 14px;
+  border-top: 1px solid #2c323a;
+  color: #8b949e;
   font-size: 11px;
 }
 </style>

@@ -89,14 +89,66 @@ describe('workspaceStore', () => {
     expect(store.tabs).toHaveLength(1);
   });
 
-  it('persists and restores tabs from localStorage', () => {
+  it('persists and restores tabs from localStorage without dirty flags', () => {
     const store = useWorkspaceStore();
     store.openTab(makeTab('t1'));
+    store.markDirty('t1', true);
 
     // New store instance reads localStorage
     setActivePinia(createPinia());
     const store2 = useWorkspaceStore();
     expect(store2.tabs).toHaveLength(1);
     expect(store2.tabs[0]?.id).toBe('t1');
+    expect(store2.tabs[0]?.isDirty).toBe(false);
+  });
+
+  it('clearTabs removes all tabs and active selection', () => {
+    const store = useWorkspaceStore();
+    store.openTab(makeTab('t1'));
+    store.openTab(makeTab('t2'));
+    store.clearTabs();
+    expect(store.tabs).toHaveLength(0);
+    expect(store.activeTabId).toBeNull();
+  });
+
+  it('initializeTabs prefers .aether over legacy .ui', () => {
+    const store = useWorkspaceStore();
+    store.initializeTabs([
+      {
+        id: 'GainPlugin.ui',
+        title: 'GainPlugin.ui',
+        filePath: 'GainPlugin.ui',
+        kind: 'designer',
+        isDirty: false,
+      },
+      {
+        id: 'GainPlugin.aether',
+        title: 'GainPlugin.aether',
+        filePath: 'GainPlugin.aether',
+        kind: 'designer',
+        isDirty: false,
+      },
+      {
+        id: 'GainPlugin.h',
+        title: 'GainPlugin.h',
+        filePath: 'GainPlugin.h',
+        kind: 'code',
+        isDirty: false,
+      },
+    ]);
+    expect(store.tabs.map((tab) => tab.filePath)).toEqual([
+      'GainPlugin.aether',
+      'GainPlugin.h',
+    ]);
+    expect(store.activeTabId).toBe('GainPlugin.aether');
+  });
+
+  it('pruneMissingTabs drops tabs outside the open project', () => {
+    const store = useWorkspaceStore();
+    store.openTab(makeTab('keep', 'GainPlugin.h'));
+    store.openTab(makeTab('drop', 'framework/core/Foo.h'));
+    store.pruneMissingTabs(['GainPlugin.h']);
+    expect(store.tabs.map((tab) => tab.id)).toEqual(['keep']);
+    expect(store.activeTabId).toBe('keep');
   });
 });

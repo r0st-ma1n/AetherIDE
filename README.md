@@ -2,6 +2,8 @@
 
 Визуальная IDE для разработки аудио-плагинов. Позволяет собирать интерфейс плагина через drag-and-drop и автоматически генерирует синхронизированный C++ код.
 
+> Проприетарное программное обеспечение. Не предназначено для публичного распространения или использования третьими лицами.
+
 ## Что это
 
 AetherIDE — desktop-приложение на Electron с визуальным дизайнером UI, встроенным редактором кода (Monaco) и собственным C++ фреймворком для аудио-плагинов (Aether).
@@ -9,9 +11,13 @@ AetherIDE — desktop-приложение на Electron с визуальным
 Ключевые возможности:
 
 - Drag-and-drop редактор компонентов (Knob, Slider, Button) на canvas
+- Выделение нескольких компонентов, выравнивание и распределение группой
+- Clipboard (Copy / Paste / Cut) и выделение рамкой (Ctrl+A)
+- Undo / Redo (Command Pattern, стек до 100 шагов)
 - Двусторонняя синхронизация: изменения в дизайнере генерируют C++ код и наоборот
 - Встроенный Monaco Editor с подсветкой синтаксиса C++
 - Файловый проводник с live-обновлением
+- Валидация проектных файлов `.aether` по JSON Schema (AJV)
 - Собственный C++ фреймворк Aether для написания аудио-плагинов
 
 ## Стек
@@ -19,7 +25,7 @@ AetherIDE — desktop-приложение на Electron с визуальным
 | Слой | Технологии |
 |---|---|
 | IDE UI | Vue 3, TypeScript, Pinia, Vite, Monaco Editor |
-| Desktop | Electron |
+| Desktop | Electron 42 |
 | C++ native | CMake, C++20 |
 | Audio framework | Aether (собственный) |
 
@@ -65,7 +71,11 @@ AetherIDE/
 │   ├── native/             # C++ нативный модуль (IPC-мост)
 │   ├── src/
 │   │   ├── app/            # shell верхнего уровня
-│   │   ├── domains/        # фичи по доменам (editor, files, ui-designer, workspace)
+│   │   ├── domains/        # фичи по доменам:
+│   │   │   ├── editor/     #   Monaco Editor
+│   │   │   ├── files/      #   файловый проводник
+│   │   │   ├── templates/  #   шаблоны проектов
+│   │   │   └── ui-designer/#   визуальный дизайнер
 │   │   └── shared/         # общие типы, утилиты, схемы
 │   └── ...конфиги
 ├── samples/
@@ -83,3 +93,7 @@ AetherIDE/
 - [docs/standards/javascript-electron.md](docs/standards/javascript-electron.md) — стандарты для Vue/Electron части
 - [docs/standards/cpp-cmake.md](docs/standards/cpp-cmake.md) — стандарты для C++/CMake части
 - [CONTRIBUTING.md](CONTRIBUTING.md) — как вносить изменения
+
+## Лицензия
+
+Copyright © 2026 r0st. Все права защищены. Исходный код является коммерческой тайной и не подлежит распространению.

@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { generateCppFromUI } from './codeGenerator';
 import { parseUIFromCpp } from './codeParser';
 import type { UISpec } from '@/shared/types';
+
+const sampleCppPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../../../samples/GainPlugin/GainPlugin.cpp'
+);
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -123,5 +131,32 @@ slider0.setBounds(5, 5, 100, 40);
     const restored = parseUIFromCpp(generateCppFromUI(spec));
     expect(restored.components[0]!.params).toBeUndefined();
     expect(restored.components[0]!.color).toBeUndefined();
+  });
+});
+
+describe('GainPlugin sample AETHER markers', () => {
+  it('parses the checked-in sample cpp into the designer UISpec', () => {
+    const cpp = readFileSync(sampleCppPath, 'utf-8');
+    const spec = parseUIFromCpp(cpp);
+    expect(spec.components).toEqual([
+      {
+        id: 'knob-1779727804935',
+        type: 'Knob',
+        position: { x: 40, y: 120 },
+        size: { width: 140, height: 70 },
+      },
+      {
+        id: 'slider-1779887593361',
+        type: 'Slider',
+        position: { x: 330, y: 60 },
+        size: { width: 110, height: 80 },
+      },
+      {
+        id: 'button-1779887600111',
+        type: 'Button',
+        position: { x: 230, y: 220 },
+        size: { width: 130, height: 50 },
+      },
+    ]);
   });
 });

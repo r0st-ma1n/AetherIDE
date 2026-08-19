@@ -29,6 +29,7 @@ pnpm-debug.log*
 
 # Native build outputs
 build/
+!ide/src/domains/build/
 cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
