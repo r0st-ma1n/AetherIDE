@@ -1,7 +1,9 @@
 import type { ProjectFileEntry, WorkspaceTab } from '@/shared/types';
 
 function inferTabKind(filePath: string): WorkspaceTab['kind'] {
-  return filePath.endsWith('.ui') ? 'designer' : 'code';
+  return filePath.endsWith('.ui') || filePath.endsWith('.aether')
+    ? 'designer'
+    : 'code';
 }
 
 export function toWorkspaceTab(entry: ProjectFileEntry): WorkspaceTab {

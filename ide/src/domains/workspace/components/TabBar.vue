@@ -10,7 +10,7 @@
       }"
       draggable="true"
       @click="workspaceStore.setActiveTab(tab.id)"
-      @mousedown.middle.prevent="workspaceStore.closeTab(tab.id)"
+      @mousedown.middle.prevent="void requestCloseTab(tab.id)"
       @dragstart="onDragStart($event, tab.id)"
       @dragover.prevent="dragOverTabId = tab.id"
       @dragleave="dragOverTabId = null"
@@ -24,7 +24,7 @@
       <button
         class="tab__close"
         title="Close (Ctrl+W / Middle click)"
-        @click.stop="workspaceStore.closeTab(tab.id)"
+        @click.stop="void requestCloseTab(tab.id)"
       >
         ×
       </button>
@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { requestCloseTab } from '@/domains/workspace/lib/unsavedGuard';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 import { basename } from '@/shared/lib/path';
 
@@ -68,7 +69,7 @@ function onKeyDown(event: KeyboardEvent) {
     event.preventDefault();
     const activeId = workspaceStore.activeTabId;
     if (activeId) {
-      workspaceStore.closeTab(activeId);
+      void requestCloseTab(activeId);
     }
   }
 }
