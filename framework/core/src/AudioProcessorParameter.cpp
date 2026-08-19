@@ -77,7 +77,7 @@ void ParameterLayout::addFloat(
     floatParams_.emplace_back(id, name, min, max, defaultValue, step);
 }
 
-AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) {
+AudioProcessorParameter* ParameterLayout::findFloat(const std::string& id) {
     auto it = std::find_if(
         floatParams_.begin(),
         floatParams_.end(),
@@ -87,26 +87,44 @@ AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) {
     );
 
     if (it == floatParams_.end()) {
-        throw std::runtime_error("Parameter not found: " + id);
+        return nullptr;
     }
 
-    return *it;
+    return &(*it);
+}
+
+const AudioProcessorParameter* ParameterLayout::findFloat(
+    const std::string& id
+) const {
+    auto it = std::find_if(
+        floatParams_.begin(),
+        floatParams_.end(),
+        [&](const AudioProcessorParameter& param) {
+            return param.id() == id;
+        }
+    );
+
+    if (it == floatParams_.end()) {
+        return nullptr;
+    }
+
+    return &(*it);
+}
+
+AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) {
+    auto* param = findFloat(id);
+    if (param == nullptr) {
+        throw std::runtime_error("Parameter not found: " + id);
+    }
+    return *param;
 }
 
 const AudioProcessorParameter& ParameterLayout::getFloat(const std::string& id) const {
-    auto it = std::find_if(
-        floatParams_.begin(),
-        floatParams_.end(),
-        [&](const AudioProcessorParameter& param) {
-            return param.id() == id;
-        }
-    );
-
-    if (it == floatParams_.end()) {
+    const auto* param = findFloat(id);
+    if (param == nullptr) {
         throw std::runtime_error("Parameter not found: " + id);
     }
-
-    return *it;
+    return *param;
 }
 
 std::vector<AudioProcessorParameter>& ParameterLayout::floats() {
