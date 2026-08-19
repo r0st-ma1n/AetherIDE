@@ -1,9 +1,11 @@
 import Ajv from 'ajv';
-import type {
-  AetherProject,
-  AetherProjectComponent,
-  UISpecComponent,
-} from '@/shared/types';
+import type { AetherProject, UISpec } from '@/shared/types';
+import { fromAetherProject, toAetherProject } from '@/shared/lib/uiModel';
+import {
+  AetherMigrationError,
+  CURRENT_AETHER_SCHEMA_VERSION,
+  migrateAetherProject,
+} from './migrateAetherProject';
 import schemaJson from './aetherProject.schema.json';
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -28,29 +30,39 @@ export function validateAetherProject(
   return { valid: false, errors };
 }
 
-export function toAetherProject(
-  components: UISpecComponent[],
-  version = 1
-): AetherProject {
+export {
+  AetherMigrationError,
+  CURRENT_AETHER_SCHEMA_VERSION,
+  fromAetherProject,
+  migrateAetherProject,
+  toAetherProject,
+};
+
+/** Convenience: migrate → validate → convert to UISpec. */
+export function parseAetherProject(data: unknown):
+  | ValidationFailure
+  | {
+      valid: true;
+      project: AetherProject;
+      spec: UISpec;
+    } {
+  let migrated: AetherProject;
+  try {
+    migrated = migrateAetherProject(data);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Migration failed.';
+    return { valid: false, errors: [message] };
+  }
+
+  const result = validateAetherProject(migrated);
+  if (!result.valid) {
+    return result;
+  }
+
   return {
-    version,
-    components: components.map(
-      (c): AetherProjectComponent => ({
-        type: c.type,
-        id: c.id,
-        x: c.position.x,
-        y: c.position.y,
-        width: c.size.width,
-        height: c.size.height,
-        properties: {
-          ...(c.params !== undefined && {
-            min: c.params.min,
-            max: c.params.max,
-            default: c.params.default,
-          }),
-          ...(c.color !== undefined && { color: c.color }),
-        },
-      })
-    ),
+    valid: true as const,
+    project: migrated,
+    spec: fromAetherProject(migrated),
   };
 }

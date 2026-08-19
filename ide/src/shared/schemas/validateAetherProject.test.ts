@@ -7,6 +7,8 @@ import type {
 import {
   validateAetherProject,
   toAetherProject,
+  fromAetherProject,
+  parseAetherProject,
 } from './validateAetherProject';
 
 const validComponent: AetherProjectComponent = {
@@ -62,9 +64,9 @@ describe('validateAetherProject — valid files', () => {
     expect(validateAetherProject(project).valid).toBe(true);
   });
 
-  it('accepts higher version numbers', () => {
+  it('rejects versions above the current schema maximum', () => {
     expect(validateAetherProject({ version: 42, components: [] }).valid).toBe(
-      true
+      false
     );
   });
 });
@@ -190,10 +192,10 @@ describe('toAetherProject — generated files pass validation', () => {
     expect(toAetherProject([]).version).toBe(1);
   });
 
-  it('accepts a custom version for migrations', () => {
+  it('rejects custom versions above the schema maximum', () => {
     const project = toAetherProject([], 3);
     expect(project.version).toBe(3);
-    expect(validateAetherProject(project)).toEqual({ valid: true });
+    expect(validateAetherProject(project).valid).toBe(false);
   });
 
   it('10 knob + 3 slider + 2 button — all 15 components pass validation', () => {
@@ -245,5 +247,88 @@ describe('toAetherProject — generated files pass validation', () => {
     ]);
     expect(project.components[0].properties).toEqual({});
     expect(validateAetherProject(project)).toEqual({ valid: true });
+  });
+});
+
+describe('fromAetherProject — on-disk to canonical UISpec', () => {
+  it('round-trips geometry, params, step and color', () => {
+    const components: UISpecComponent[] = [
+      {
+        id: 'knob1',
+        type: 'Knob',
+        position: { x: 10, y: 20 },
+        size: { width: 80, height: 80 },
+        params: { min: 0, max: 1, default: 0.5, step: 0.01 },
+        color: '#ff0000',
+      },
+      {
+        id: 'btn1',
+        type: 'Button',
+        position: { x: 0, y: 200 },
+        size: { width: 100, height: 30 },
+      },
+    ];
+
+    const restored = fromAetherProject(toAetherProject(components));
+    expect(restored.components).toEqual(components);
+  });
+
+  it('drops incomplete params from properties bag', () => {
+    const project: AetherProject = {
+      version: 1,
+      components: [
+        {
+          type: 'Knob',
+          id: 'knob1',
+          x: 0,
+          y: 0,
+          width: 80,
+          height: 80,
+          properties: { min: 0, max: 1 },
+        },
+      ],
+    };
+
+    expect(fromAetherProject(project).components[0]?.params).toBeUndefined();
+  });
+});
+
+describe('parseAetherProject', () => {
+  it('returns UISpec for valid documents', () => {
+    const result = parseAetherProject({
+      version: 1,
+      components: [validComponent],
+    });
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.spec.components[0]?.id).toBe('knob1');
+    }
+  });
+
+  it('migrates legacy documents missing version', () => {
+    const result = parseAetherProject({
+      components: [validComponent],
+    });
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.project.version).toBe(1);
+      expect(result.spec.components[0]?.id).toBe('knob1');
+    }
+  });
+
+  it('returns validation errors for unsupported schema versions', () => {
+    const result = parseAetherProject({ version: 99, components: [] });
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.join(' ')).toMatch(/Unsupported/);
+    }
+  });
+
+  it('returns validation errors for invalid documents', () => {
+    const result = parseAetherProject({
+      version: 1,
+      components: [{ type: 'Knob' }],
+    });
+    expect(result.valid).toBe(false);
   });
 });

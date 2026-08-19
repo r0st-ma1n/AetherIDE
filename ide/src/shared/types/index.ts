@@ -1,5 +1,11 @@
 export type WorkspaceTabKind = 'code' | 'designer';
 
+export interface RecentProjectEntry {
+  path: string;
+  name: string;
+  openedAt: number;
+}
+
 export interface WorkspaceTab {
   id: string;
   title: string;
@@ -23,6 +29,17 @@ export interface FileTreeNode {
 
 export type UiComponentType = 'Knob' | 'Slider' | 'Button';
 
+export interface UiComponentParams {
+  min: number;
+  max: number;
+  default: number;
+  step?: number;
+}
+
+/**
+ * Canonical in-memory UI component.
+ * Designer, codegen, and document adapters all speak this shape.
+ */
 export interface UISpecComponent {
   id: string;
   type: UiComponentType;
@@ -31,6 +48,11 @@ export interface UISpecComponent {
   params?: UiComponentParams;
   color?: string;
 }
+
+/**
+ * @deprecated Use UISpecComponent. Kept as an alias during the P1 migration.
+ */
+export type UiComponent = UISpecComponent;
 
 /**
  * Compile-time contract: every field of UISpecComponent must have a serializer.
@@ -56,15 +78,13 @@ export type CppDeserializerMap = {
 export interface UISpec {
   components: UISpecComponent[];
 }
+
 export type DesignerGridStep = 5 | 10 | 20;
 
-export interface UiComponentParams {
-  min: number;
-  max: number;
-  default: number;
-  step?: number;
-}
-
+/**
+ * On-disk `.aether` component shape (flat geometry + opaque properties bag).
+ * Convert via toAetherProject / fromAetherProject — do not use in designer state.
+ */
 export interface AetherProjectComponent {
   type: UiComponentType;
   id: string;
@@ -78,19 +98,9 @@ export interface AetherProjectComponent {
 export interface AetherProject {
   version: number;
   components: AetherProjectComponent[];
-}
-
-export interface UiComponent {
-  id: string;
-  type: UiComponentType;
-  position: {
-    x: number;
-    y: number;
-  };
-  size: {
-    width: number;
-    height: number;
-  };
-  params?: Partial<UiComponentParams>;
-  color?: string;
+  /** Designer canvas size in px; optional for older files. */
+  canvasWidth?: number;
+  canvasHeight?: number;
+  /** Set by New Project wizard; optional for older files. */
+  pluginType?: 'Effect' | 'Instrument';
 }
