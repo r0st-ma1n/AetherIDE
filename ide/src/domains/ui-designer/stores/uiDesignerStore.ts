@@ -8,9 +8,11 @@ import {
 } from '@/domains/ui-designer/lib/alignComponents';
 import type { ICommand } from '@/domains/ui-designer/lib/commands';
 import {
-  parseUiDocument,
-  serializeUiDocument,
+  parseDesignerDocument,
+  serializeDesignerDocument,
+  type UiDocumentData,
 } from '@/domains/ui-designer/lib/uiDocument';
+import { normalizeUiComponentParams } from '@/shared/lib/uiModel';
 
 import type {
   DesignerGridStep,
@@ -86,12 +88,24 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   async function loadDocument(filePath: string) {
     const source = await window.prototypeIDE.readFile(filePath);
-    currentDocumentPath.value = filePath;
-    const doc = parseUiDocument(source);
-    components.value = doc.components;
+    const doc = parseDesignerDocument(source, filePath);
+    applyDocument(doc, filePath);
+  }
+
+  function applyDocument(doc: UiDocumentData, filePath?: string) {
+    if (filePath !== undefined) {
+      currentDocumentPath.value = filePath;
+    }
+    components.value = doc.components.map((component) => ({
+      ...component,
+      position: { ...component.position },
+      size: { ...component.size },
+      params: component.params ? { ...component.params } : undefined,
+    }));
     canvasWidth.value = doc.canvasWidth;
     canvasHeight.value = doc.canvasHeight;
     selectedComponentId.value = doc.components[0]?.id ?? null;
+    selectionGroup.value = [];
     undoStack.value = [];
     redoStack.value = [];
   }
@@ -100,7 +114,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     currentDocumentPath.value = filePath;
     await window.prototypeIDE.writeFile(
       filePath,
-      serializeUiDocument(
+      serializeDesignerDocument(
+        filePath,
         components.value,
         canvasWidth.value,
         canvasHeight.value
@@ -330,15 +345,28 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     const component = components.value.find((item) => item.id === componentId);
     if (!component) return;
     const oldParams = component.params ? { ...component.params } : undefined;
-    const newParams = { ...component.params, ...params };
+    const newParams = normalizeUiComponentParams({
+      ...component.params,
+      ...params,
+    });
     executeCommand({
       execute() {
         const c = components.value.find((item) => item.id === componentId);
-        if (c) c.params = newParams;
+        if (!c) return;
+        if (newParams === undefined) {
+          delete c.params;
+        } else {
+          c.params = newParams;
+        }
       },
       undo() {
         const c = components.value.find((item) => item.id === componentId);
-        if (c) c.params = oldParams;
+        if (!c) return;
+        if (oldParams === undefined) {
+          delete c.params;
+        } else {
+          c.params = oldParams;
+        }
       },
     });
   }
@@ -452,6 +480,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
 
   return {
     alignGroup,
+    applyDocument,
     canUndo,
     canRedo,
     components,

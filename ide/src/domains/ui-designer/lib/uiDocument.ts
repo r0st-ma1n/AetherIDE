@@ -1,21 +1,33 @@
-import type { UiComponent } from '@/shared/types';
+import type { AetherProject, UISpecComponent } from '@/shared/types';
+import {
+  aetherProjectToDocument,
+  DEFAULT_CANVAS_HEIGHT,
+  DEFAULT_CANVAS_WIDTH,
+  normalizeUiComponentParams,
+  toAetherProject,
+} from '@/shared/lib/uiModel';
+import {
+  AetherMigrationError,
+  CURRENT_AETHER_SCHEMA_VERSION,
+  migrateAetherProject,
+} from '@/shared/schemas/migrateAetherProject';
+import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
 
 export interface UiDocumentData {
-  components: UiComponent[];
+  components: UISpecComponent[];
   canvasWidth: number;
   canvasHeight: number;
 }
 
-const DEFAULT_CANVAS_WIDTH = 600;
-const DEFAULT_CANVAS_HEIGHT = 400;
-
 interface RawUiComponent {
   id: string;
-  type: UiComponent['type'];
+  type: UISpecComponent['type'];
   left?: string;
   top?: string;
-  width?: string;
-  height?: string;
+  width?: string | number;
+  height?: string | number;
+  x?: number;
+  y?: number;
   position?: {
     x: number;
     y: number;
@@ -24,12 +36,15 @@ interface RawUiComponent {
     width: number;
     height: number;
   };
-  params?: UiComponent['params'];
+  params?: Partial<NonNullable<UISpecComponent['params']>>;
   color?: string;
 }
 
-function parsePixels(value: string | undefined, fallback: number) {
-  if (!value) {
+function parsePixels(value: string | number | undefined, fallback: number) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value !== 'string' || !value) {
     return fallback;
   }
 
@@ -37,6 +52,7 @@ function parsePixels(value: string | undefined, fallback: number) {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+/** Legacy `.ui` JSON used before S2-T2. Kept for read compatibility. */
 export function parseUiDocument(source: string): UiDocumentData {
   const parsed = JSON.parse(source) as {
     components?: RawUiComponent[];
@@ -44,20 +60,25 @@ export function parseUiDocument(source: string): UiDocumentData {
     canvasHeight?: number;
   };
 
-  const components = (parsed.components ?? []).map((component) => ({
-    id: component.id,
-    type: component.type,
-    position: component.position ?? {
-      x: parsePixels(component.left, 80),
-      y: parsePixels(component.top, 80),
-    },
-    size: component.size ?? {
-      width: parsePixels(component.width, 100),
-      height: parsePixels(component.height, 40),
-    },
-    ...(component.params !== undefined ? { params: component.params } : {}),
-    ...(component.color !== undefined ? { color: component.color } : {}),
-  }));
+  const components: UISpecComponent[] = (parsed.components ?? []).map(
+    (component) => {
+      const params = normalizeUiComponentParams(component.params);
+      return {
+        id: component.id,
+        type: component.type,
+        position: component.position ?? {
+          x: component.x ?? parsePixels(component.left, 80),
+          y: component.y ?? parsePixels(component.top, 80),
+        },
+        size: component.size ?? {
+          width: parsePixels(component.width, 100),
+          height: parsePixels(component.height, 40),
+        },
+        ...(params !== undefined ? { params } : {}),
+        ...(component.color !== undefined ? { color: component.color } : {}),
+      };
+    }
+  );
 
   return {
     components,
@@ -66,8 +87,9 @@ export function parseUiDocument(source: string): UiDocumentData {
   };
 }
 
+/** @deprecated Prefer serializeAetherDocument for new saves. */
 export function serializeUiDocument(
-  components: UiComponent[],
+  components: UISpecComponent[],
   canvasWidth: number,
   canvasHeight: number
 ) {
@@ -88,5 +110,85 @@ export function serializeUiDocument(
     },
     null,
     2
+  );
+}
+
+export function parseAetherDocument(source: string): UiDocumentData {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new Error('Invalid .aether file: not valid JSON.');
+  }
+
+  let migrated: AetherProject;
+  try {
+    migrated = migrateAetherProject(parsed);
+  } catch (error) {
+    const message =
+      error instanceof AetherMigrationError
+        ? error.message
+        : 'Failed to migrate .aether file.';
+    throw new Error(message);
+  }
+
+  const result = validateAetherProject(migrated);
+  if (!result.valid) {
+    throw new Error(
+      `Invalid .aether file: ${result.errors.join('; ') || 'schema validation failed.'}`
+    );
+  }
+
+  return aetherProjectToDocument(migrated);
+}
+
+export function serializeAetherDocument(
+  components: UISpecComponent[],
+  canvasWidth: number,
+  canvasHeight: number,
+  version = CURRENT_AETHER_SCHEMA_VERSION
+): string {
+  const project = toAetherProject(components, version, {
+    width: canvasWidth,
+    height: canvasHeight,
+  });
+  const result = validateAetherProject(project);
+  if (!result.valid) {
+    throw new Error(
+      `Cannot save .aether file: ${result.errors.join('; ') || 'schema validation failed.'}`
+    );
+  }
+  return JSON.stringify(project, null, 2);
+}
+
+export function parseDesignerDocument(
+  source: string,
+  filePath: string
+): UiDocumentData {
+  if (filePath.endsWith('.aether')) {
+    return parseAetherDocument(source);
+  }
+  if (filePath.endsWith('.ui')) {
+    return parseUiDocument(source);
+  }
+  throw new Error(
+    `Unsupported designer document: ${filePath}. Expected .aether or legacy .ui.`
+  );
+}
+
+export function serializeDesignerDocument(
+  filePath: string,
+  components: UISpecComponent[],
+  canvasWidth: number,
+  canvasHeight: number
+): string {
+  if (filePath.endsWith('.aether')) {
+    return serializeAetherDocument(components, canvasWidth, canvasHeight);
+  }
+  if (filePath.endsWith('.ui')) {
+    return serializeUiDocument(components, canvasWidth, canvasHeight);
+  }
+  throw new Error(
+    `Unsupported designer document: ${filePath}. Expected .aether or legacy .ui.`
   );
 }

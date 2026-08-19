@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { UISpec, UISpecComponent, UiComponentType } from '@/shared/types';
-import { generateCppFromUI } from './codeGenerator';
+import {
+  AETHER_UI_BEGIN,
+  AETHER_UI_END,
+  generateCppFromUI,
+  generatePluginCode,
+  upsertAetherUiBlock,
+} from './codeGenerator';
 import { parseUIFromCpp } from './codeParser';
 
 describe('generateCppFromUI', () => {
@@ -295,5 +301,99 @@ describe('round-trip: generateCppFromUI → parseUIFromCpp', () => {
     const parsed = parseUIFromCpp(cpp);
     expect(parsed.components).toHaveLength(1);
     expect(parsed.components[0]).toEqual(spec.components[0]);
+  });
+});
+
+describe('generatePluginCode AETHER protocol', () => {
+  const templates = {
+    header: `{{componentDeclarations}}\n{{eventHandlersDeclarations}}`,
+    cpp: `void {{className}}UI::setupUI() {\n{{setupComponents}}\n\n    // --- USER CODE BEGIN: SetupUI ---\n{{setupUI}}\n    // --- USER CODE END: SetupUI ---\n}\n\n{{eventHandlersImplementations}}`,
+    components: {},
+  };
+
+  it('emits AETHER UI markers around setup components', () => {
+    const { cppCode } = generatePluginCode(
+      [
+        {
+          id: 'knob-1',
+          type: 'Knob',
+          position: { x: 10, y: 20 },
+          size: { width: 80, height: 80 },
+        },
+      ],
+      'Demo',
+      templates
+    );
+
+    expect(cppCode).toContain('// --- AETHER UI BEGIN ---');
+    expect(cppCode).toContain('// --- AETHER UI END ---');
+    expect(cppCode).toContain(
+      '// AETHER id=knob-1 type=Knob x=10 y=20 w=80 h=80'
+    );
+    expect(cppCode).toContain('knob1.setBounds(10, 20, 80, 80)');
+    expect(cppCode).toContain('knob1.onValueChanged = [this](float val) {');
+  });
+
+  it('round-trips designer components through plugin cpp', () => {
+    const components: UISpecComponent[] = [
+      {
+        id: 'slider-9',
+        type: 'Slider',
+        position: { x: 1, y: 2 },
+        size: { width: 3, height: 4 },
+        params: { min: 0, max: 1, default: 0.5 },
+        color: '#abc',
+      },
+    ];
+    const { cppCode } = generatePluginCode(components, 'Demo', templates);
+    expect(parseUIFromCpp(cppCode).components).toEqual(components);
+  });
+
+  it('preserves USER CODE SetupUI across regenerate', () => {
+    const existingCpp = `void DemoUI::setupUI() {
+    // --- AETHER UI BEGIN ---
+    // --- AETHER UI END ---
+
+    // --- USER CODE BEGIN: SetupUI ---
+    doSomethingCustom();
+    // --- USER CODE END: SetupUI ---
+}`;
+    const { cppCode } = generatePluginCode(
+      [
+        {
+          id: 'btn1',
+          type: 'Button',
+          position: { x: 0, y: 0 },
+          size: { width: 10, height: 10 },
+        },
+      ],
+      'Demo',
+      templates,
+      '',
+      existingCpp
+    );
+    expect(cppCode).toContain('doSomethingCustom();');
+    expect(cppCode).toContain('// AETHER id=btn1 type=Button');
+  });
+});
+
+describe('upsertAetherUiBlock', () => {
+  it('replaces an existing AETHER block in place', () => {
+    const source = `void setup() {
+    // --- AETHER UI BEGIN ---
+    // AETHER id=old type=Knob x=0 y=0 w=1 h=1
+    // --- AETHER UI END ---
+
+    // --- USER CODE BEGIN: SetupUI ---
+    keepMe();
+    // --- USER CODE END: SetupUI ---
+}`;
+    const next = upsertAetherUiBlock(
+      source,
+      `${AETHER_UI_BEGIN}\n// AETHER id=new type=Button x=5 y=5 w=10 h=10\n${AETHER_UI_END}\n`
+    );
+    expect(next).toContain('id=new type=Button');
+    expect(next).not.toContain('id=old');
+    expect(next).toContain('keepMe();');
   });
 });

@@ -15,8 +15,8 @@ import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore
 
 const TAB = {
   id: 'tab-1',
-  title: 'test.uid',
-  filePath: 'test.uid',
+  title: 'test.aether',
+  filePath: 'test.aether',
   kind: 'designer' as const,
   isDirty: false,
 };
@@ -29,7 +29,12 @@ describe('UIDesigner rAF throttling', () => {
     setActivePinia(createPinia());
 
     (window.prototypeIDE.readFile as Mock).mockResolvedValue(
-      '{"components":[]}'
+      JSON.stringify({
+        version: 1,
+        components: [],
+        canvasWidth: 600,
+        canvasHeight: 400,
+      })
     );
 
     pendingRaf = new Map();
