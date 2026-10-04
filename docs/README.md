@@ -4,6 +4,7 @@
 
 ## Содержание
 
+- [ROADMAP.md](./ROADMAP.md) — план разработки: блоки, задачи, статусы
 - [GIT_CONVENTIONS.md](./GIT_CONVENTIONS.md) — ветки, коммиты, pull request
 - [CODING_STANDARDS.md](./CODING_STANDARDS.md) — общие правила по коду и структуре
 - [standards/architecture.md](./standards/architecture.md) — границы модулей и устройство приложения
