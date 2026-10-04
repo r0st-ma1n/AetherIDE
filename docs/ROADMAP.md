@@ -20,7 +20,7 @@
 
 ## Как пользоваться этим документом
 
-- Документ разбит на **блоки** (A, B, C…), блоки — на **задачи** (A1, A2…),
+- Документ разбит на **блоки** (0, A, B…), блоки — на **задачи** (A1, A2…),
   задачи — на **подзадачи** (чекбоксы).
 - Задача берётся в работу целиком: заводится issue, ветка `feat/<issue>-<short-desc>`
   (см. [GIT_CONVENTIONS.md](./GIT_CONVENTIONS.md)).
@@ -33,7 +33,8 @@
 
 | Блок | Что | Зависит от | Статус |
 |---|---|---|---|
-| A | Ядро фреймворка, готовое к реальному хосту | — | ⏳ следующий |
+| 0 | Автоматические проверки стандартов кода | — | ⏳ следующий |
+| A | Ядро фреймворка, готовое к реальному хосту | 0 | ⏳ |
 | B | Параметры в проекте и кодогенерация процессора | A2, A5 | ⏳ |
 | C | VST3-адаптер и сборка бандла | A | ⏳ |
 | D | Сборка VST3 из IDE | B, C | ⏳ |
@@ -41,12 +42,49 @@
 | F | v2: собственное окно плагина | v1 | 🔒 после v1 |
 
 ```
-A ──┬──► B ──┐
-    └──► C ──┼──► D ──► E (v1) ──► F (v2)
-             │
+0 ──► A ──┬──► B ──┐
+          └──► C ──┴──► D ──► E (v1) ──► F (v2)
 ```
 
 Блоки B и C после A можно вести параллельно.
+
+---
+
+## 0. Проверки стандартов кода
+
+Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
+
+Стандарты из `docs/standards/` проверяются автоматически лишь частично: ESLint смотрит только
+`electron/**/*.cjs`, C++ не проверяется на формат, CTest-тесты нигде не запускаются, `main`
+не защищён. Блок идёт первым, чтобы код блоков A–E сразу проходил через проверки.
+
+### 0.1. ESLint для renderer · S
+
+- [ ] Подключить `typescript-eslint` и `eslint-plugin-vue`, линтить `src/**/*.{ts,vue}`
+- [ ] Правила из [javascript-electron.md](./standards/javascript-electron.md):
+      `no-explicit-any`, `vue/component-api-style` (`script-setup`), `consistent-type-exports`
+- [ ] Починить найденные нарушения
+
+### 0.2. clang-format для C++ · S
+
+- [ ] Привести `framework/`, `ide/native/`, `samples/` к `.clang-format` (отдельный коммит `style:`)
+- [ ] `make cpp-format` / `make cpp-format-check`
+- [ ] Проверка `clang-format --dry-run --Werror` в CI
+
+### 0.3. CTest и Windows в CI · S
+
+- [ ] `ctest --output-on-failure` в CI и в `make test`
+- [ ] C++-сборка и тесты на `windows-latest` (MSVC) рядом с Ubuntu
+- [ ] Закрепить версию CLAP в `FetchContent` (сейчас `GIT_TAG main` — сборка не воспроизводима)
+
+### 0.4. Защита `main` и документы · S
+
+- [ ] Branch protection на `main`: merge только при зелёном CI
+- [ ] Обновить [testing.md](./standards/testing.md), [cpp-cmake.md](./standards/cpp-cmake.md),
+      [javascript-electron.md](./standards/javascript-electron.md) под реальные проверки
+
+Готово (блок 0), когда: CI падает на `any` в renderer, на неотформатированном C++ и на
+упавшем CTest-тесте; PR с красным CI нельзя смержить в `main`.
 
 ---
 
@@ -122,7 +160,6 @@ A ──┬──► B ──┐
 - [ ] Утилита `aether_host`: грузит плагин, рендерит WAV/синус через `processBlock`
 - [ ] Заменить `examples/gain/main.cpp` на тест поверх неё
 - [ ] Тест реального GainPlugin: gain 0.5 → амплитуда 0.5, без щелчков при смене
-- [ ] Закрепить версию CLAP в `FetchContent` (сейчас `GIT_TAG main`) или убрать, пока не нужен
 
 Готово, когда: `ctest` прогоняет тесты ядра и тест GainPlugin.
 
