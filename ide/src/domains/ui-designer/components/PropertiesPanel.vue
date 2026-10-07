@@ -1,7 +1,7 @@
 <template>
   <section class="panel">
     <header class="panel__header">Inspector</header>
-    <div class="panel__body" v-if="selectedComponent">
+    <div v-if="selectedComponent" class="panel__body">
       <div class="property-group">
         <div class="group-title">Component</div>
         <div class="property-row">
@@ -72,7 +72,7 @@
         </div>
       </div>
 
-      <div class="property-group" v-if="hasParams">
+      <div v-if="hasParams" class="property-group">
         <div class="group-title">Parameters</div>
         <div class="property-row">
           <span class="property-label">Min</span>

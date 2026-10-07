@@ -8,9 +8,7 @@ void GainPluginUI::setupUI(aether::PluginProcessor& processor) {
     if (auto* param = processor.getParameter("knob-1779727804935")) {
         knob1779727804935.setParameter(param);
     }
-    knob1779727804935.onValueChanged = [this](float val) {
-        onKnob1779727804935ValueChanged(val);
-    };
+    knob1779727804935.onValueChanged = [this](float val) { onKnob1779727804935ValueChanged(val); };
 
     // AETHER id=slider-1779887593361 type=Slider x=330 y=60 w=110 h=80
     slider1779887593361.setBounds(330, 60, 110, 80);

@@ -4,21 +4,10 @@
 
 namespace aether {
 
-AudioProcessorParameter::AudioProcessorParameter(
-    std::string id,
-    std::string name,
-    float min,
-    float max,
-    float defaultValue,
-    float step
-)
-    : id_(std::move(id)),
-      name_(std::move(name)),
-      min_(min),
-      max_(max),
-      defaultValue_(defaultValue),
-      step_(step),
-      value_(defaultValue) {
+AudioProcessorParameter::AudioProcessorParameter(std::string id, std::string name, float min,
+                                                 float max, float defaultValue, float step)
+    : id_(std::move(id)), name_(std::move(name)), min_(min), max_(max), defaultValue_(defaultValue),
+      step_(step), value_(defaultValue) {
     if (min >= max) {
         throw std::invalid_argument("Parameter min must be less than max");
     }
@@ -66,25 +55,14 @@ void AudioProcessorParameter::setValue(float value) {
     }
 }
 
-void ParameterLayout::addFloat(
-    const std::string& id,
-    const std::string& name,
-    float min,
-    float max,
-    float defaultValue,
-    float step
-) {
+void ParameterLayout::addFloat(const std::string& id, const std::string& name, float min, float max,
+                               float defaultValue, float step) {
     floatParams_.emplace_back(id, name, min, max, defaultValue, step);
 }
 
 AudioProcessorParameter* ParameterLayout::findFloat(const std::string& id) {
-    auto it = std::find_if(
-        floatParams_.begin(),
-        floatParams_.end(),
-        [&](const AudioProcessorParameter& param) {
-            return param.id() == id;
-        }
-    );
+    auto it = std::find_if(floatParams_.begin(), floatParams_.end(),
+                           [&](const AudioProcessorParameter& param) { return param.id() == id; });
 
     if (it == floatParams_.end()) {
         return nullptr;
@@ -93,16 +71,9 @@ AudioProcessorParameter* ParameterLayout::findFloat(const std::string& id) {
     return &(*it);
 }
 
-const AudioProcessorParameter* ParameterLayout::findFloat(
-    const std::string& id
-) const {
-    auto it = std::find_if(
-        floatParams_.begin(),
-        floatParams_.end(),
-        [&](const AudioProcessorParameter& param) {
-            return param.id() == id;
-        }
-    );
+const AudioProcessorParameter* ParameterLayout::findFloat(const std::string& id) const {
+    auto it = std::find_if(floatParams_.begin(), floatParams_.end(),
+                           [&](const AudioProcessorParameter& param) { return param.id() == id; });
 
     if (it == floatParams_.end()) {
         return nullptr;

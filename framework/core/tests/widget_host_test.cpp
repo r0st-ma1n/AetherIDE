@@ -21,8 +21,8 @@ void expectTrue(bool condition, const char* message) {
 
 void expectNear(float actual, float expected, float eps, const char* message) {
     if (std::fabs(actual - expected) > eps) {
-        std::cerr << "FAIL: " << message << " (got " << actual << ", expected "
-                  << expected << ")\n";
+        std::cerr << "FAIL: " << message << " (got " << actual << ", expected " << expected
+                  << ")\n";
         ++failures;
     }
 }
@@ -57,12 +57,7 @@ int main() {
     expectTrue(host.hitTest(15, 25) == &knob, "hit inside knob");
     expectTrue(host.pointerValueAt(15, 25, 0.25f), "pointer updates knob");
     expectNear(lastCallback, 0.25f, 1e-5f, "callback receives mapped value");
-    expectNear(
-        processor.getParameter("gain")->value(),
-        0.25f,
-        1e-5f,
-        "parameter updated"
-    );
+    expectNear(processor.getParameter("gain")->value(), 0.25f, 1e-5f, "parameter updated");
 
     Knob top;
     top.setBounds(10, 20, 40, 40);

@@ -1,12 +1,13 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
-void addComponentToCode(const std::string& componentType, int x, int y, const std::string& filePath) {
+void addComponentToCode(const std::string& componentType, int x, int y,
+                        const std::string& filePath) {
     // This is a naive implementation for the prototype.
     // In a real scenario, we'd use Clang libtooling or tree-sitter to parse the C++ AST safely.
-    
+
     std::ifstream fileIn(filePath);
     if (!fileIn.is_open()) {
         std::cerr << "Error: Could not open file " << filePath << std::endl;
@@ -31,7 +32,8 @@ void addComponentToCode(const std::string& componentType, int x, int y, const st
             static int id_counter = 0;
             id_counter++;
             std::string id = componentType + "_" + std::to_string(id_counter);
-            newLines.push_back("    auto* " + id + " = new " + componentType + "(" + std::to_string(x) + ", " + std::to_string(y) + ");");
+            newLines.push_back("    auto* " + id + " = new " + componentType + "(" +
+                               std::to_string(x) + ", " + std::to_string(y) + ");");
         }
     }
 
@@ -44,8 +46,9 @@ void addComponentToCode(const std::string& componentType, int x, int y, const st
     for (const auto& l : newLines) {
         fileOut << l << std::endl;
     }
-    
-    std::cout << "SUCCESS: Added " << componentType << " at (" << x << ", " << y << ")" << std::endl;
+
+    std::cout << "SUCCESS: Added " << componentType << " at (" << x << ", " << y << ")"
+              << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -77,11 +80,11 @@ int main(int argc, char* argv[]) {
         }
         std::string buildDir = argv[2];
         std::cout << "Invoking CMake build in " << buildDir << "..." << std::endl;
-        
+
         // Execute CMake via system command
         std::string cmakeCmd = "cmake --build " + buildDir;
         int result = system(cmakeCmd.c_str());
-        
+
         if (result == 0) {
             std::cout << "SUCCESS: Build finished." << std::endl;
         } else {

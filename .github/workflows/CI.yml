@@ -6,9 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Job names below are referenced by branch protection on `main`; rename with care.
 jobs:
-  build-and-lint:
-    name: Build & Lint
+  ide:
+    name: IDE (lint, typecheck, test, build)
     runs-on: ubuntu-latest
 
     defaults:
@@ -41,32 +42,46 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  test:
-    name: Test
+      - name: Build frontend
+        run: npm run build
+
+  cpp-format:
+    name: C++ format
     runs-on: ubuntu-latest
-    needs: build-and-lint
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: ide/package-lock.json
+          python-version: "3.12"
 
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: ide
+      - name: Install clang-format
+        run: pip install -r requirements-dev.txt
 
-      - name: Build frontend
-        run: npm run build
-        working-directory: ide
+      - name: Check C++ formatting
+        run: make cpp-format-check
+
+  cpp:
+    name: C++ build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Configure CMake
         run: cmake -S . -B build
 
       - name: Build targets
         run: cmake --build build --config Release
+
+      - name: Run CTest
+        run: ctest --test-dir build -C Release --output-on-failure

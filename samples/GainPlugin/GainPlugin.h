@@ -1,8 +1,8 @@
 // GENERATED CODE - DO NOT MODIFY COMMENTS
 #pragma once
 
-#include "aether/PluginProcessor.h"
 #include "aether/Parameter.h"
+#include "aether/PluginProcessor.h"
 
 // --- USER CODE BEGIN: Includes ---
 
@@ -13,7 +13,7 @@ public:
     void setupUI(aether::PluginProcessor& processor);
 
     // --- USER CODE BEGIN: PublicMethods ---
-    
+
     // --- USER CODE END: PublicMethods ---
 
 private:
@@ -27,6 +27,6 @@ private:
     void onButton1779887600111ValueChanged(float newValue);
 
     // --- USER CODE BEGIN: PrivateMembers ---
-    
+
     // --- USER CODE END: PrivateMembers ---
 };

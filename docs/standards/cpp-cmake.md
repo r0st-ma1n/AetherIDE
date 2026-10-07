@@ -48,7 +48,29 @@
 
 ## Форматирование и проверки
 
-- Для `C++`-части стоит ввести `clang-format`.
-- По мере роста проекта стоит подключить `clang-tidy` хотя бы для базовых проверок.
-- Базовая проверка качества для нативной части - успешный `CMake` configure и build.
-- Любое изменение в `framework` или `ide/native` должно сопровождаться как минимум успешной сборкой затронутых target-ов.
+Стиль задаёт `.clang-format` в корне. Версия clang-format зафиксирована в `requirements-dev.txt`, чтобы локально и в CI форматирование совпадало:
+
+```bash
+pip install -r requirements-dev.txt
+make cpp-format         # clang-format -i по всем отслеживаемым .cpp/.h
+make cpp-format-check   # --dry-run --Werror (то же, что в CI)
+```
+
+Если `clang-format` не в `PATH`, путь можно передать: `make cpp-format-check CLANG_FORMAT=/path/to/clang-format`.
+
+Сборка и тесты:
+
+```bash
+make cmake-configure
+make cmake-build        # --config Release (BUILD_CONFIG=Debug для отладки)
+make cmake-test         # ctest --output-on-failure
+```
+
+CI (`.github/workflows/CI.yml`) на каждый PR:
+
+- проверяет формат C++ (`C++ format`);
+- собирает все target-ы и гоняет CTest на `ubuntu-latest` (GCC) и `windows-latest` (MSVC).
+
+PR с неотформатированным C++, ошибкой сборки на любой из платформ или упавшим тестом в `main` не попадает.
+
+`clang-tidy` пока не подключён — вернёмся к нему, когда в `framework/core` появится больше кода.
