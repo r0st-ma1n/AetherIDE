@@ -1,22 +1,23 @@
 #pragma once
 
-#include "aether/AudioProcessor.h"
-#include "aether/AudioProcessorParameter.h"
+#include "aether/PluginFactory.h"
 #include "aether/SmoothedValue.h"
 
-class GainPlugin final : public aether::AudioProcessor {
+/** Minimal effect: scales the input by a smoothed gain, with a bypass switch. */
+class GainPlugin final : public aether::PluginProcessor {
 public:
     /** Gain changes are ramped over this time to avoid clicks. */
     static constexpr double kGainSmoothingMs = 20.0;
 
-    void prepareToPlay(double sampleRate, int maxBlockSize) override;
-    void releaseResources() override;
+    static aether::PluginInfo pluginInfo();
+
+    GainPlugin();
+
+protected:
+    void prepareToPlay(const aether::ProcessSetup& setup) override;
     void processBlock(aether::ProcessContext& context) override;
 
-    aether::ParameterLayout createParameters();
-
-    void setupUI();
-
 private:
+    aether::AudioProcessorParameter* gainParameter_;
     aether::SmoothedValue gain_;
 };

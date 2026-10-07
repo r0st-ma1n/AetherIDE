@@ -11,3 +11,4 @@
 - [standards/javascript-electron.md](./standards/javascript-electron.md) — стандарты для Vue 3, TypeScript, Pinia, Electron
 - [standards/cpp-cmake.md](./standards/cpp-cmake.md) — стандарты для C++ и CMake
 - [standards/testing.md](./standards/testing.md) — правила тестирования и проверки изменений
+- [framework/plugin-contract.md](./framework/plugin-contract.md) — контракт плагина и адаптера формата: вызовы, потоки, запреты в аудиопотоке

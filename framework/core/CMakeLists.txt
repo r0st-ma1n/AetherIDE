@@ -1,5 +1,6 @@
 add_library(aether_core
     src/AudioProcessorParameter.cpp
+    src/PluginInfo.cpp
     src/PluginState.cpp
 )
 
@@ -25,6 +26,13 @@ add_executable(parameter_test
 )
 target_link_libraries(parameter_test PRIVATE aether_core aether_test_support)
 add_test(NAME parameter_test COMMAND parameter_test)
+
+add_executable(plugin_contract_test
+    tests/plugin_contract_test.cpp
+    tests/contract/ContractTestPlugin.cpp
+)
+target_link_libraries(plugin_contract_test PRIVATE aether_core aether_test_support)
+add_test(NAME plugin_contract_test COMMAND plugin_contract_test)
 
 add_executable(plugin_state_test
     tests/plugin_state_test.cpp

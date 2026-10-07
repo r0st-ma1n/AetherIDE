@@ -13,6 +13,9 @@ namespace {
 constexpr double kSampleRate = 48000.0;
 constexpr int kBlockSize = 64;
 
+const aether::ProcessSetup kSetup{
+    .sampleRate = kSampleRate, .maxBlockSize = kBlockSize, .layout = aether::BusLayout::stereo()};
+
 void fill(aether::OwningAudioBuffer& buffer, float value) {
     for (int ch = 0; ch < buffer.numChannels(); ++ch) {
         for (int i = 0; i < buffer.numSamples(); ++i) {
@@ -23,22 +26,17 @@ void fill(aether::OwningAudioBuffer& buffer, float value) {
 
 void processesInPlaceWithoutAllocating() {
     GainPlugin plugin;
-    plugin.prepareToPlay(kSampleRate, kBlockSize);
-    aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.get("gain").setValue(0.5f);
+    plugin.parameters().get("gain").setValue(0.5f);
+    plugin.prepare(kSetup);
 
     aether::OwningAudioBuffer storage(2, kBlockSize);
     fill(storage, 1.0f);
     aether::AudioBuffer audio = storage.view();
-    aether::ProcessContext context{.input = audio,
-                                   .output = audio,
-                                   .parameters = parameters,
-                                   .sampleRate = kSampleRate,
-                                   .blockSize = kBlockSize};
+    aether::ProcessContext context{.input = audio, .output = audio};
 
     aether::test::AllocationCounter counter;
-    plugin.processBlock(context);
-    expectTrue(counter.count() == 0, "processBlock does not allocate");
+    plugin.process(context);
+    expectTrue(counter.count() == 0, "process does not allocate");
 
     expectNear(storage.channel(0)[0], 0.5f, 1e-6f, "in-place: first sample scaled");
     expectNear(storage.channel(1)[kBlockSize - 1], 0.5f, 1e-6f, "in-place: last sample scaled");
@@ -46,55 +44,49 @@ void processesInPlaceWithoutAllocating() {
 
 void processesSeparateBuffers() {
     GainPlugin plugin;
-    plugin.prepareToPlay(kSampleRate, kBlockSize);
-    aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.get("gain").setValue(2.0f);
+    plugin.parameters().get("gain").setValue(2.0f);
+    plugin.prepare(kSetup);
 
     aether::OwningAudioBuffer inputStorage(2, kBlockSize);
     aether::OwningAudioBuffer outputStorage(2, kBlockSize);
     fill(inputStorage, 0.25f);
     const aether::AudioBuffer input = inputStorage.view();
     aether::AudioBuffer output = outputStorage.view();
-    aether::ProcessContext context{.input = input,
-                                   .output = output,
-                                   .parameters = parameters,
-                                   .sampleRate = kSampleRate,
-                                   .blockSize = kBlockSize};
+    aether::ProcessContext context{.input = input, .output = output};
 
-    plugin.processBlock(context);
+    plugin.process(context);
 
     expectNear(outputStorage.channel(1)[10], 0.5f, 1e-6f, "output = input * gain");
     expectNear(inputStorage.channel(1)[10], 0.25f, 0.0f, "input is left untouched");
 }
 
-void silencesOutputChannelsWithoutInput() {
+void bypassPassesInputThrough() {
     GainPlugin plugin;
-    plugin.prepareToPlay(kSampleRate, kBlockSize);
-    aether::ParameterLayout parameters = plugin.createParameters();
+    plugin.parameters().get("gain").setValue(0.0f);
+    plugin.parameters().get("bypass").setValue(1.0f);
+    plugin.prepare(kSetup);
 
-    aether::OwningAudioBuffer inputStorage(1, kBlockSize);
+    aether::OwningAudioBuffer inputStorage(2, kBlockSize);
     aether::OwningAudioBuffer outputStorage(2, kBlockSize);
-    fill(inputStorage, 1.0f);
-    fill(outputStorage, 9.0f);
+    fill(inputStorage, 0.7f);
     const aether::AudioBuffer input = inputStorage.view();
     aether::AudioBuffer output = outputStorage.view();
-    aether::ProcessContext context{.input = input,
-                                   .output = output,
-                                   .parameters = parameters,
-                                   .sampleRate = kSampleRate,
-                                   .blockSize = kBlockSize};
+    aether::ProcessContext context{.input = input, .output = output};
 
-    plugin.processBlock(context);
+    plugin.process(context);
+    expectNear(outputStorage.channel(0)[5], 0.7f, 0.0f, "bypassed output equals input");
 
-    expectNear(outputStorage.channel(0)[0], 1.0f, 1e-6f, "channel with input is processed");
-    expectNear(outputStorage.channel(1)[0], 0.0f, 0.0f, "channel without input is silent");
+    plugin.parameters().get("bypass").setValue(0.0f);
+    plugin.process(context);
+    expectNear(outputStorage.channel(0)[5], 0.0f, 0.0f, "processing resumes after bypass");
 }
 
 void gainChangeIsRampedWithoutClick() {
     GainPlugin plugin;
-    plugin.prepareToPlay(kSampleRate, kBlockSize);
-    aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.get("gain").setValue(1.0f);
+    plugin.parameters().get("gain").setValue(1.0f);
+    plugin.prepare({.sampleRate = kSampleRate,
+                    .maxBlockSize = kBlockSize,
+                    .layout = aether::BusLayout::mono()});
 
     // 20 ms at 48 kHz = 960 samples = 15 blocks of 64.
     const int rampSamples = static_cast<int>(kSampleRate * GainPlugin::kGainSmoothingMs / 1000.0);
@@ -102,23 +94,19 @@ void gainChangeIsRampedWithoutClick() {
 
     aether::OwningAudioBuffer storage(1, kBlockSize);
     aether::AudioBuffer audio = storage.view();
-    aether::ProcessContext context{.input = audio,
-                                   .output = audio,
-                                   .parameters = parameters,
-                                   .sampleRate = kSampleRate,
-                                   .blockSize = kBlockSize};
+    aether::ProcessContext context{.input = audio, .output = audio};
 
     fill(storage, 1.0f);
-    plugin.processBlock(context);
+    plugin.process(context);
     expectNear(storage.channel(0)[0], 1.0f, 0.0f, "first block after prepare uses gain directly");
 
-    parameters.get("gain").setValue(0.0f);
+    plugin.parameters().get("gain").setValue(0.0f);
     float previous = 1.0f;
     bool monotonic = true;
     float largestJump = 0.0f;
     for (int b = 0; b < blocks; ++b) {
         fill(storage, 1.0f);
-        plugin.processBlock(context);
+        plugin.process(context);
         for (int i = 0; i < kBlockSize; ++i) {
             const float sample = storage.channel(0)[i];
             monotonic = monotonic && sample <= previous;
@@ -137,7 +125,7 @@ void gainChangeIsRampedWithoutClick() {
 int main() {
     processesInPlaceWithoutAllocating();
     processesSeparateBuffers();
-    silencesOutputChannelsWithoutInput();
+    bypassPassesInputThrough();
     gainChangeIsRampedWithoutClick();
     return aether::test::finish("gain_processor_test");
 }

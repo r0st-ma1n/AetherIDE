@@ -23,14 +23,12 @@ public:
         parameters_.addChoice("mode", "Mode", {"Clean", "Warm", "Hot"}, 0);
     }
 
-    void prepareToPlay(double, int) override {}
-    void processBlock(aether::ProcessContext&) override {}
-    void releaseResources() override {}
-
     std::string presetName;
     int customLoads = 0;
 
 protected:
+    void processBlock(aether::ProcessContext&) override {}
+
     void saveCustomState(std::vector<std::uint8_t>& out) const override {
         out.assign(presetName.begin(), presetName.end());
     }
