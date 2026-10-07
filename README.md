@@ -87,6 +87,7 @@ AetherIDE/
 
 ## Документация
 
+- [docs/ROADMAP.md](docs/ROADMAP.md) — план разработки
 - [docs/GIT_CONVENTIONS.md](docs/GIT_CONVENTIONS.md) — ветки, коммиты, PR
 - [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) — общие правила по коду
 - [docs/standards/architecture.md](docs/standards/architecture.md) — границы модулей
