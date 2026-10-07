@@ -1,7 +1,8 @@
 #include "GainPlugin.h"
 
-void GainPlugin::prepareToPlay([[maybe_unused]] double sampleRate,
-                               [[maybe_unused]] int maxBlockSize) {}
+void GainPlugin::prepareToPlay(double sampleRate, [[maybe_unused]] int maxBlockSize) {
+    gain_.reset(sampleRate, kGainSmoothingMs);
+}
 
 void GainPlugin::releaseResources() {}
 
@@ -14,25 +15,26 @@ aether::ParameterLayout GainPlugin::createParameters() {
 }
 
 void GainPlugin::processBlock(aether::ProcessContext& context) {
-    const float gain = context.parameters.get("gain").value();
+    gain_.setTarget(context.parameters.get("gain").value());
 
     const aether::AudioBuffer& input = context.input;
     aether::AudioBuffer& output = context.output;
+    const int processedChannels =
+        input.numChannels() < output.numChannels() ? input.numChannels() : output.numChannels();
 
-    for (int ch = 0; ch < output.numChannels(); ++ch) {
-        float* out = output.channel(ch);
+    for (int i = 0; i < output.numSamples(); ++i) {
+        const float gain = gain_.next();
 
-        if (ch >= input.numChannels()) {
-            for (int i = 0; i < output.numSamples(); ++i) {
-                out[i] = 0.0f;
-            }
-            continue;
+        // Reads the input sample before writing the output one, so in-place is safe.
+        for (int ch = 0; ch < processedChannels; ++ch) {
+            output.channel(ch)[i] = input.channel(ch)[i] * gain;
         }
+    }
 
-        // Reads in[i] before writing out[i], so in-place processing is safe.
-        const float* in = input.channel(ch);
+    for (int ch = processedChannels; ch < output.numChannels(); ++ch) {
+        float* out = output.channel(ch);
         for (int i = 0; i < output.numSamples(); ++i) {
-            out[i] = in[i] * gain;
+            out[i] = 0.0f;
         }
     }
 }

@@ -25,6 +25,12 @@ add_executable(parameter_test
 target_link_libraries(parameter_test PRIVATE aether_core aether_test_support)
 add_test(NAME parameter_test COMMAND parameter_test)
 
+add_executable(smoothed_value_test
+    tests/smoothed_value_test.cpp
+)
+target_link_libraries(smoothed_value_test PRIVATE aether_core aether_test_support)
+add_test(NAME smoothed_value_test COMMAND smoothed_value_test)
+
 add_executable(widget_host_test
     tests/widget_host_test.cpp
 )
