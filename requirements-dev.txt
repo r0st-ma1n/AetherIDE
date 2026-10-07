@@ -1,0 +1,2 @@
+# Dev tools pinned for local checks and CI: pip install -r requirements-dev.txt
+clang-format==23.1.3

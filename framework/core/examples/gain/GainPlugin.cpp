@@ -1,21 +1,14 @@
 #include "GainPlugin.h"
 
-void GainPlugin::prepareToPlay([[maybe_unused]] double sampleRate, [[maybe_unused]] int maxBlockSize) {
-}
+void GainPlugin::prepareToPlay([[maybe_unused]] double sampleRate,
+                               [[maybe_unused]] int maxBlockSize) {}
 
-void GainPlugin::releaseResources() {
-}
+void GainPlugin::releaseResources() {}
 
 aether::ParameterLayout GainPlugin::createParameters() {
     aether::ParameterLayout layout;
 
-    layout.addFloat(
-        "gain",
-        "Gain",
-        0.0f,
-        2.0f,
-        1.0f
-    );
+    layout.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);
 
     return layout;
 }

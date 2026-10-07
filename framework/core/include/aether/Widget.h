@@ -29,10 +29,18 @@ public:
         return parameter_;
     }
 
-    int x() const { return x_; }
-    int y() const { return y_; }
-    int width() const { return width_; }
-    int height() const { return height_; }
+    int x() const {
+        return x_;
+    }
+    int y() const {
+        return y_;
+    }
+    int width() const {
+        return width_;
+    }
+    int height() const {
+        return height_;
+    }
 
     /** Invoked by the future event loop when the control value changes. */
     std::function<void(float)> onValueChanged;

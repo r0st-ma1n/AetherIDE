@@ -36,8 +36,8 @@ public:
             if (widget == nullptr) {
                 continue;
             }
-            if (x >= widget->x() && x < widget->x() + widget->width() &&
-                y >= widget->y() && y < widget->y() + widget->height()) {
+            if (x >= widget->x() && x < widget->x() + widget->width() && y >= widget->y() &&
+                y < widget->y() + widget->height()) {
                 return widget;
             }
         }

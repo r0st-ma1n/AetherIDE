@@ -1,8 +1,8 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 namespace aether {
 
@@ -22,14 +22,8 @@ public:
      * @param defaultValue  Initial value; must be in [min, max].
      * @param step          Smallest meaningful increment (0 = continuous).
      */
-    AudioProcessorParameter(
-        std::string id,
-        std::string name,
-        float min,
-        float max,
-        float defaultValue,
-        float step = 0.0f
-    );
+    AudioProcessorParameter(std::string id, std::string name, float min, float max,
+                            float defaultValue, float step = 0.0f);
 
     /** @brief Returns the unique machine-readable identifier. */
     const std::string& id() const;
@@ -82,14 +76,8 @@ public:
      * @param defaultValue  Initial value.
      * @param step          Step size (0 = continuous).
      */
-    void addFloat(
-        const std::string& id,
-        const std::string& name,
-        float min,
-        float max,
-        float defaultValue,
-        float step = 0.0f
-    );
+    void addFloat(const std::string& id, const std::string& name, float min, float max,
+                  float defaultValue, float step = 0.0f);
 
     /**
      * @brief Returns the parameter with the given id, or nullptr if missing.

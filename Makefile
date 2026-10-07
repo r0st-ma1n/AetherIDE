@@ -1,7 +1,10 @@
-.PHONY: help ide-install ide-dev ide-build ide-start ide-lint ide-test ide-typecheck ide-format ide-format-check cmake-configure cmake-build test run-all
+.PHONY: help ide-install ide-dev ide-build ide-start ide-lint ide-test ide-typecheck ide-format ide-format-check cmake-configure cmake-build cmake-test cpp-format cpp-format-check test run-all
 
 BUILD_DIR ?= build
 IDE_DIR := ide
+BUILD_CONFIG ?= Release
+CLANG_FORMAT ?= clang-format
+CPP_SOURCES = $(shell git ls-files "*.cpp" "*.h")
 
 help:
 	@echo Available targets:
@@ -22,6 +25,11 @@ help:
 	@echo [CMake]
 	@echo   cmake-configure   Configure the CMake project
 	@echo   cmake-build       Build the CMake project
+	@echo   cmake-test        Run C++ tests with CTest
+	@echo
+	@echo [C++ Checks]
+	@echo   cpp-format        Format C++ sources with clang-format
+	@echo   cpp-format-check  Check C++ formatting (pip install -r requirements-dev.txt)
 	@echo
 	@echo [Project]
 	@echo   test              Run all available project checks
@@ -61,9 +69,19 @@ cmake-configure:
 	cmake -S . -B $(BUILD_DIR)
 
 cmake-build:
-	cmake --build $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) --config $(BUILD_CONFIG)
+
+cmake-test: cmake-build
+	ctest --test-dir $(BUILD_DIR) -C $(BUILD_CONFIG) --output-on-failure
+
+# C++ Checks
+cpp-format:
+	$(CLANG_FORMAT) -i $(CPP_SOURCES)
+
+cpp-format-check:
+	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SOURCES)
 
 # Project
-test: cmake-configure cmake-build ide-format-check ide-lint ide-test ide-typecheck ide-build
+test: cmake-configure cmake-build cmake-test cpp-format-check ide-format-check ide-lint ide-test ide-typecheck ide-build
 
 run-all: cmake-configure cmake-build ide-build ide-start

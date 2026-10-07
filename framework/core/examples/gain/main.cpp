@@ -24,12 +24,10 @@ int main() {
         }
     }
 
-    aether::ProcessContext context {
-        .audio = buffer,
-        .parameters = parameters,
-        .sampleRate = sampleRate,
-        .blockSize = blockSize
-    };
+    aether::ProcessContext context{.audio = buffer,
+                                   .parameters = parameters,
+                                   .sampleRate = sampleRate,
+                                   .blockSize = blockSize};
 
     plugin.processBlock(context);
 

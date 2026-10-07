@@ -1,15 +1,14 @@
 #pragma once
 
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 namespace aether {
 
 class AudioBuffer {
 public:
     AudioBuffer(int channels, int samples)
-        : channels_(channels),
-          samples_(samples),
+        : channels_(channels), samples_(samples),
           data_(channels, std::vector<float>(samples, 0.0f)) {
         if (channels <= 0 || samples <= 0) {
             throw std::invalid_argument("Invalid audio buffer size");
