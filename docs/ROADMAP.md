@@ -155,10 +155,10 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### A0. Уборка · S
 
-- [ ] Убрать CLAP из `aether_core`: `FetchContent` тянет его из сети, а код его не использует
+- [x] Убрать CLAP из `aether_core`: `FetchContent` тянет его из сети, а код его не использует
       (CLAP вернётся отдельным адаптером в блоке G)
-- [ ] Удалить `ide/native`: прототип, который IDE не вызывает
-- [ ] `PluginProcessor.h` не включает виджеты (`Knob`, `Slider`, `Button`) — GUI ядру v1 не нужен
+- [x] Удалить `ide/native`: прототип, который IDE не вызывает
+- [x] `PluginProcessor.h` не включает виджеты (`Knob`, `Slider`, `Button`) — GUI ядру v1 не нужен
 
 ### A1. AudioBuffer без владения памятью · S
 
