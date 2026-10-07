@@ -1,10 +1,7 @@
 #pragma once
 
 #include "aether/AudioProcessor.h"
-#include "aether/Button.h"
-#include "aether/Knob.h"
 #include "aether/Parameter.h"
-#include "aether/Slider.h"
 
 #include <string>
 

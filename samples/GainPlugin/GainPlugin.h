@@ -3,6 +3,7 @@
 
 #include "aether/Parameter.h"
 #include "aether/PluginProcessor.h"
+#include "aether/Widgets.h"
 
 // --- USER CODE BEGIN: Includes ---
 
