@@ -17,9 +17,14 @@
 
 ```cmake
 add_executable(my_feature_test tests/my_feature_test.cpp)
-target_link_libraries(my_feature_test PRIVATE aether_core)
+target_link_libraries(my_feature_test PRIVATE aether_core aether_test_support)
 add_test(NAME my_feature_test COMMAND my_feature_test)
 ```
+
+`aether_test_support` (`framework/core/tests/support/`) даёт:
+
+- `Check.h` — `expectTrue`, `expectNear` и `finish("my_feature_test")` для кода возврата;
+- `AllocationCounter.h` — счётчик аллокаций через подменённый глобальный `operator new`. Любой код, который выполняется в аудиопотоке (`processBlock` и всё, что он вызывает), проверяется тестом `counter.count() == 0`.
 
 Тесты собираются и запускаются на Linux (GCC) и Windows (MSVC).
 

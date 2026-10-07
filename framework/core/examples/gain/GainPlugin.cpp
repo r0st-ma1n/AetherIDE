@@ -16,11 +16,23 @@ aether::ParameterLayout GainPlugin::createParameters() {
 void GainPlugin::processBlock(aether::ProcessContext& context) {
     const float gain = context.parameters.getFloat("gain").value();
 
-    for (int ch = 0; ch < context.audio.numChannels(); ++ch) {
-        float* samples = context.audio.channel(ch);
+    const aether::AudioBuffer& input = context.input;
+    aether::AudioBuffer& output = context.output;
 
-        for (int i = 0; i < context.audio.numSamples(); ++i) {
-            samples[i] *= gain;
+    for (int ch = 0; ch < output.numChannels(); ++ch) {
+        float* out = output.channel(ch);
+
+        if (ch >= input.numChannels()) {
+            for (int i = 0; i < output.numSamples(); ++i) {
+                out[i] = 0.0f;
+            }
+            continue;
+        }
+
+        // Reads in[i] before writing out[i], so in-place processing is safe.
+        const float* in = input.channel(ch);
+        for (int i = 0; i < output.numSamples(); ++i) {
+            out[i] = in[i] * gain;
         }
     }
 }
