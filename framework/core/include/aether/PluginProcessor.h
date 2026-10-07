@@ -1,9 +1,10 @@
 #pragma once
 
-#include "aether/AudioProcessor.h"
-#include "aether/Parameter.h"
+#include "aether/AudioProcessorParameter.h"
 #include "aether/PluginState.h"
+#include "aether/ProcessContext.h"
 
+#include <cassert>
 #include <cstdint>
 #include <span>
 #include <string_view>
@@ -12,38 +13,134 @@
 namespace aether {
 
 /**
- * IDE-facing processor base.
+ * @brief Base class of every Aether plugin; the only thing format adapters talk to.
  *
- * Owns a ParameterLayout and exposes getParameter() for generated UI code.
- * DSP methods remain pure virtual — plugin authors implement processBlock.
+ * The processor owns its parameters and describes its capabilities (bus layouts, latency,
+ * tail). Format adapters (VST3, CLAP, AU, the headless host) drive it through the
+ * non-virtual calls prepare(), process() and release(); the plugin implements the
+ * protected virtual hooks. The full contract — which call comes from which thread and what
+ * is forbidden on the audio thread — is in docs/framework/plugin-contract.md.
+ *
+ * Minimal plugin:
+ *
+ *     class MyGain : public aether::PluginProcessor {
+ *     public:
+ *         static aether::PluginInfo pluginInfo();
+ *         MyGain() { gain_ = &parameters_.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f); }
+ *
+ *     protected:
+ *         void processBlock(aether::ProcessContext& context) override { ... }
+ *
+ *     private:
+ *         aether::AudioProcessorParameter* gain_;
+ *     };
+ *
+ *     AETHER_PLUGIN(MyGain)
  */
-class PluginProcessor : public AudioProcessor {
+class PluginProcessor {
 public:
-    ~PluginProcessor() override = default;
+    PluginProcessor() = default;
+    virtual ~PluginProcessor() = default;
 
-    ParameterLayout& parameters() {
-        return parameters_;
-    }
+    PluginProcessor(const PluginProcessor&) = delete;
+    PluginProcessor& operator=(const PluginProcessor&) = delete;
 
-    const ParameterLayout& parameters() const {
-        return parameters_;
+    // --- Called by format adapters ------------------------------------------------------
+
+    /**
+     * @brief Prepares for processing with @p setup; main thread.
+     *
+     * If already prepared, releases first. @p setup.layout must be supported
+     * (see isBusLayoutSupported()).
+     */
+    void prepare(const ProcessSetup& setup) {
+        assert(isBusLayoutSupported(setup.layout));
+        if (prepared_) {
+            release();
+        }
+        setup_ = setup;
+        bypass_ = parameters_.bypass();
+        prepareToPlay(setup_);
+        prepared_ = true;
     }
 
     /**
-     * @return Parameter pointer, or nullptr if id is unknown.
+     * @brief Processes one block; audio thread.
+     *
+     * When the bypass parameter is on, copies input to output without calling
+     * processBlock(). Must not throw: an exception here terminates the host.
      */
-    Parameter* getParameter(std::string_view id) noexcept {
+    void process(ProcessContext& context) noexcept {
+        assert(prepared_);
+        assert(context.output.numSamples() <= setup_.maxBlockSize);
+        assert(context.input.numChannels() == 0 ||
+               context.input.numSamples() == context.output.numSamples());
+
+        if (bypass_ != nullptr && bypass_->boolValue()) {
+            passThrough(context);
+            return;
+        }
+        processBlock(context);
+    }
+
+    /** @brief Ends processing and frees resources from prepare(); main thread. */
+    void release() {
+        if (!prepared_) {
+            return;
+        }
+        prepared_ = false;
+        releaseResources();
+    }
+
+    bool isPrepared() const noexcept {
+        return prepared_;
+    }
+
+    /** @brief Setup passed to the last prepare(). */
+    const ProcessSetup& processSetup() const noexcept {
+        return setup_;
+    }
+
+    // --- Capabilities; override to change --------------------------------------------
+
+    /** @brief Whether the plugin can run with @p layout. Default: mono→mono, stereo→stereo. */
+    virtual bool isBusLayoutSupported(const BusLayout& layout) const {
+        return layout == BusLayout::mono() || layout == BusLayout::stereo();
+    }
+
+    /** @brief Delay the plugin adds, in samples; the host compensates for it. */
+    virtual int getLatencySamples() const {
+        return 0;
+    }
+
+    /** @brief How long the output keeps sounding after the input goes silent, in seconds. */
+    virtual double getTailSeconds() const {
+        return 0.0;
+    }
+
+    // --- Parameters and state ---------------------------------------------------------
+
+    ParameterLayout& parameters() noexcept {
+        return parameters_;
+    }
+
+    const ParameterLayout& parameters() const noexcept {
+        return parameters_;
+    }
+
+    /** @return Parameter with the given string id, or nullptr. */
+    AudioProcessorParameter* getParameter(std::string_view id) noexcept {
         return parameters_.find(id);
     }
 
-    const Parameter* getParameter(std::string_view id) const noexcept {
+    const AudioProcessorParameter* getParameter(std::string_view id) const noexcept {
         return parameters_.find(id);
     }
 
     /**
      * @brief Serialises the plugin for the DAW project or a preset; see PluginState.
      *
-     * Called by format adapters from the host's main thread, never from processBlock().
+     * Main thread; may run while the audio thread is processing.
      */
     PluginState getState() const {
         std::vector<std::uint8_t> custom;
@@ -55,7 +152,8 @@ public:
      * @brief Restores a state produced by getState(), possibly by an older plugin version.
      *
      * Parameters missing from the state get their defaults, unknown ids are ignored.
-     * loadCustomState() is called only if the state is valid.
+     * loadCustomState() is called only if the state is valid. Main thread; may run while
+     * the audio thread is processing.
      *
      * @return false if the state is corrupt or from a newer format; nothing is changed then.
      */
@@ -69,6 +167,27 @@ public:
     }
 
 protected:
+    // --- Implemented by the plugin -----------------------------------------------------
+
+    /**
+     * @brief Allocate buffers and reset DSP state for @p setup; main thread.
+     *
+     * Called before the first processBlock() and again whenever the sample rate, maximum
+     * block size or layout changes.
+     */
+    virtual void prepareToPlay([[maybe_unused]] const ProcessSetup& setup) {}
+
+    /**
+     * @brief Produces one block of output from input; audio thread.
+     *
+     * Must not allocate, lock, wait, do I/O or throw. Read parameters through the
+     * AudioProcessorParameter pointers kept from the constructor.
+     */
+    virtual void processBlock(ProcessContext& context) = 0;
+
+    /** @brief Frees what prepareToPlay() allocated; main thread. */
+    virtual void releaseResources() {}
+
     /**
      * @brief Appends plugin-specific data (beyond parameters) to the state.
      *
@@ -83,7 +202,43 @@ protected:
      */
     virtual void loadCustomState([[maybe_unused]] std::span<const std::uint8_t> data) {}
 
+    /**
+     * @brief Adds the standard bypass switch (id "bypass").
+     *
+     * When it is on, process() passes input to output and processBlock() is not called.
+     * Call from the constructor.
+     */
+    AudioProcessorParameter& addBypassParameter() {
+        return parameters_.addBool("bypass", "Bypass", false, {.isBypass = true});
+    }
+
+    /** Parameters of the plugin; add them in the constructor, never after prepare(). */
     ParameterLayout parameters_;
+
+private:
+    static void passThrough(ProcessContext& context) noexcept {
+        const AudioBuffer& in = context.input;
+        AudioBuffer& out = context.output;
+        for (int ch = 0; ch < out.numChannels(); ++ch) {
+            float* dst = out.channel(ch);
+            if (ch < in.numChannels()) {
+                const float* src = in.channel(ch);
+                if (src != dst) {
+                    for (int i = 0; i < out.numSamples(); ++i) {
+                        dst[i] = src[i];
+                    }
+                }
+            } else {
+                for (int i = 0; i < out.numSamples(); ++i) {
+                    dst[i] = 0.0f;
+                }
+            }
+        }
+    }
+
+    ProcessSetup setup_;
+    AudioProcessorParameter* bypass_ = nullptr;
+    bool prepared_ = false;
 };
 
 } // namespace aether

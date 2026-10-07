@@ -22,12 +22,12 @@ enum class SmoothingType {
  * Use it for any parameter that scales audio directly (gain, mix, pan): a sudden jump
  * produces an audible click. Typical use in a processor:
  *
- *     void prepareToPlay(double sampleRate, int) override {
- *         gain_.reset(sampleRate, 20.0);
+ *     void prepareToPlay(const ProcessSetup& setup) override {
+ *         gain_.reset(setup.sampleRate, 20.0);
  *     }
  *
  *     void processBlock(ProcessContext& context) override {
- *         gain_.setTarget(context.parameters.get("gain").value());
+ *         gain_.setTarget(gainParameter_->value());
  *         for (int i = 0; i < context.output.numSamples(); ++i) {
  *             const float g = gain_.next();
  *             ...

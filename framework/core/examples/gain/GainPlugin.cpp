@@ -1,21 +1,25 @@
 #include "GainPlugin.h"
 
-void GainPlugin::prepareToPlay(double sampleRate, [[maybe_unused]] int maxBlockSize) {
-    gain_.reset(sampleRate, kGainSmoothingMs);
+aether::PluginInfo GainPlugin::pluginInfo() {
+    return {
+        .name = "Gain",
+        .vendor = "Aether",
+        .id = "dev.aether.examples.gain",
+        .version = {1, 0, 0},
+    };
 }
 
-void GainPlugin::releaseResources() {}
+GainPlugin::GainPlugin() {
+    gainParameter_ = &parameters_.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);
+    addBypassParameter();
+}
 
-aether::ParameterLayout GainPlugin::createParameters() {
-    aether::ParameterLayout layout;
-
-    layout.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);
-
-    return layout;
+void GainPlugin::prepareToPlay(const aether::ProcessSetup& setup) {
+    gain_.reset(setup.sampleRate, kGainSmoothingMs);
 }
 
 void GainPlugin::processBlock(aether::ProcessContext& context) {
-    gain_.setTarget(context.parameters.get("gain").value());
+    gain_.setTarget(gainParameter_->value());
 
     const aether::AudioBuffer& input = context.input;
     aether::AudioBuffer& output = context.output;
@@ -39,6 +43,4 @@ void GainPlugin::processBlock(aether::ProcessContext& context) {
     }
 }
 
-void GainPlugin::setupUI() {
-    // UI components will be generated here by the IDE
-}
+AETHER_PLUGIN(GainPlugin)

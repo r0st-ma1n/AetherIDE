@@ -1,55 +1,38 @@
-#include "GainPlugin.h"
-
 #include "aether/OwningAudioBuffer.h"
+#include "aether/PluginFactory.h"
 
 #include <iostream>
 
+// Drives the registered plugin through the factory, like a format adapter would.
 int main() {
-    GainPlugin plugin;
+    const aether::PluginFactory& factory = aether::pluginFactory();
+    const aether::PluginInfo info = factory.info();
+    std::cout << info.name << " " << info.version.toString() << " by " << info.vendor << "\n";
 
-    constexpr double sampleRate = 44100.0;
-    constexpr int blockSize = 8;
-    constexpr int channels = 2;
+    auto plugin = factory.create();
+    plugin->parameters().get("gain").setValue(0.5f);
+    plugin->prepare(
+        {.sampleRate = 44100.0, .maxBlockSize = 8, .layout = aether::BusLayout::stereo()});
 
-    plugin.prepareToPlay(sampleRate, blockSize);
-
-    aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.get("gain").setValue(0.5f);
-
-    aether::OwningAudioBuffer buffer(channels, blockSize);
-    aether::AudioBuffer audio = buffer.view();
-
+    aether::OwningAudioBuffer buffer(2, 8);
     for (int ch = 0; ch < buffer.numChannels(); ++ch) {
-        float* samples = buffer.channel(ch);
-
         for (int i = 0; i < buffer.numSamples(); ++i) {
-            samples[i] = 1.0f;
+            buffer.channel(ch)[i] = 1.0f;
         }
     }
 
-    aether::ProcessContext context{.input = audio,
-                                   .output = audio,
-                                   .parameters = parameters,
-                                   .sampleRate = sampleRate,
-                                   .blockSize = blockSize};
-
-    plugin.processBlock(context);
-
-    plugin.releaseResources();
+    aether::AudioBuffer audio = buffer.view();
+    aether::ProcessContext context{.input = audio, .output = audio};
+    plugin->process(context);
+    plugin->release();
 
     std::cout << "Processed samples:\n";
-
     for (int ch = 0; ch < buffer.numChannels(); ++ch) {
         std::cout << "Channel " << ch << ": ";
-
-        const float* samples = buffer.channel(ch);
-
         for (int i = 0; i < buffer.numSamples(); ++i) {
-            std::cout << samples[i] << " ";
+            std::cout << buffer.channel(ch)[i] << " ";
         }
-
         std::cout << "\n";
     }
-
     return 0;
 }

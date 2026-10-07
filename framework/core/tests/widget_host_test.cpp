@@ -34,10 +34,8 @@ int main() {
 
     // Concrete processor for layout ownership in tests.
     class TestProcessor : public PluginProcessor {
-    public:
-        void prepareToPlay(double, int) override {}
+    protected:
         void processBlock(ProcessContext&) override {}
-        void releaseResources() override {}
     };
 
     TestProcessor processor;
