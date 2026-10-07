@@ -68,7 +68,6 @@ AetherIDE/
 │       └── examples/gain/  # пример плагина
 ├── ide/
 │   ├── electron/           # Electron main process и preload
-│   ├── native/             # C++ нативный модуль (IPC-мост)
 │   ├── src/
 │   │   ├── app/            # shell верхнего уровня
 │   │   ├── domains/        # фичи по доменам:

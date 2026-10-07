@@ -4,10 +4,10 @@
 
 ## Автоматические тесты
 
-| Часть                  | Инструмент              | Где лежат тесты                   | Команда           |
-| ---------------------- | ----------------------- | --------------------------------- | ----------------- |
-| `ide/src` (renderer)   | Vitest                  | `*.test.ts` рядом с кодом         | `make ide-test`   |
-| `framework/`, `native` | CTest (exe + exit code) | `framework/core/tests/*_test.cpp` | `make cmake-test` |
+| Часть                    | Инструмент              | Где лежат тесты                   | Команда           |
+| ------------------------ | ----------------------- | --------------------------------- | ----------------- |
+| `ide/src` (renderer)     | Vitest                  | `*.test.ts` рядом с кодом         | `make ide-test`   |
+| `framework/`, `samples/` | CTest (exe + exit code) | `framework/core/tests/*_test.cpp` | `make cmake-test` |
 
 `make test` прогоняет всё, что гоняет CI: сборку C++, CTest, формат C++ и IDE, ESLint, vitest, typecheck, сборку фронтенда.
 
@@ -29,7 +29,7 @@ add_test(NAME my_feature_test COMMAND my_feature_test)
   - запуск приложения
   - сценарий, который затронул изменение
   - отсутствие явных ошибок в консоли для основного happy path
-- Изменения в `framework/` или `ide/native/`:
+- Изменения в `framework/` или `samples/`:
   - успешная сборка
   - ручная проверка затронутого поведения
   - если меняется core API, проверка `examples/gain`

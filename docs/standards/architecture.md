@@ -11,7 +11,6 @@ AetherIDE/
 ├── ide/
 │   ├── electron/main/      # Electron main process
 │   ├── electron/preload/   # IPC bridge
-│   ├── native/             # C++ нативный модуль IDE
 │   └── src/                # Vue 3 renderer
 │       ├── domains/        # фичи по доменам
 │       └── shared/         # общий код
@@ -51,13 +50,6 @@ AetherIDE/
 - Синхронизация визуального редактора с кодом
 
 Не должен использовать Node API напрямую в обход preload.
-
-### `ide/native`
-
-- C++ нативный модуль, нужный самой IDE
-- Интеграция с C++ подсистемой через IPC
-
-Не должен дублировать framework-логику, если она может жить в `framework/core`.
 
 ### `samples/GainPlugin`
 
