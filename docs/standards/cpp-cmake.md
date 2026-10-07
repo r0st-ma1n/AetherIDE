@@ -1,13 +1,13 @@
 # C++ and CMake Standards
 
-Стандарты для `framework/` и `ide/native/`.
+Стандарты для `framework/` и `samples/`.
 
 ## Назначение
 
 - `framework/core` содержит переиспользуемые аудио-абстракции
-- `ide/native` содержит нативный backend самой IDE
+- `samples/` содержит примеры проектов, которые открываются в IDE
 
-Если код нужен только IDE, он не должен автоматически попадать в framework API.
+Если код нужен только IDE, он живёт в `ide/` (TypeScript) и не попадает в framework API.
 
 ## Именование
 

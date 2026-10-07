@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'native/**'],
+    ignores: ['dist/**', 'node_modules/**'],
   },
 
   // Electron main + preload (CommonJS, Node runtime)

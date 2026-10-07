@@ -5,7 +5,6 @@
 ## Структура репозитория
 
 - `ide/` — Electron-приложение с Vue 3 renderer
-- `ide/native/` — C++ нативный модуль (IPC-мост)
 - `framework/core/` — C++ Aether framework
 - `framework/core/examples/gain/` — пример использования framework API
 - `samples/GainPlugin/` — пример проекта, открываемого в IDE
@@ -41,7 +40,7 @@ make ide-test           # unit-тесты (Vitest)
 make ide-build          # сборка frontend
 ```
 
-Если затронута C++ часть (`framework/` или `ide/native/`):
+Если затронута C++ часть (`framework/`, `samples/`):
 
 ```bash
 make cmake-configure
