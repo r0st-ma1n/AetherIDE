@@ -25,7 +25,7 @@ void processesInPlaceWithoutAllocating() {
     GainPlugin plugin;
     plugin.prepareToPlay(kSampleRate, kBlockSize);
     aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.getFloat("gain").setValue(0.5f);
+    parameters.get("gain").setValue(0.5f);
 
     aether::OwningAudioBuffer storage(2, kBlockSize);
     fill(storage, 1.0f);
@@ -48,7 +48,7 @@ void processesSeparateBuffers() {
     GainPlugin plugin;
     plugin.prepareToPlay(kSampleRate, kBlockSize);
     aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.getFloat("gain").setValue(2.0f);
+    parameters.get("gain").setValue(2.0f);
 
     aether::OwningAudioBuffer inputStorage(2, kBlockSize);
     aether::OwningAudioBuffer outputStorage(2, kBlockSize);

@@ -56,10 +56,7 @@ public:
 
         float value = normalizedValue;
         if (Parameter* param = widget->parameter()) {
-            const float min = param->min();
-            const float max = param->max();
-            value = min + (max - min) * normalizedValue;
-            param->setValue(value);
+            param->setNormalizedValue(normalizedValue);
             value = param->value();
         }
 

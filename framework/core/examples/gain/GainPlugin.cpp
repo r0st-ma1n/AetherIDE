@@ -14,7 +14,7 @@ aether::ParameterLayout GainPlugin::createParameters() {
 }
 
 void GainPlugin::processBlock(aether::ProcessContext& context) {
-    const float gain = context.parameters.getFloat("gain").value();
+    const float gain = context.parameters.get("gain").value();
 
     const aether::AudioBuffer& input = context.input;
     aether::AudioBuffer& output = context.output;
