@@ -6,8 +6,9 @@
 
 ```
 AetherIDE/
-├── framework/core/         # C++ Aether framework — аудио-абстракции
-│   └── examples/gain/      # пример использования API
+├── framework/core/         # C++ Aether framework — контракт плагина
+│   └── examples/gain/      # пример плагина
+├── framework/host/         # headless-хост aether_host — первый адаптер
 ├── ide/
 │   ├── electron/main/      # Electron main process
 │   ├── electron/preload/   # IPC bridge
@@ -27,6 +28,13 @@ AetherIDE/
 - Публичный API держится в `include/aether/`
 
 Не должен зависеть от Electron, Node.js или UI-слоя.
+
+### `framework/host`
+
+- Headless-хост: загрузка плагина из модуля, офлайн-рендер, WAV, утилита `aether_host` —
+  см. [headless-host.md](../framework/headless-host.md)
+- Работает с плагином только через контракт `framework/core`
+- Платформенный код — только в `src/platform/`
 
 ### `ide/electron/main`
 

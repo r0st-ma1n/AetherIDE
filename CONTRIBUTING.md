@@ -6,7 +6,8 @@
 
 - `ide/` — Electron-приложение с Vue 3 renderer
 - `framework/core/` — C++ Aether framework
-- `framework/core/examples/gain/` — пример использования framework API
+- `framework/core/examples/gain/` — пример плагина
+- `framework/host/` — headless-хост `aether_host`
 - `samples/GainPlugin/` — пример проекта, открываемого в IDE
 - `docs/` — стандарты и правила разработки
 
