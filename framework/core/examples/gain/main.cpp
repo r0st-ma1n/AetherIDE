@@ -1,5 +1,7 @@
 #include "GainPlugin.h"
 
+#include "aether/OwningAudioBuffer.h"
+
 #include <iostream>
 
 int main() {
@@ -14,7 +16,8 @@ int main() {
     aether::ParameterLayout parameters = plugin.createParameters();
     parameters.getFloat("gain").setValue(0.5f);
 
-    aether::AudioBuffer buffer(channels, blockSize);
+    aether::OwningAudioBuffer buffer(channels, blockSize);
+    aether::AudioBuffer audio = buffer.view();
 
     for (int ch = 0; ch < buffer.numChannels(); ++ch) {
         float* samples = buffer.channel(ch);
@@ -24,7 +27,8 @@ int main() {
         }
     }
 
-    aether::ProcessContext context{.audio = buffer,
+    aether::ProcessContext context{.input = audio,
+                                   .output = audio,
                                    .parameters = parameters,
                                    .sampleRate = sampleRate,
                                    .blockSize = blockSize};
