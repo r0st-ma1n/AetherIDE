@@ -1,8 +1,29 @@
 # Testing Standards
 
-Этот проект пока выглядит как прототип, поэтому стандарт тестирования должен быть легким, но обязательным.
+Стандарт тестирования лёгкий, но обязательный. Автоматические проверки запускает CI на каждый PR в `main`; merge возможен только при зелёном CI.
 
-## Что проверять обязательно
+## Автоматические тесты
+
+| Часть                  | Инструмент              | Где лежат тесты                   | Команда           |
+| ---------------------- | ----------------------- | --------------------------------- | ----------------- |
+| `ide/src` (renderer)   | Vitest                  | `*.test.ts` рядом с кодом         | `make ide-test`   |
+| `framework/`, `native` | CTest (exe + exit code) | `framework/core/tests/*_test.cpp` | `make cmake-test` |
+
+`make test` прогоняет всё, что гоняет CI: сборку C++, CTest, формат C++ и IDE, ESLint, vitest, typecheck, сборку фронтенда.
+
+### C++-тесты
+
+Пока без тестового фреймворка: тест — это исполняемый файл, который возвращает `EXIT_FAILURE` при провале и печатает причину в `stderr`. Регистрация в CMake:
+
+```cmake
+add_executable(my_feature_test tests/my_feature_test.cpp)
+target_link_libraries(my_feature_test PRIVATE aether_core)
+add_test(NAME my_feature_test COMMAND my_feature_test)
+```
+
+Тесты собираются и запускаются на Linux (GCC) и Windows (MSVC).
+
+## Ручная проверка
 
 - Изменения в `ide/`:
   - запуск приложения
@@ -28,10 +49,10 @@ How to verify
 
 ## Приоритет для будущих автотестов
 
+- Unit-тесты для core-сущностей `framework/core` (каждая новая сущность — с тестом)
+- Тесты на генерацию или преобразование кода
 - Smoke test на запуск `Electron` IDE
 - Проверки синхронизации visual editor <-> code editor
-- Unit-тесты для core сущностей во `framework/core`
-- Тесты на генерацию или преобразование кода, если эта логика будет расти
 
 ## Правила тестового кода
 

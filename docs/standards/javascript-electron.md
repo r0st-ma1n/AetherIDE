@@ -96,8 +96,18 @@ project:list-files
 ```bash
 make ide-format        # Prettier --write
 make ide-format-check  # Prettier --check (в CI)
-make ide-lint          # ESLint
-make ide-typecheck     # vue-tsc
+make ide-lint          # ESLint, --max-warnings 0 (в CI)
+make ide-typecheck     # vue-tsc (в CI)
 ```
 
 Конфиги: `.prettierrc.json` (корень), `eslint.config.mjs` (ide/).
+
+ESLint проверяет:
+
+- `src/**/*.{ts,vue}` — `typescript-eslint` (recommended) + `eslint-plugin-vue` (recommended). Правила из этого документа закреплены явно:
+  - `@typescript-eslint/no-explicit-any` — `any` запрещён;
+  - `@typescript-eslint/consistent-type-imports` — типы импортируются через `import type`;
+  - `vue/component-api-style: script-setup` и `vue/block-lang: ts` — только `<script setup lang="ts">`.
+- `electron/**/*.cjs`, `scripts/**` — `eslint:recommended` с глобалами Node.
+
+Правила оформления разметки отключены — за формат отвечает Prettier. Предупреждения ломают CI так же, как ошибки: либо чинить, либо осознанно отключать правило в конфиге.
