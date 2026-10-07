@@ -22,9 +22,12 @@
   "dependencies": {
     "ajv": "^8.20.0",
     "electron": "^42.2.0",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.57.0",
     "pinia": "^3.0.3",
-    "vue": "^3.5.34"
+    "vue": "^3.5.43"
+  },
+  "overrides": {
+    "dompurify": "^3.4.16"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
