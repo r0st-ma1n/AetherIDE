@@ -26,6 +26,9 @@
     "pinia": "^3.0.3",
     "vue": "^3.5.43"
   },
+  "overrides": {
+    "dompurify": "^3.4.16"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^6.0.1",
