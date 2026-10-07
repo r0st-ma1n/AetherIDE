@@ -37,7 +37,7 @@
 
 - Изменения в public headers считать API-изменениями.
 - Перед расширением базовых абстракций сначала проверить, нельзя ли решить задачу на уровне примера или IDE backend.
-- Если меняется контракт `PluginProcessor`, `Parameter` или `ProcessContext`, нужно проверить пример `gain` и обновить документацию.
+- Если меняется контракт `PluginProcessor`, параметров или `ProcessContext`, нужно проверить пример `gain`, тест `plugin_contract_test` и обновить [plugin-contract.md](../framework/plugin-contract.md).
 
 ## Правила по CMake
 

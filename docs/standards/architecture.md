@@ -21,7 +21,8 @@ AetherIDE/
 
 ### `framework/core`
 
-- Абстракции аудио-обработки: `AudioProcessor`, `Parameter`, `ProcessContext`
+- Контракт плагина: `PluginProcessor`, `PluginInfo`, `AETHER_PLUGIN`, параметры, состояние,
+  `ProcessContext` — см. [plugin-contract.md](../framework/plugin-contract.md)
 - Переиспользуемый C++ код, независимый от IDE
 - Публичный API держится в `include/aether/`
 
