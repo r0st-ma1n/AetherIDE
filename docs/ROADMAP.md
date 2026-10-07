@@ -33,8 +33,8 @@
 
 | Блок | Что | Зависит от | Статус |
 |---|---|---|---|
-| 0 | Автоматические проверки стандартов кода | — | ⏳ следующий |
-| A | Ядро фреймворка, готовое к реальному хосту | 0 | ⏳ |
+| 0 | Автоматические проверки стандартов кода | — | ✅ готово |
+| A | Ядро фреймворка, готовое к реальному хосту | 0 | ⏳ следующий |
 | B | Параметры в проекте и кодогенерация процессора | A2, A5 | ⏳ |
 | C | VST3-адаптер и сборка бандла | A | ⏳ |
 | D | Сборка VST3 из IDE | B, C | ⏳ |
@@ -60,27 +60,27 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### 0.1. ESLint для renderer · S
 
-- [ ] Подключить `typescript-eslint` и `eslint-plugin-vue`, линтить `src/**/*.{ts,vue}`
-- [ ] Правила из [javascript-electron.md](./standards/javascript-electron.md):
+- [x] Подключить `typescript-eslint` и `eslint-plugin-vue`, линтить `src/**/*.{ts,vue}`
+- [x] Правила из [javascript-electron.md](./standards/javascript-electron.md):
       `no-explicit-any`, `vue/component-api-style` (`script-setup`), `consistent-type-exports`
-- [ ] Починить найденные нарушения
+- [x] Починить найденные нарушения
 
 ### 0.2. clang-format для C++ · S
 
-- [ ] Привести `framework/`, `ide/native/`, `samples/` к `.clang-format` (отдельный коммит `style:`)
-- [ ] `make cpp-format` / `make cpp-format-check`
-- [ ] Проверка `clang-format --dry-run --Werror` в CI
+- [x] Привести `framework/`, `ide/native/`, `samples/` к `.clang-format` (отдельный коммит `style:`)
+- [x] `make cpp-format` / `make cpp-format-check`
+- [x] Проверка `clang-format --dry-run --Werror` в CI
 
 ### 0.3. CTest и Windows в CI · S
 
-- [ ] `ctest --output-on-failure` в CI и в `make test`
-- [ ] C++-сборка и тесты на `windows-latest` (MSVC) рядом с Ubuntu
-- [ ] Закрепить версию CLAP в `FetchContent` (сейчас `GIT_TAG main` — сборка не воспроизводима)
+- [x] `ctest --output-on-failure` в CI и в `make test`
+- [x] C++-сборка и тесты на `windows-latest` (MSVC) рядом с Ubuntu
+- [x] Закрепить версию CLAP в `FetchContent` (сейчас `GIT_TAG main` — сборка не воспроизводима)
 
 ### 0.4. Защита `main` и документы · S
 
-- [ ] Branch protection на `main`: merge только при зелёном CI
-- [ ] Обновить [testing.md](./standards/testing.md), [cpp-cmake.md](./standards/cpp-cmake.md),
+- [x] Branch protection на `main`: merge только при зелёном CI
+- [x] Обновить [testing.md](./standards/testing.md), [cpp-cmake.md](./standards/cpp-cmake.md),
       [javascript-electron.md](./standards/javascript-electron.md) под реальные проверки
 
 Готово (блок 0), когда: CI падает на `any` в renderer, на неотформатированном C++ и на
