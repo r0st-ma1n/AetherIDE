@@ -1,4 +1,4 @@
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import editorWorker from 'monaco-editor/editor/editor.worker?worker';
 
 interface MonacoEnv {
   getWorker: (_moduleId: string, _label: string) => Worker;
