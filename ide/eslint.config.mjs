@@ -36,12 +36,15 @@ export default tseslint.config(
       parserOptions: {
         parser: tseslint.parser,
         extraFileExtensions: ['.vue'],
+        projectService: { allowDefaultProject: ['vitest.config.ts'] },
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
       // docs/standards/javascript-electron.md
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/consistent-type-exports': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },

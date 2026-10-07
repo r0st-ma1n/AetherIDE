@@ -106,7 +106,7 @@ ESLint проверяет:
 
 - `src/**/*.{ts,vue}` — `typescript-eslint` (recommended) + `eslint-plugin-vue` (recommended). Правила из этого документа закреплены явно:
   - `@typescript-eslint/no-explicit-any` — `any` запрещён;
-  - `@typescript-eslint/consistent-type-imports` — типы импортируются через `import type`;
+  - `@typescript-eslint/consistent-type-imports` / `consistent-type-exports` — типы импортируются через `import type` и экспортируются через `export type` (это правило использует информацию о типах из `tsconfig.json`);
   - `vue/component-api-style: script-setup` и `vue/block-lang: ts` — только `<script setup lang="ts">`.
 - `electron/**/*.cjs`, `scripts/**` — `eslint:recommended` с глобалами Node.
 
