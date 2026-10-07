@@ -1,5 +1,6 @@
 add_library(aether_core
     src/AudioProcessorParameter.cpp
+    src/PluginState.cpp
 )
 
 target_include_directories(aether_core
@@ -24,6 +25,12 @@ add_executable(parameter_test
 )
 target_link_libraries(parameter_test PRIVATE aether_core aether_test_support)
 add_test(NAME parameter_test COMMAND parameter_test)
+
+add_executable(plugin_state_test
+    tests/plugin_state_test.cpp
+)
+target_link_libraries(plugin_state_test PRIVATE aether_core aether_test_support)
+add_test(NAME plugin_state_test COMMAND plugin_state_test)
 
 add_executable(smoothed_value_test
     tests/smoothed_value_test.cpp
