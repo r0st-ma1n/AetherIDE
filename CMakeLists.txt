@@ -10,5 +10,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(CTest)
 
 add_subdirectory(framework/core)
+add_subdirectory(framework/host)
 add_subdirectory(framework/core/examples/gain)
 add_subdirectory(samples/GainPlugin)
