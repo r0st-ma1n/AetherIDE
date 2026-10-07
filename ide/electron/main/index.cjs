@@ -98,7 +98,7 @@ function notifyRecentChanged() {
 
 async function loadPersistedProjectRoot() {
   /** @type {Record<string, unknown> | null} */
-  let parsed = null;
+  let parsed;
 
   try {
     const raw = await fs.readFile(getStateFilePath(), 'utf-8');
@@ -574,7 +574,7 @@ function registerIpcHandlers() {
       throw new Error('Project path must stay inside the chosen location.');
     }
 
-    let targetExists = false;
+    let targetExists;
     try {
       const stat = await fs.stat(targetDir);
       targetExists = stat.isDirectory();

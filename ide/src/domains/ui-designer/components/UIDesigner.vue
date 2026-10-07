@@ -119,16 +119,17 @@
         >
           <span class="designer__component-label">{{ component.type }}</span>
 
-          <div
-            v-if="component.id === designerStore.selectedComponentId"
-            v-for="handle in RESIZE_HANDLES"
-            :key="handle.direction"
-            class="designer__resize-handle"
-            :class="`designer__resize-handle--${handle.direction}`"
-            @mousedown.stop.prevent="
-              startResize($event, component.id, handle.direction)
-            "
-          ></div>
+          <template v-if="component.id === designerStore.selectedComponentId">
+            <div
+              v-for="handle in RESIZE_HANDLES"
+              :key="handle.direction"
+              class="designer__resize-handle"
+              :class="`designer__resize-handle--${handle.direction}`"
+              @mousedown.stop.prevent="
+                startResize($event, component.id, handle.direction)
+              "
+            ></div>
+          </template>
         </div>
       </div>
     </div>

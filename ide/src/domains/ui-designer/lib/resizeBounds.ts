@@ -191,7 +191,7 @@ function getAspectRatioBounds(
   const initialHeight = initialBounds.size.height;
   const aspectRatio = initialWidth / initialHeight;
 
-  let scale = 1;
+  let scale: number;
 
   if (direction === 'e' || direction === 'w') {
     const signedWidthDelta = direction === 'e' ? dx : -dx;
