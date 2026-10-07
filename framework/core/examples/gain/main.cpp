@@ -14,7 +14,7 @@ int main() {
     plugin.prepareToPlay(sampleRate, blockSize);
 
     aether::ParameterLayout parameters = plugin.createParameters();
-    parameters.getFloat("gain").setValue(0.5f);
+    parameters.get("gain").setValue(0.5f);
 
     aether::OwningAudioBuffer buffer(channels, blockSize);
     aether::AudioBuffer audio = buffer.view();

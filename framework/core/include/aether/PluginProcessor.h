@@ -3,7 +3,7 @@
 #include "aether/AudioProcessor.h"
 #include "aether/Parameter.h"
 
-#include <string>
+#include <string_view>
 
 namespace aether {
 
@@ -28,12 +28,12 @@ public:
     /**
      * @return Parameter pointer, or nullptr if id is unknown.
      */
-    Parameter* getParameter(const std::string& id) {
-        return parameters_.findFloat(id);
+    Parameter* getParameter(std::string_view id) noexcept {
+        return parameters_.find(id);
     }
 
-    const Parameter* getParameter(const std::string& id) const {
-        return parameters_.findFloat(id);
+    const Parameter* getParameter(std::string_view id) const noexcept {
+        return parameters_.find(id);
     }
 
 protected:

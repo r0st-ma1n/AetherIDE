@@ -19,6 +19,12 @@ add_executable(audio_buffer_test
 target_link_libraries(audio_buffer_test PRIVATE aether_core aether_test_support)
 add_test(NAME audio_buffer_test COMMAND audio_buffer_test)
 
+add_executable(parameter_test
+    tests/parameter_test.cpp
+)
+target_link_libraries(parameter_test PRIVATE aether_core aether_test_support)
+add_test(NAME parameter_test COMMAND parameter_test)
+
 add_executable(widget_host_test
     tests/widget_host_test.cpp
 )
