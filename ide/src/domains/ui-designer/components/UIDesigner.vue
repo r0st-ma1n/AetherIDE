@@ -148,6 +148,7 @@ import {
   buildLinkedPluginPaths,
   readOptionalFile,
 } from '@/domains/ui-designer/lib/uiSync';
+import { generateProcessorCode } from '@/domains/ui-designer/lib/processorGenerator';
 import {
   clampPositionToCanvas,
   getResizedBounds,
@@ -298,7 +299,34 @@ async function saveDocument() {
     await window.prototypeIDE.writeFile(paths.headerPath, headerCode);
     await window.prototypeIDE.writeFile(paths.cppPath, cppCode);
 
-    for (const linkedPath of [paths.headerPath, paths.cppPath]) {
+    const linkedPaths = [paths.headerPath, paths.cppPath];
+    if (designerStore.projectMeta) {
+      const processor = generateProcessorCode({
+        className: paths.className,
+        meta: designerStore.projectMeta,
+        existingHeader: await readOptionalFile(
+          paths.processorHeaderPath,
+          (path) => window.prototypeIDE.readFile(path),
+          (path) => window.prototypeIDE.fileExists(path)
+        ),
+        existingCpp: await readOptionalFile(
+          paths.processorCppPath,
+          (path) => window.prototypeIDE.readFile(path),
+          (path) => window.prototypeIDE.fileExists(path)
+        ),
+      });
+      await window.prototypeIDE.writeFile(
+        paths.processorHeaderPath,
+        processor.headerCode
+      );
+      await window.prototypeIDE.writeFile(
+        paths.processorCppPath,
+        processor.cppCode
+      );
+      linkedPaths.push(paths.processorHeaderPath, paths.processorCppPath);
+    }
+
+    for (const linkedPath of linkedPaths) {
       const linkedTab = workspaceStore.tabs.find(
         (tab) => tab.filePath === linkedPath
       );

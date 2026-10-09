@@ -1,0 +1,39 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+// Regenerated from {{aetherFile}} on save; edit only inside USER CODE regions.
+#include "{{processorClass}}.h"
+{{categoryCheck}}
+aether::PluginInfo {{processorClass}}::pluginInfo() {
+    return {
+{{pluginInfoFields}}
+    };
+}
+
+{{processorClass}}::{{processorClass}}() {
+{{parameterSetup}}    // --- USER CODE BEGIN: Constructor ---
+{{constructor}}
+    // --- USER CODE END: Constructor ---
+}
+
+void {{processorClass}}::prepareToPlay([[maybe_unused]] const aether::ProcessSetup& setup) {
+    // --- USER CODE BEGIN: PrepareToPlay ---
+{{prepareToPlay}}
+    // --- USER CODE END: PrepareToPlay ---
+}
+
+void {{processorClass}}::processBlock(aether::ProcessContext& context) {
+    // --- USER CODE BEGIN: ProcessBlock ---
+{{processBlock}}
+    // --- USER CODE END: ProcessBlock ---
+}
+
+void {{processorClass}}::releaseResources() {
+    // --- USER CODE BEGIN: ReleaseResources ---
+{{releaseResources}}
+    // --- USER CODE END: ReleaseResources ---
+}
+
+// --- USER CODE BEGIN: CustomMethods ---
+{{customMethods}}
+// --- USER CODE END: CustomMethods ---
+
+AETHER_PLUGIN({{processorClass}})

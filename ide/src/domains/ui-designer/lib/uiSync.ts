@@ -19,6 +19,8 @@ export interface LinkedPluginPaths {
   aetherPath: string;
   headerPath: string;
   cppPath: string;
+  processorHeaderPath: string;
+  processorCppPath: string;
   className: string;
 }
 
@@ -35,6 +37,8 @@ export function buildLinkedPluginPaths(
     aetherPath: joinPath(baseDir, `${className}.aether`),
     headerPath: joinPath(baseDir, `${className}.h`),
     cppPath: joinPath(baseDir, `${className}.cpp`),
+    processorHeaderPath: joinPath(baseDir, `${className}Processor.h`),
+    processorCppPath: joinPath(baseDir, `${className}Processor.cpp`),
   };
 }
 

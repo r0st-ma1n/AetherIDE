@@ -4,6 +4,7 @@ import type {
   TemplateData,
 } from '@/domains/templates/stores/templateStore';
 import { generateLinkedPluginSources } from '@/domains/ui-designer/lib/uiSync';
+import { generateProcessorCode } from '@/domains/ui-designer/lib/processorGenerator';
 import { serializeAetherDocument } from '@/domains/ui-designer/lib/uiDocument';
 import { defaultProjectMeta } from '@/shared/lib/projectMeta';
 
@@ -42,7 +43,7 @@ function seedExistingCpp(className: string, pluginType: PluginType): string {
   return `// GENERATED CODE - DO NOT MODIFY COMMENTS
 #include "${className}.h"
 
-void ${className}UI::setupUI(aether::PluginProcessor& processor) {
+void ${className}UI::setupUI([[maybe_unused]] aether::PluginProcessor& processor) {
     // --- AETHER UI BEGIN ---
     // --- AETHER UI END ---
 
@@ -84,16 +85,15 @@ export function buildScaffoldFiles(
     existingCpp: seedExistingCpp(className, input.pluginType),
   });
 
-  const aether = serializeAetherDocument(
-    [],
-    600,
-    400,
-    defaultProjectMeta(className, input.pluginType)
-  );
+  const meta = defaultProjectMeta(className, input.pluginType);
+  const aether = serializeAetherDocument([], 600, 400, meta);
+  const processor = generateProcessorCode({ className, meta });
 
   return {
     [`${className}.h`]: headerCode,
     [`${className}.cpp`]: cppCode,
+    [`${className}Processor.h`]: processor.headerCode,
+    [`${className}Processor.cpp`]: processor.cppCode,
     [`${className}.aether`]: `${aether}\n`,
     'CMakeLists.txt': `${renderTemplate(cmakeTemplate, { className })}\n`,
     'README.md': `# ${className}

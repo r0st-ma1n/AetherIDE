@@ -1,0 +1,61 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+// Regenerated from Heavy.aether on save; edit only inside USER CODE regions.
+#include "HeavyProcessor.h"
+
+aether::PluginInfo HeavyProcessor::pluginInfo() {
+    return {
+        .name = "Heavy \"Q\" FX",
+        .vendor = "Back\\slash",
+        .id = "com.test.heavy",
+        .version = {2, 10, 3},
+        .url = "https://x.test",
+        .email = "a@x.test",
+        .category = aether::PluginCategory::Effect,
+    };
+}
+
+HeavyProcessor::HeavyProcessor() {
+    gainParameter_ = &parameters_.addFloat("gain", "Gain", -60.0f, 12.0f, 0.0f, {.step = 0.5f, .unit = "dB"});
+    mix_aParameter_ = &parameters_.addFloat("mix.a", "Mix A", 0.0f, 1.0f, 1.0f);
+    mix_a2Parameter_ = &parameters_.addFloat("mix_a", "Mix A2", 0.001f, 0.1f, 0.01f);
+    onParameter_ = &parameters_.addBool("on", "On", true);
+    modeParameter_ = &parameters_.addChoice("mode", "Mode", {"Soft", "Hard \"x\"", "Clip"}, 2);
+
+    // --- USER CODE BEGIN: Constructor ---
+
+    // --- USER CODE END: Constructor ---
+}
+
+void HeavyProcessor::prepareToPlay([[maybe_unused]] const aether::ProcessSetup& setup) {
+    // --- USER CODE BEGIN: PrepareToPlay ---
+
+    // --- USER CODE END: PrepareToPlay ---
+}
+
+void HeavyProcessor::processBlock(aether::ProcessContext& context) {
+    // --- USER CODE BEGIN: ProcessBlock ---
+    // Pass-through. Replace with your DSP; read parameters through the pointers above.
+    // Rules for the audio thread: docs/framework/plugin-contract.md.
+    const aether::AudioBuffer& input = context.input;
+    aether::AudioBuffer& output = context.output;
+    for (int ch = 0; ch < output.numChannels(); ++ch) {
+        float* out = output.channel(ch);
+        const float* in = ch < input.numChannels() ? input.channel(ch) : nullptr;
+        for (int i = 0; i < output.numSamples(); ++i) {
+            out[i] = in != nullptr ? in[i] : 0.0f;
+        }
+    }
+    // --- USER CODE END: ProcessBlock ---
+}
+
+void HeavyProcessor::releaseResources() {
+    // --- USER CODE BEGIN: ReleaseResources ---
+
+    // --- USER CODE END: ReleaseResources ---
+}
+
+// --- USER CODE BEGIN: CustomMethods ---
+
+// --- USER CODE END: CustomMethods ---
+
+AETHER_PLUGIN(HeavyProcessor)

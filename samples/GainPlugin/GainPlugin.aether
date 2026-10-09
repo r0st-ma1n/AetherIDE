@@ -25,7 +25,9 @@
       "y": 120,
       "width": 140,
       "height": 70,
-      "properties": {}
+      "properties": {
+        "parameterId": "gain"
+      }
     },
     {
       "type": "Slider",

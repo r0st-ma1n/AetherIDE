@@ -25,6 +25,8 @@ describe('buildLinkedPluginPaths', () => {
       aetherPath: 'GainPlugin.aether',
       headerPath: 'GainPlugin.h',
       cppPath: 'GainPlugin.cpp',
+      processorHeaderPath: 'GainPluginProcessor.h',
+      processorCppPath: 'GainPluginProcessor.cpp',
     });
   });
 });

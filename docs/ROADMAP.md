@@ -266,15 +266,15 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### B3. Генерация процессора · L
 
-- [ ] Новые шаблоны `<Name>Processor.h/.cpp`: наследник `PluginProcessor`,
-      `createParameters()` из `.aether`, `AETHER_PLUGIN(...)`
-- [ ] `processBlock`, `prepareToPlay`, `releaseResources` — внутри `USER CODE`-регионов
-- [ ] Генерация `PluginInfo` из раздела `plugin`
-- [ ] Привязка виджетов в `setupUI` — по `parameterId`, а не по id виджета. В v1 окна нет:
+- [x] Новые шаблоны `<Name>Processor.h/.cpp`: наследник `PluginProcessor`,
+      параметры из `.aether` в конструкторе, `AETHER_PLUGIN(...)`
+- [x] `processBlock`, `prepareToPlay`, `releaseResources` — внутри `USER CODE`-регионов
+- [x] Генерация `PluginInfo` из раздела `plugin`
+- [x] Привязка виджетов в `setupUI` — по `parameterId`, а не по id виджета. В v1 окна нет:
       UI-класс генерируется и компилируется, чтобы не ломать round-trip дизайнера, но в плагине
       не используется до блока F
-- [ ] Round-trip: пользовательский код сохраняется при перегенерации
-- [ ] Fixture-тесты генератора
+- [x] Round-trip: пользовательский код сохраняется при перегенерации
+- [x] Fixture-тесты генератора
 
 ### B4. Шаблон проекта и sample · S
 

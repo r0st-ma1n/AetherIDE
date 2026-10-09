@@ -92,7 +92,9 @@ export function extractUserCode(sourceCode: string): Record<string, string> {
     /\/\/ --- USER CODE BEGIN: ([\w_]+) ---\n([\s\S]*?)\/\/ --- USER CODE END: \1 ---/g;
   let match;
 
-  while ((match = regex.exec(sourceCode)) !== null) {
+  // Files saved by Windows editors may use CRLF; the markers are matched on "\n".
+  const source = sourceCode.replace(/\r\n/g, '\n');
+  while ((match = regex.exec(source)) !== null) {
     userCode[match[1]] = match[2].replace(/\s+$/, '');
   }
 
@@ -161,11 +163,13 @@ function buildSetupComponentsBlock(
 
   const body = components
     .map((component) => {
+      const binding =
+        component.parameterId === undefined
+          ? ''
+          : `
+    ${component.safeId}.setParameter(processor.getParameter("${component.parameterId}"));`;
       return `    ${formatAetherComment(component)}
-    ${component.safeId}.setBounds(${component.position.x}, ${component.position.y}, ${component.size.width}, ${component.size.height});
-    if (auto* param = processor.getParameter("${component.id}")) {
-        ${component.safeId}.setParameter(param);
-    }
+    ${component.safeId}.setBounds(${component.position.x}, ${component.position.y}, ${component.size.width}, ${component.size.height});${binding}
     ${component.safeId}.onValueChanged = [this](float val) {
         on${capitalize(component.safeId)}ValueChanged(val);
     };`;
