@@ -1,0 +1,53 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+// Regenerated from Empty.aether on save; edit only inside USER CODE regions.
+#include "EmptyProcessor.h"
+
+aether::PluginInfo EmptyProcessor::pluginInfo() {
+    return {
+        .name = "Empty",
+        .vendor = "My Company",
+        .id = "com.mycompany.empty",
+        .version = {1, 0, 0},
+        .category = aether::PluginCategory::Effect,
+    };
+}
+
+EmptyProcessor::EmptyProcessor() {
+    // --- USER CODE BEGIN: Constructor ---
+
+    // --- USER CODE END: Constructor ---
+}
+
+void EmptyProcessor::prepareToPlay([[maybe_unused]] const aether::ProcessSetup& setup) {
+    // --- USER CODE BEGIN: PrepareToPlay ---
+
+    // --- USER CODE END: PrepareToPlay ---
+}
+
+void EmptyProcessor::processBlock(aether::ProcessContext& context) {
+    // --- USER CODE BEGIN: ProcessBlock ---
+    // Pass-through. Replace with your DSP; read parameters through the pointers above.
+    // Rules for the audio thread: docs/framework/plugin-contract.md.
+    const aether::AudioBuffer& input = context.input;
+    aether::AudioBuffer& output = context.output;
+    for (int ch = 0; ch < output.numChannels(); ++ch) {
+        float* out = output.channel(ch);
+        const float* in = ch < input.numChannels() ? input.channel(ch) : nullptr;
+        for (int i = 0; i < output.numSamples(); ++i) {
+            out[i] = in != nullptr ? in[i] : 0.0f;
+        }
+    }
+    // --- USER CODE END: ProcessBlock ---
+}
+
+void EmptyProcessor::releaseResources() {
+    // --- USER CODE BEGIN: ReleaseResources ---
+
+    // --- USER CODE END: ReleaseResources ---
+}
+
+// --- USER CODE BEGIN: CustomMethods ---
+
+// --- USER CODE END: CustomMethods ---
+
+AETHER_PLUGIN(EmptyProcessor)

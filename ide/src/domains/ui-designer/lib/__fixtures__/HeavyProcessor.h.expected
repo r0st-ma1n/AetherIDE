@@ -1,0 +1,36 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+// Regenerated from Heavy.aether on save; edit only inside USER CODE regions.
+#pragma once
+
+#include "aether/PluginFactory.h"
+
+// --- USER CODE BEGIN: Includes ---
+
+// --- USER CODE END: Includes ---
+
+class HeavyProcessor final : public aether::PluginProcessor {
+public:
+    static aether::PluginInfo pluginInfo();
+
+    HeavyProcessor();
+
+    // --- USER CODE BEGIN: PublicMethods ---
+
+    // --- USER CODE END: PublicMethods ---
+
+protected:
+    void prepareToPlay(const aether::ProcessSetup& setup) override;
+    void processBlock(aether::ProcessContext& context) override;
+    void releaseResources() override;
+
+private:
+    aether::AudioProcessorParameter* gainParameter_ = nullptr;
+    aether::AudioProcessorParameter* mix_aParameter_ = nullptr;
+    aether::AudioProcessorParameter* mix_a2Parameter_ = nullptr;
+    aether::AudioProcessorParameter* onParameter_ = nullptr;
+    aether::AudioProcessorParameter* modeParameter_ = nullptr;
+
+    // --- USER CODE BEGIN: PrivateMembers ---
+
+    // --- USER CODE END: PrivateMembers ---
+};

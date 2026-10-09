@@ -26,10 +26,13 @@ if (NOT TARGET aether_core)
     "or add aether_core before including this CMakeLists.txt.")
 endif()
 
-add_library({{className}} SHARED
+# Plugin module: the processor plus the designer UI class (compiled, unused until the
+# plugin window lands).
+add_library({{className}} MODULE
+    {{className}}Processor.cpp
     {{className}}.cpp
-    {{className}}.h
 )
 
 target_link_libraries({{className}} PRIVATE aether_core)
 target_include_directories({{className}} PRIVATE .)
+set_target_properties({{className}} PROPERTIES PREFIX "")

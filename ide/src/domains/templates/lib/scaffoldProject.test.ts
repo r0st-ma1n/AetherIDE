@@ -48,8 +48,16 @@ describe('buildScaffoldFiles', () => {
       'DemoEffect.aether',
       'DemoEffect.cpp',
       'DemoEffect.h',
+      'DemoEffectProcessor.cpp',
+      'DemoEffectProcessor.h',
       'README.md',
     ]);
+    expect(files['DemoEffectProcessor.cpp']).toContain(
+      'AETHER_PLUGIN(DemoEffectProcessor)'
+    );
+    expect(files['DemoEffectProcessor.cpp']).toContain('.name = "DemoEffect"');
+    expect(files['CMakeLists.txt']).toContain('DemoEffectProcessor.cpp');
+    expect(files['CMakeLists.txt']).toContain('MODULE');
 
     const aether = JSON.parse(files['DemoEffect.aether']!);
     expect(validateAetherProject(aether)).toEqual({ valid: true });

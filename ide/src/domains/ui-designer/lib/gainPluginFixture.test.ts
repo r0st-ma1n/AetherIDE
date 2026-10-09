@@ -26,6 +26,7 @@ const EXPECTED_COMPONENTS: UISpecComponent[] = [
     type: 'Knob',
     position: { x: 40, y: 120 },
     size: { width: 140, height: 70 },
+    parameterId: 'gain',
   },
   {
     id: 'slider-1779887593361',

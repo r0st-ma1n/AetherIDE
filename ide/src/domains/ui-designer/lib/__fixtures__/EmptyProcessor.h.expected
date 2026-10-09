@@ -1,0 +1,30 @@
+// GENERATED CODE - DO NOT MODIFY COMMENTS
+// Regenerated from Empty.aether on save; edit only inside USER CODE regions.
+#pragma once
+
+#include "aether/PluginFactory.h"
+
+// --- USER CODE BEGIN: Includes ---
+
+// --- USER CODE END: Includes ---
+
+class EmptyProcessor final : public aether::PluginProcessor {
+public:
+    static aether::PluginInfo pluginInfo();
+
+    EmptyProcessor();
+
+    // --- USER CODE BEGIN: PublicMethods ---
+
+    // --- USER CODE END: PublicMethods ---
+
+protected:
+    void prepareToPlay(const aether::ProcessSetup& setup) override;
+    void processBlock(aether::ProcessContext& context) override;
+    void releaseResources() override;
+
+private:
+    // --- USER CODE BEGIN: PrivateMembers ---
+
+    // --- USER CODE END: PrivateMembers ---
+};
