@@ -397,3 +397,29 @@ describe('upsertAetherUiBlock', () => {
     expect(next).toContain('keepMe();');
   });
 });
+
+describe('parameterId in AETHER markers', () => {
+  it('writes param= and reads it back', () => {
+    const spec: UISpec = {
+      components: [
+        {
+          id: 'knob1',
+          type: 'Knob',
+          position: { x: 1, y: 2 },
+          size: { width: 3, height: 4 },
+          parameterId: 'gain',
+        },
+        {
+          id: 'knob2',
+          type: 'Knob',
+          position: { x: 5, y: 6 },
+          size: { width: 7, height: 8 },
+        },
+      ],
+    };
+    const cpp = generateCppFromUI(spec);
+    expect(cpp).toContain('id=knob1 type=Knob x=1 y=2 w=3 h=4 param=gain');
+    expect(cpp).not.toMatch(/id=knob2.*param=/);
+    expect(parseUIFromCpp(cpp)).toEqual(spec);
+  });
+});

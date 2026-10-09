@@ -44,6 +44,7 @@ const AETHER_DESERIALIZERS = {
     return result;
   },
   color: (attrs) => attrs.get('color'),
+  parameterId: (attrs) => attrs.get('param'),
 } satisfies CppDeserializerMap;
 
 /**
@@ -74,6 +75,9 @@ export function parseUIFromCpp(src: string): UISpec {
 
     const color = AETHER_DESERIALIZERS.color(attrs);
     if (color !== undefined) component.color = color;
+
+    const parameterId = AETHER_DESERIALIZERS.parameterId(attrs);
+    if (parameterId !== undefined) component.parameterId = parameterId;
 
     components.push(component);
   }

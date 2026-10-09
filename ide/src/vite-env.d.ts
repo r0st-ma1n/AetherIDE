@@ -80,6 +80,13 @@ declare global {
         message?: string;
         detail?: string;
       }) => Promise<UnsavedDialogChoice>;
+      /** Native OK/Cancel dialog; resolves true on confirm. */
+      confirmAction: (payload: {
+        title?: string;
+        message: string;
+        detail?: string;
+        confirmLabel?: string;
+      }) => Promise<boolean>;
       confirmQuit: () => Promise<boolean>;
       cancelQuit: () => Promise<boolean>;
     };
