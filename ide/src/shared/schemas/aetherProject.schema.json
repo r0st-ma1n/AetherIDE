@@ -3,13 +3,19 @@
   "$id": "https://aether-ide/schemas/aether-project",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "components"],
+  "required": ["version", "plugin", "parameters", "components"],
   "properties": {
     "version": {
       "type": "integer",
-      "minimum": 1,
-      "maximum": 1,
+      "minimum": 2,
+      "maximum": 2,
       "description": "Schema version; must match CURRENT_AETHER_SCHEMA_VERSION after migrate"
+    },
+    "plugin": { "$ref": "#/definitions/plugin" },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/parameter" },
+      "description": "Plugin parameters; ids must be unique (checked in validateAetherProject)"
     },
     "components": {
       "type": "array",
@@ -26,14 +32,73 @@
       "minimum": 100,
       "maximum": 2000,
       "description": "Designer canvas height in pixels"
-    },
-    "pluginType": {
-      "type": "string",
-      "enum": ["Effect", "Instrument"],
-      "description": "Plugin category chosen in New Project wizard"
     }
   },
   "definitions": {
+    "plugin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "vendor", "id", "version", "category"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "vendor": { "type": "string", "minLength": 1 },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$",
+          "description": "Reverse-DNS id, same rule as aether::validatePluginInfo"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+        },
+        "category": { "type": "string", "enum": ["Effect", "Instrument"] },
+        "url": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type", "default"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["float", "bool", "choice"] },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "default": { "type": ["number", "boolean"] },
+        "step": { "type": "number", "minimum": 0 },
+        "unit": { "type": "string" },
+        "choices": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "float" } } },
+          "then": {
+            "required": ["min", "max"],
+            "properties": { "default": { "type": "number" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "bool" } } },
+          "then": { "properties": { "default": { "type": "boolean" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "choice" } } },
+          "then": {
+            "required": ["choices"],
+            "properties": { "default": { "type": "integer", "minimum": 0 } }
+          }
+        }
+      ]
+    },
     "component": {
       "type": "object",
       "additionalProperties": false,

@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { UISpecComponent } from '@/shared/types';
+import { defaultProjectMeta } from '@/shared/lib/projectMeta';
+import { CURRENT_AETHER_SCHEMA_VERSION } from '@/shared/schemas/migrateAetherProject';
 import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
 import {
   parseAetherDocument,
@@ -24,6 +26,8 @@ describe('aether document round-trip', () => {
     expect(doc.components).toHaveLength(3);
     expect(doc.canvasWidth).toBe(600);
     expect(doc.canvasHeight).toBe(400);
+    expect(doc.meta.plugin.id).toBe('dev.aether.samples.gain');
+    expect(doc.meta.parameters.map((p) => p.id)).toEqual(['gain']);
     expect(doc.components[0]).toMatchObject({
       id: 'knob-1779727804935',
       type: 'Knob',
@@ -32,7 +36,7 @@ describe('aether document round-trip', () => {
     });
   });
 
-  it('save → reload keeps components and canvas identical', () => {
+  it('save → reload keeps components, canvas and meta identical', () => {
     const components: UISpecComponent[] = [
       {
         id: 'knob1',
@@ -50,7 +54,25 @@ describe('aether document round-trip', () => {
       },
     ];
 
-    const serialized = serializeAetherDocument(components, 640, 480);
+    const meta = {
+      plugin: {
+        ...defaultProjectMeta('Demo').plugin,
+        url: 'https://example.com',
+      },
+      parameters: [
+        {
+          id: 'gain',
+          name: 'Gain',
+          type: 'float' as const,
+          min: -12,
+          max: 12,
+          default: 0,
+          unit: 'dB',
+        },
+        { id: 'on', name: 'On', type: 'bool' as const, default: true },
+      ],
+    };
+    const serialized = serializeAetherDocument(components, 640, 480, meta);
     expect(validateAetherProject(JSON.parse(serialized))).toEqual({
       valid: true,
     });
@@ -59,6 +81,22 @@ describe('aether document round-trip', () => {
     expect(restored.components).toEqual(components);
     expect(restored.canvasWidth).toBe(640);
     expect(restored.canvasHeight).toBe(480);
+    expect(restored.meta).toEqual(meta);
+  });
+
+  it('refuses to save an invalid parameter', () => {
+    const meta = defaultProjectMeta('Demo');
+    meta.parameters.push({
+      id: 'gain',
+      name: 'Gain',
+      type: 'float',
+      min: 1,
+      max: 0,
+      default: 0,
+    });
+    expect(() => serializeAetherDocument([], 600, 400, meta)).toThrow(
+      /Cannot save .aether file: \/parameters\/0\/max/
+    );
   });
 
   it('rejects invalid .aether without corrupting caller responsibility', () => {
@@ -72,6 +110,14 @@ describe('aether document round-trip', () => {
 });
 
 describe('parseDesignerDocument dispatch', () => {
+  it('names migrated v1 projects after the file', () => {
+    const doc = parseDesignerDocument(
+      JSON.stringify({ version: 1, components: [] }),
+      'C:\\projects\\Reverb.aether'
+    );
+    expect(doc.meta.plugin.name).toBe('Reverb');
+  });
+
   it('routes .aether through schema validation', () => {
     const source = readFileSync(sampleAetherPath, 'utf-8');
     const doc = parseDesignerDocument(source, 'GainPlugin.aether');
@@ -107,9 +153,15 @@ describe('parseDesignerDocument dispatch', () => {
         size: { width: 3, height: 4 },
       },
     ];
-    const raw = serializeDesignerDocument('Demo.aether', components, 600, 400);
+    const raw = serializeDesignerDocument(
+      'Demo.aether',
+      components,
+      600,
+      400,
+      defaultProjectMeta('Demo')
+    );
     const parsed = JSON.parse(raw);
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(CURRENT_AETHER_SCHEMA_VERSION);
     expect(parsed.components[0].x).toBe(1);
     expect(validateAetherProject(parsed)).toEqual({ valid: true });
   });

@@ -1,5 +1,22 @@
 {
-  "version": 1,
+  "version": 2,
+  "plugin": {
+    "name": "GainPlugin",
+    "vendor": "Aether",
+    "id": "dev.aether.samples.gain",
+    "version": "1.0.0",
+    "category": "Effect"
+  },
+  "parameters": [
+    {
+      "id": "gain",
+      "name": "Gain",
+      "type": "float",
+      "min": 0,
+      "max": 2,
+      "default": 1
+    }
+  ],
   "components": [
     {
       "type": "Knob",

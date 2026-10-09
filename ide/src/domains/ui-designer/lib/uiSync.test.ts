@@ -7,6 +7,9 @@ import {
 } from './uiSync';
 import { parseUIFromCpp } from './codeParser';
 import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
+import { defaultProjectMeta } from '@/shared/lib/projectMeta';
+
+const meta = defaultProjectMeta('Demo');
 
 describe('buildLinkedPluginPaths', () => {
   it('maps designer or code path to sibling plugin files', () => {
@@ -32,11 +35,12 @@ describe('buildAetherDocumentFromCpp', () => {
       buildAetherDocumentFromCpp('int main() {}', {
         canvasWidth: 600,
         canvasHeight: 400,
+        meta,
       })
     ).toBeNull();
   });
 
-  it('builds a document from AETHER markers and keeps canvas size', () => {
+  it('builds a document from AETHER markers and keeps canvas and meta', () => {
     const cpp = `void setup() {
     // --- AETHER UI BEGIN ---
     // AETHER id=knob1 type=Knob x=10 y=20 w=80 h=80
@@ -44,10 +48,15 @@ describe('buildAetherDocumentFromCpp', () => {
     // --- AETHER UI END ---
 }`;
     expect(
-      buildAetherDocumentFromCpp(cpp, { canvasWidth: 640, canvasHeight: 480 })
+      buildAetherDocumentFromCpp(cpp, {
+        canvasWidth: 640,
+        canvasHeight: 480,
+        meta,
+      })
     ).toEqual({
       canvasWidth: 640,
       canvasHeight: 480,
+      meta,
       components: [
         {
           id: 'knob1',
@@ -120,8 +129,11 @@ describe('serializeAetherFromSpec', () => {
         ],
       },
       600,
-      400
+      400,
+      meta
     );
-    expect(validateAetherProject(JSON.parse(raw))).toEqual({ valid: true });
+    const parsed = JSON.parse(raw);
+    expect(validateAetherProject(parsed)).toEqual({ valid: true });
+    expect(parsed.plugin).toEqual(meta.plugin);
   });
 });

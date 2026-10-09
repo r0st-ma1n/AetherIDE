@@ -9,7 +9,11 @@ import {
   serializeDesignerDocument,
   type UiDocumentData,
 } from '@/domains/ui-designer/lib/uiDocument';
-import type { UISpec, UISpecComponent } from '@/shared/types';
+import type {
+  AetherProjectMeta,
+  UISpec,
+  UISpecComponent,
+} from '@/shared/types';
 
 export interface LinkedPluginPaths {
   aetherPath: string;
@@ -36,7 +40,7 @@ export function buildLinkedPluginPaths(
 
 export function buildAetherDocumentFromCpp(
   cppSource: string,
-  existing: Pick<UiDocumentData, 'canvasWidth' | 'canvasHeight'>
+  existing: Omit<UiDocumentData, 'components'>
 ): UiDocumentData | null {
   const spec = parseUIFromCpp(cppSource);
   if (spec.components.length === 0) {
@@ -46,6 +50,7 @@ export function buildAetherDocumentFromCpp(
     components: spec.components,
     canvasWidth: existing.canvasWidth,
     canvasHeight: existing.canvasHeight,
+    meta: existing.meta,
   };
 }
 
@@ -93,31 +98,39 @@ export function serializeAetherFromSpec(
   aetherPath: string,
   spec: UISpec,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
+  meta: AetherProjectMeta
 ): string {
   return serializeDesignerDocument(
     aetherPath,
     spec.components,
     canvasWidth,
-    canvasHeight
+    canvasHeight,
+    meta
   );
 }
 
-export async function loadExistingAetherCanvas(
+/**
+ * Everything but the components of an existing `.aether`, for rewriting it from code.
+ * Returns null when the file is missing or invalid: rewriting it would drop the
+ * `plugin` and `parameters` sections.
+ */
+export async function loadExistingAetherDocument(
   aetherPath: string,
   readFile: (path: string) => Promise<string>,
   fileExists: (path: string) => Promise<boolean>
-): Promise<Pick<UiDocumentData, 'canvasWidth' | 'canvasHeight'>> {
+): Promise<Omit<UiDocumentData, 'components'> | null> {
   if (!(await fileExists(aetherPath))) {
-    return { canvasWidth: 600, canvasHeight: 400 };
+    return null;
   }
   try {
     const doc = parseDesignerDocument(await readFile(aetherPath), aetherPath);
     return {
       canvasWidth: doc.canvasWidth,
       canvasHeight: doc.canvasHeight,
+      meta: doc.meta,
     };
   } catch {
-    return { canvasWidth: 600, canvasHeight: 400 };
+    return null;
   }
 }

@@ -45,6 +45,12 @@ describe('isValidAetherProjectDocument', () => {
     ).toEqual({ valid: true });
   });
 
+  it('accepts the current schema version', () => {
+    expect(
+      isValidAetherProjectDocument({ version: 2, components: [] })
+    ).toEqual({ valid: true });
+  });
+
   it('accepts legacy documents without version (renderer migrates)', () => {
     expect(isValidAetherProjectDocument({ components: [] })).toEqual({
       valid: true,

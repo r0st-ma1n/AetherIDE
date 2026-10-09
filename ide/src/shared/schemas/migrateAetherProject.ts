@@ -1,7 +1,16 @@
-import type { AetherProject } from '@/shared/types';
+import type { AetherPluginCategory, AetherProject } from '@/shared/types';
+import {
+  DEFAULT_PLUGIN_NAME,
+  defaultProjectMeta,
+} from '@/shared/lib/projectMeta';
 
 /** Bump when introducing a breaking .aether format change + a migrator step. */
-export const CURRENT_AETHER_SCHEMA_VERSION = 1;
+export const CURRENT_AETHER_SCHEMA_VERSION = 2;
+
+export interface MigrationContext {
+  /** Plugin name for files without a `plugin` section; usually the file name. */
+  pluginName?: string;
+}
 
 export class AetherMigrationError extends Error {
   constructor(message: string) {
@@ -57,10 +66,33 @@ function migrateV0ToV1(draft: Record<string, unknown>): void {
 }
 
 /**
+ * v1 → v2: adds the `plugin` and `parameters` sections.
+ * `pluginType` (set by the old New Project wizard) becomes `plugin.category`.
+ */
+function migrateV1ToV2(
+  draft: Record<string, unknown>,
+  context: MigrationContext
+): void {
+  const category: AetherPluginCategory =
+    draft.pluginType === 'Instrument' ? 'Instrument' : 'Effect';
+  delete draft.pluginType;
+
+  const meta = defaultProjectMeta(
+    context.pluginName || DEFAULT_PLUGIN_NAME,
+    category
+  );
+  draft.plugin = meta.plugin;
+  draft.parameters = meta.parameters;
+}
+
+/**
  * Normalize unknown JSON into the current on-disk .aether shape (before AJV).
  * Throws {@link AetherMigrationError} for unsupported or corrupt versions.
  */
-export function migrateAetherProject(raw: unknown): AetherProject {
+export function migrateAetherProject(
+  raw: unknown,
+  context: MigrationContext = {}
+): AetherProject {
   if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new AetherMigrationError('.aether file must contain a JSON object.');
   }
@@ -84,7 +116,9 @@ export function migrateAetherProject(raw: unknown): AetherProject {
     migrateV0ToV1(draft);
   }
 
-  // Future: if (fromVersion < 2) migrateV1ToV2(draft);
+  if (fromVersion < 2) {
+    migrateV1ToV2(draft, context);
+  }
 
   draft.version = CURRENT_AETHER_SCHEMA_VERSION;
   return draft as unknown as AetherProject;

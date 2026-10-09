@@ -95,12 +95,68 @@ export interface AetherProjectComponent {
   properties: Record<string, unknown>;
 }
 
-export interface AetherProject {
+export type AetherPluginCategory = 'Effect' | 'Instrument';
+
+/** `plugin` section of `.aether`; mirrors `aether::PluginInfo` in the framework. */
+export interface AetherPluginInfo {
+  /** Display name, e.g. "Gain". */
+  name: string;
+  /** Company or author. */
+  vendor: string;
+  /** Reverse-DNS id, e.g. "com.aetheraudio.gain". Never change after release. */
+  id: string;
+  /** "major.minor.patch". */
+  version: string;
+  category: AetherPluginCategory;
+  url?: string;
+  email?: string;
+}
+
+interface AetherParameterBase {
+  /** Stable string id; DAWs store automation by it. Never change after release. */
+  id: string;
+  name: string;
+}
+
+export interface AetherFloatParameter extends AetherParameterBase {
+  type: 'float';
+  min: number;
+  max: number;
+  default: number;
+  /** Smallest increment; omitted or 0 = continuous. */
+  step?: number;
+  /** Unit label, e.g. "dB". */
+  unit?: string;
+}
+
+export interface AetherBoolParameter extends AetherParameterBase {
+  type: 'bool';
+  default: boolean;
+}
+
+export interface AetherChoiceParameter extends AetherParameterBase {
+  type: 'choice';
+  choices: string[];
+  /** Index into choices. */
+  default: number;
+}
+
+/** Entry of the `parameters` section; mirrors `aether::AudioProcessorParameter`. */
+export type AetherParameter =
+  | AetherFloatParameter
+  | AetherBoolParameter
+  | AetherChoiceParameter;
+
+/** Project-level data of `.aether` that the UI designer does not edit. */
+export interface AetherProjectMeta {
+  plugin: AetherPluginInfo;
+  parameters: AetherParameter[];
+}
+
+export interface AetherProject extends AetherProjectMeta {
   version: number;
   components: AetherProjectComponent[];
   /** Designer canvas size in px; optional for older files. */
   canvasWidth?: number;
   canvasHeight?: number;
-  /** Set by New Project wizard; optional for older files. */
-  pluginType?: 'Effect' | 'Instrument';
 }

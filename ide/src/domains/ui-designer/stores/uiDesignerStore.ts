@@ -12,9 +12,14 @@ import {
   serializeDesignerDocument,
   type UiDocumentData,
 } from '@/domains/ui-designer/lib/uiDocument';
+import {
+  defaultProjectMeta,
+  pluginNameFromPath,
+} from '@/shared/lib/projectMeta';
 import { normalizeUiComponentParams } from '@/shared/lib/uiModel';
 
 import type {
+  AetherProjectMeta,
   DesignerGridStep,
   UiComponent,
   UiComponentParams,
@@ -44,6 +49,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
   const snapToGridEnabled = ref(true);
   const canvasWidth = ref(600);
   const canvasHeight = ref(400);
+  /** `plugin` and `parameters` of the open document; null until a document is loaded. */
+  const projectMeta = ref<AetherProjectMeta | null>(null);
 
   const undoStack = ref<ICommand[]>([]);
   const redoStack = ref<ICommand[]>([]);
@@ -104,6 +111,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     }));
     canvasWidth.value = doc.canvasWidth;
     canvasHeight.value = doc.canvasHeight;
+    projectMeta.value = doc.meta;
     selectedComponentId.value = doc.components[0]?.id ?? null;
     selectionGroup.value = [];
     undoStack.value = [];
@@ -118,7 +126,8 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
         filePath,
         components.value,
         canvasWidth.value,
-        canvasHeight.value
+        canvasHeight.value,
+        projectMeta.value ?? defaultProjectMeta(pluginNameFromPath(filePath))
       )
     );
   }
@@ -505,6 +514,7 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     clearSelection,
     canvasWidth,
     canvasHeight,
+    projectMeta,
     setCanvasSize,
     setGridStep,
     setSnapToGridEnabled,
