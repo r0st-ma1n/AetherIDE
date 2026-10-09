@@ -12,3 +12,4 @@
 - [standards/cpp-cmake.md](./standards/cpp-cmake.md) — стандарты для C++ и CMake
 - [standards/testing.md](./standards/testing.md) — правила тестирования и проверки изменений
 - [framework/plugin-contract.md](./framework/plugin-contract.md) — контракт плагина и адаптера формата: вызовы, потоки, запреты в аудиопотоке
+- [framework/headless-host.md](./framework/headless-host.md) — `aether_host`: рендер плагина без DAW
