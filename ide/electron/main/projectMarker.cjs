@@ -36,7 +36,7 @@ function isValidAetherProjectDocument(data) {
 
   const project = /** @type {Record<string, unknown>} */ (data);
   /** Keep in sync with CURRENT_AETHER_SCHEMA_VERSION in migrateAetherProject.ts */
-  const CURRENT_AETHER_SCHEMA_VERSION = 1;
+  const CURRENT_AETHER_SCHEMA_VERSION = 2;
 
   if (project.version !== undefined && project.version !== null) {
     if (

@@ -53,7 +53,12 @@ describe('buildScaffoldFiles', () => {
 
     const aether = JSON.parse(files['DemoEffect.aether']!);
     expect(validateAetherProject(aether)).toEqual({ valid: true });
-    expect(aether.pluginType).toBe('Effect');
+    expect(aether.plugin).toMatchObject({
+      name: 'DemoEffect',
+      id: 'com.mycompany.demoeffect',
+      category: 'Effect',
+    });
+    expect(aether.parameters).toEqual([]);
     expect(aether.components).toEqual([]);
 
     expect(files['CMakeLists.txt']).toContain('project(DemoEffect');
@@ -69,7 +74,7 @@ describe('buildScaffoldFiles', () => {
     });
 
     expect(files['DemoSynth.cpp']).toContain('handle MIDI');
-    expect(JSON.parse(files['DemoSynth.aether']!).pluginType).toBe(
+    expect(JSON.parse(files['DemoSynth.aether']!).plugin.category).toBe(
       'Instrument'
     );
   });

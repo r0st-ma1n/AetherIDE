@@ -1,4 +1,8 @@
-import type { AetherProject, UISpecComponent } from '@/shared/types';
+import type {
+  AetherProject,
+  AetherProjectMeta,
+  UISpecComponent,
+} from '@/shared/types';
 import {
   aetherProjectToDocument,
   DEFAULT_CANVAS_HEIGHT,
@@ -7,8 +11,11 @@ import {
   toAetherProject,
 } from '@/shared/lib/uiModel';
 import {
+  defaultProjectMeta,
+  pluginNameFromPath,
+} from '@/shared/lib/projectMeta';
+import {
   AetherMigrationError,
-  CURRENT_AETHER_SCHEMA_VERSION,
   migrateAetherProject,
 } from '@/shared/schemas/migrateAetherProject';
 import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
@@ -17,6 +24,8 @@ export interface UiDocumentData {
   components: UISpecComponent[];
   canvasWidth: number;
   canvasHeight: number;
+  /** `plugin` and `parameters`; the designer keeps them as-is on save. */
+  meta: AetherProjectMeta;
 }
 
 interface RawUiComponent {
@@ -53,7 +62,10 @@ function parsePixels(value: string | number | undefined, fallback: number) {
 }
 
 /** Legacy `.ui` JSON used before S2-T2. Kept for read compatibility. */
-export function parseUiDocument(source: string): UiDocumentData {
+export function parseUiDocument(
+  source: string,
+  pluginName?: string
+): UiDocumentData {
   const parsed = JSON.parse(source) as {
     components?: RawUiComponent[];
     canvasWidth?: number;
@@ -84,6 +96,7 @@ export function parseUiDocument(source: string): UiDocumentData {
     components,
     canvasWidth: parsed.canvasWidth ?? DEFAULT_CANVAS_WIDTH,
     canvasHeight: parsed.canvasHeight ?? DEFAULT_CANVAS_HEIGHT,
+    meta: defaultProjectMeta(pluginName),
   };
 }
 
@@ -113,7 +126,11 @@ export function serializeUiDocument(
   );
 }
 
-export function parseAetherDocument(source: string): UiDocumentData {
+/** @param pluginName name for files migrated from schema v1 (no `plugin` section). */
+export function parseAetherDocument(
+  source: string,
+  pluginName?: string
+): UiDocumentData {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
@@ -123,7 +140,7 @@ export function parseAetherDocument(source: string): UiDocumentData {
 
   let migrated: AetherProject;
   try {
-    migrated = migrateAetherProject(parsed);
+    migrated = migrateAetherProject(parsed, { pluginName });
   } catch (error) {
     const message =
       error instanceof AetherMigrationError
@@ -146,9 +163,9 @@ export function serializeAetherDocument(
   components: UISpecComponent[],
   canvasWidth: number,
   canvasHeight: number,
-  version = CURRENT_AETHER_SCHEMA_VERSION
+  meta: AetherProjectMeta
 ): string {
-  const project = toAetherProject(components, version, {
+  const project = toAetherProject(components, meta, {
     width: canvasWidth,
     height: canvasHeight,
   });
@@ -166,10 +183,10 @@ export function parseDesignerDocument(
   filePath: string
 ): UiDocumentData {
   if (filePath.endsWith('.aether')) {
-    return parseAetherDocument(source);
+    return parseAetherDocument(source, pluginNameFromPath(filePath));
   }
   if (filePath.endsWith('.ui')) {
-    return parseUiDocument(source);
+    return parseUiDocument(source, pluginNameFromPath(filePath));
   }
   throw new Error(
     `Unsupported designer document: ${filePath}. Expected .aether or legacy .ui.`
@@ -180,10 +197,11 @@ export function serializeDesignerDocument(
   filePath: string,
   components: UISpecComponent[],
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
+  meta: AetherProjectMeta
 ): string {
   if (filePath.endsWith('.aether')) {
-    return serializeAetherDocument(components, canvasWidth, canvasHeight);
+    return serializeAetherDocument(components, canvasWidth, canvasHeight, meta);
   }
   if (filePath.endsWith('.ui')) {
     return serializeUiDocument(components, canvasWidth, canvasHeight);

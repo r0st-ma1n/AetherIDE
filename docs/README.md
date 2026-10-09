@@ -13,3 +13,4 @@
 - [standards/testing.md](./standards/testing.md) — правила тестирования и проверки изменений
 - [framework/plugin-contract.md](./framework/plugin-contract.md) — контракт плагина и адаптера формата: вызовы, потоки, запреты в аудиопотоке
 - [framework/headless-host.md](./framework/headless-host.md) — `aether_host`: рендер плагина без DAW
+- [ide/aether-format.md](./ide/aether-format.md) — формат проекта `.aether`: метаданные, параметры, миграция версий

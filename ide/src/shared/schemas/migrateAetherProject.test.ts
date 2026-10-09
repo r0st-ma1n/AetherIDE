@@ -5,11 +5,13 @@ import {
   migrateAetherProject,
 } from './migrateAetherProject';
 import { validateAetherProject } from './validateAetherProject';
+import { defaultProjectMeta } from '@/shared/lib/projectMeta';
 
 describe('migrateAetherProject', () => {
   it('is a no-op for current-version documents', () => {
     const input = {
       version: CURRENT_AETHER_SCHEMA_VERSION,
+      ...defaultProjectMeta('Demo'),
       components: [
         {
           type: 'Knob',
@@ -27,7 +29,7 @@ describe('migrateAetherProject', () => {
 
     const migrated = migrateAetherProject(input);
     expect(migrated.version).toBe(CURRENT_AETHER_SCHEMA_VERSION);
-    expect(migrated.components).toHaveLength(1);
+    expect(migrated).toEqual(input);
     expect(validateAetherProject(migrated)).toEqual({ valid: true });
   });
 
@@ -58,8 +60,52 @@ describe('migrateAetherProject', () => {
       version: '1',
       components: [],
     });
-    expect(migrated.version).toBe(1);
+    expect(migrated.version).toBe(CURRENT_AETHER_SCHEMA_VERSION);
     expect(validateAetherProject(migrated)).toEqual({ valid: true });
+  });
+
+  it('v1 → v2 adds plugin and parameters named after the file', () => {
+    const v1 = {
+      version: 1,
+      components: [],
+      canvasWidth: 600,
+      canvasHeight: 400,
+    };
+
+    const migrated = migrateAetherProject(v1, { pluginName: 'Gain Pro' });
+    expect(migrated.plugin).toEqual({
+      name: 'Gain Pro',
+      vendor: 'My Company',
+      id: 'com.mycompany.gainpro',
+      version: '1.0.0',
+      category: 'Effect',
+    });
+    expect(migrated.parameters).toEqual([]);
+    expect(migrated.canvasWidth).toBe(600);
+    expect(validateAetherProject(migrated)).toEqual({ valid: true });
+  });
+
+  it('v1 → v2 moves pluginType into plugin.category', () => {
+    const migrated = migrateAetherProject({
+      version: 1,
+      components: [],
+      pluginType: 'Instrument',
+    });
+    expect(migrated.plugin.category).toBe('Instrument');
+    expect(migrated).not.toHaveProperty('pluginType');
+    expect(validateAetherProject(migrated)).toEqual({ valid: true });
+  });
+
+  it('v1 → v2 without a name falls back to "Plugin"', () => {
+    const migrated = migrateAetherProject({ version: 1, components: [] });
+    expect(migrated.plugin.name).toBe('Plugin');
+    expect(migrated.plugin.id).toBe('com.mycompany.plugin');
+  });
+
+  it('does not mutate the input', () => {
+    const v1 = { version: 1, components: [], pluginType: 'Effect' };
+    migrateAetherProject(v1);
+    expect(v1).toEqual({ version: 1, components: [], pluginType: 'Effect' });
   });
 
   it('rejects unsupported future versions', () => {

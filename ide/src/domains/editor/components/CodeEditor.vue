@@ -26,7 +26,7 @@ import { useEditorStore } from '@/domains/editor/stores/editorStore';
 import {
   buildAetherDocumentFromCpp,
   buildLinkedPluginPaths,
-  loadExistingAetherCanvas,
+  loadExistingAetherDocument,
   serializeAetherFromSpec,
 } from '@/domains/ui-designer/lib/uiSync';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
@@ -98,17 +98,16 @@ async function syncDesignerFromCppSource(cppSource: string) {
     basenameWithoutExt
   );
 
-  const aetherExists = await window.prototypeIDE.fileExists(paths.aetherPath);
-  if (!aetherExists) {
-    return;
-  }
-
-  const canvas = await loadExistingAetherCanvas(
+  const existing = await loadExistingAetherDocument(
     paths.aetherPath,
     (path) => window.prototypeIDE.readFile(path),
     (path) => window.prototypeIDE.fileExists(path)
   );
-  const doc = buildAetherDocumentFromCpp(cppSource, canvas);
+  if (!existing) {
+    return;
+  }
+
+  const doc = buildAetherDocumentFromCpp(cppSource, existing);
   if (!doc) {
     return;
   }
@@ -119,7 +118,8 @@ async function syncDesignerFromCppSource(cppSource: string) {
       paths.aetherPath,
       { components: doc.components },
       doc.canvasWidth,
-      doc.canvasHeight
+      doc.canvasHeight,
+      doc.meta
     )
   );
 

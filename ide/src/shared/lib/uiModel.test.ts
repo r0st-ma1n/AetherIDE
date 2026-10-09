@@ -6,6 +6,7 @@ import {
   toUISpec,
 } from './uiModel';
 import type { UISpecComponent } from '@/shared/types';
+import { defaultProjectMeta } from '@/shared/lib/projectMeta';
 
 describe('normalizeUiComponentParams', () => {
   it('returns undefined when required fields are missing', () => {
@@ -49,8 +50,9 @@ describe('aether adapters', () => {
         params: { min: 0, max: 10, default: 5, step: 1 },
       },
     ];
-    expect(fromAetherProject(toAetherProject(components)).components).toEqual(
-      components
-    );
+    expect(
+      fromAetherProject(toAetherProject(components, defaultProjectMeta()))
+        .components
+    ).toEqual(components);
   });
 });

@@ -1,6 +1,7 @@
 import type {
   AetherProject,
   AetherProjectComponent,
+  AetherProjectMeta,
   UISpec,
   UISpecComponent,
   UiComponentParams,
@@ -83,11 +84,13 @@ function fromAetherComponent(
 
 export function toAetherProject(
   components: UISpecComponent[],
-  version = CURRENT_AETHER_SCHEMA_VERSION,
+  meta: AetherProjectMeta,
   canvas?: { width: number; height: number }
 ): AetherProject {
   return {
-    version,
+    version: CURRENT_AETHER_SCHEMA_VERSION,
+    plugin: meta.plugin,
+    parameters: meta.parameters,
     components: components.map(
       (component): AetherProjectComponent => ({
         type: component.type,
@@ -122,9 +125,11 @@ export function aetherProjectToDocument(project: AetherProject): {
   components: UISpecComponent[];
   canvasWidth: number;
   canvasHeight: number;
+  meta: AetherProjectMeta;
 } {
   return {
     components: fromAetherProject(project).components,
+    meta: { plugin: project.plugin, parameters: project.parameters },
     canvasWidth: project.canvasWidth ?? DEFAULT_CANVAS_WIDTH,
     canvasHeight: project.canvasHeight ?? DEFAULT_CANVAS_HEIGHT,
   };

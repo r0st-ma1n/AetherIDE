@@ -5,7 +5,7 @@ import type {
 } from '@/domains/templates/stores/templateStore';
 import { generateLinkedPluginSources } from '@/domains/ui-designer/lib/uiSync';
 import { serializeAetherDocument } from '@/domains/ui-designer/lib/uiDocument';
-import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
+import { defaultProjectMeta } from '@/shared/lib/projectMeta';
 
 const IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
@@ -84,22 +84,17 @@ export function buildScaffoldFiles(
     existingCpp: seedExistingCpp(className, input.pluginType),
   });
 
-  const aether = {
-    ...JSON.parse(serializeAetherDocument([], 600, 400)),
-    pluginType: input.pluginType,
-  };
-
-  const aetherCheck = validateAetherProject(aether);
-  if (!aetherCheck.valid) {
-    throw new Error(
-      `Invalid scaffold .aether: ${aetherCheck.errors.join('; ')}`
-    );
-  }
+  const aether = serializeAetherDocument(
+    [],
+    600,
+    400,
+    defaultProjectMeta(className, input.pluginType)
+  );
 
   return {
     [`${className}.h`]: headerCode,
     [`${className}.cpp`]: cppCode,
-    [`${className}.aether`]: `${JSON.stringify(aether, null, 2)}\n`,
+    [`${className}.aether`]: `${aether}\n`,
     'CMakeLists.txt': `${renderTemplate(cmakeTemplate, { className })}\n`,
     'README.md': `# ${className}
 

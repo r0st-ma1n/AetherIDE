@@ -52,7 +52,8 @@ describe('GainPlugin fixture regression', () => {
     const serialized = serializeAetherDocument(
       doc.components,
       doc.canvasWidth,
-      doc.canvasHeight
+      doc.canvasHeight,
+      doc.meta
     );
     expect(JSON.parse(serialized).version).toBe(CURRENT_AETHER_SCHEMA_VERSION);
     expect(validateAetherProject(JSON.parse(serialized))).toEqual({
@@ -63,6 +64,8 @@ describe('GainPlugin fixture regression', () => {
     expect(restored.components).toEqual(doc.components);
     expect(restored.canvasWidth).toBe(doc.canvasWidth);
     expect(restored.canvasHeight).toBe(doc.canvasHeight);
+    expect(restored.meta).toEqual(doc.meta);
+    expect(serialized).toBe(readFileSync(sampleAetherPath, 'utf-8').trimEnd());
   });
 
   it('cpp markers → generateCppFromUI → parse equals', () => {
