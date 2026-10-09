@@ -97,6 +97,16 @@ function checkSemantics(project: AetherProject): string[] {
     seen.add(param.id);
     checkParameter(param, path, errors);
   });
+  project.components.forEach((component, index) => {
+    const parameterId = component.properties.parameterId;
+    if (parameterId === undefined) return;
+    const path = `/components/${index}/properties/parameterId`;
+    if (typeof parameterId !== 'string') {
+      errors.push(`${path}: must be a string`);
+    } else if (!seen.has(parameterId)) {
+      errors.push(`${path}: unknown parameter "${parameterId}"`);
+    }
+  });
   return errors;
 }
 

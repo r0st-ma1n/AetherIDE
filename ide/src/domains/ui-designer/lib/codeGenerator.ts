@@ -27,6 +27,9 @@ const AETHER_SERIALIZERS = {
   color: (val, out) => {
     if (val !== undefined) out.push(`color=${val}`);
   },
+  parameterId: (val, out) => {
+    if (val !== undefined) out.push(`param=${val}`);
+  },
 } satisfies CppSerializerMap;
 
 export function formatAetherComment(component: UISpecComponent): string {
@@ -37,6 +40,7 @@ export function formatAetherComment(component: UISpecComponent): string {
   AETHER_SERIALIZERS.size(component.size, parts);
   AETHER_SERIALIZERS.params(component.params, parts);
   AETHER_SERIALIZERS.color(component.color, parts);
+  AETHER_SERIALIZERS.parameterId(component.parameterId, parts);
   return `// AETHER ${parts.join(' ')}`;
 }
 

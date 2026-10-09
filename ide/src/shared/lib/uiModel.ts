@@ -58,6 +58,9 @@ function toAetherProperties(
       }),
     }),
     ...(component.color !== undefined && { color: component.color }),
+    ...(component.parameterId !== undefined && {
+      parameterId: component.parameterId,
+    }),
   };
 }
 
@@ -71,6 +74,7 @@ function fromAetherComponent(
     step: readNumber(component.properties.step),
   });
   const color = readString(component.properties.color);
+  const parameterId = readString(component.properties.parameterId);
 
   return {
     id: component.id,
@@ -79,6 +83,7 @@ function fromAetherComponent(
     size: { width: component.width, height: component.height },
     ...(params !== undefined ? { params } : {}),
     ...(color !== undefined ? { color } : {}),
+    ...(parameterId !== undefined ? { parameterId } : {}),
   };
 }
 

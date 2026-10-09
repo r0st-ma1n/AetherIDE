@@ -24,6 +24,24 @@
           <span class="property-label">ID</span>
           <span class="property-value--id">{{ selectedComponent.id }}</span>
         </div>
+        <div class="property-row">
+          <span class="property-label">Parameter</span>
+          <select
+            class="property-select"
+            :value="selectedComponent.parameterId ?? ''"
+            :disabled="!projectMeta"
+            @change="onParameterChange"
+          >
+            <option value="">— none —</option>
+            <option
+              v-for="param in bindableParameters"
+              :key="param.id"
+              :value="param.id"
+            >
+              {{ param.name }} ({{ param.id }})
+            </option>
+          </select>
+        </div>
       </div>
 
       <div class="property-group">
@@ -72,8 +90,8 @@
         </div>
       </div>
 
-      <div v-if="hasParams" class="property-group">
-        <div class="group-title">Parameters</div>
+      <div v-if="hasRange" class="property-group">
+        <div class="group-title">Range</div>
         <div class="property-row">
           <span class="property-label">Min</span>
           <input
@@ -142,17 +160,38 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { canBindParameter } from '@/domains/ui-designer/lib/parameters';
 import { useUiDesignerStore } from '@/domains/ui-designer/stores/uiDesignerStore';
 import type { UiComponentType } from '@/shared/types';
 
 const store = useUiDesignerStore();
-const { selectedComponent } = storeToRefs(store);
+const { selectedComponent, projectMeta } = storeToRefs(store);
 
-const hasParams = computed(
+/** Widget's own range; a bound widget takes the range from its parameter. */
+const hasRange = computed(
   () =>
-    selectedComponent.value?.type === 'Knob' ||
-    selectedComponent.value?.type === 'Slider'
+    (selectedComponent.value?.type === 'Knob' ||
+      selectedComponent.value?.type === 'Slider') &&
+    selectedComponent.value.parameterId === undefined
 );
+
+/** Parameters this widget type can drive, plus the current one in any case. */
+const bindableParameters = computed(() => {
+  const component = selectedComponent.value;
+  if (!component) return [];
+  return (projectMeta.value?.parameters ?? []).filter(
+    (param) =>
+      param.id === component.parameterId ||
+      canBindParameter(component.type, param.type)
+  );
+});
+
+function onParameterChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value;
+  if (selectedComponent.value) {
+    store.setComponentParameter(selectedComponent.value.id, value || undefined);
+  }
+}
 
 function onTypeChange(event: Event) {
   const type = (event.target as HTMLSelectElement).value as UiComponentType;

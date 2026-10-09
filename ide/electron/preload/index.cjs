@@ -130,6 +130,8 @@ contextBridge.exposeInMainWorld('prototypeIDE', {
     }),
   confirmUnsaved: (payload) =>
     ipcRenderer.invoke('dialog:confirm-unsaved', payload),
+  confirmAction: (payload) =>
+    ipcRenderer.invoke('dialog:confirm-action', payload),
   confirmQuit: () => ipcRenderer.invoke('app:confirm-quit'),
   cancelQuit: () => ipcRenderer.invoke('app:cancel-quit'),
 });

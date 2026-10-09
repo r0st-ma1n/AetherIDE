@@ -7,6 +7,7 @@ import {
   type DistributeAxis,
 } from '@/domains/ui-designer/lib/alignComponents';
 import type { ICommand } from '@/domains/ui-designer/lib/commands';
+import { createParameter } from '@/domains/ui-designer/lib/parameters';
 import {
   parseDesignerDocument,
   serializeDesignerDocument,
@@ -19,6 +20,7 @@ import {
 import { normalizeUiComponentParams } from '@/shared/lib/uiModel';
 
 import type {
+  AetherParameter,
   AetherProjectMeta,
   DesignerGridStep,
   UiComponent,
@@ -396,6 +398,100 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     });
   }
 
+  /** Widgets bound to the parameter with @p parameterId. */
+  function componentsBoundTo(parameterId: string): UiComponent[] {
+    return components.value.filter((c) => c.parameterId === parameterId);
+  }
+
+  function setComponentsParameterId(
+    componentIds: readonly string[],
+    parameterId: string | undefined
+  ) {
+    for (const c of components.value) {
+      if (!componentIds.includes(c.id)) continue;
+      if (parameterId === undefined) {
+        delete c.parameterId;
+      } else {
+        c.parameterId = parameterId;
+      }
+    }
+  }
+
+  /**
+   * One undoable change of the parameter list, optionally rebinding widgets:
+   * @p reboundIds get @p reboundTo on execute and @p reboundFrom on undo.
+   */
+  function executeParametersChange(
+    next: AetherParameter[],
+    rebind?: { ids: string[]; from: string; to: string | undefined }
+  ) {
+    const meta = projectMeta.value;
+    if (!meta) return;
+    const previous = meta.parameters;
+    executeCommand({
+      execute() {
+        if (projectMeta.value) projectMeta.value.parameters = next;
+        if (rebind) setComponentsParameterId(rebind.ids, rebind.to);
+      },
+      undo() {
+        if (projectMeta.value) projectMeta.value.parameters = previous;
+        if (rebind) setComponentsParameterId(rebind.ids, rebind.from);
+      },
+    });
+  }
+
+  /** Appends a new float parameter; returns its id, or null without a document. */
+  function addParameter(): string | null {
+    const meta = projectMeta.value;
+    if (!meta) return null;
+    const param = createParameter(meta.parameters.map((p) => p.id));
+    executeParametersChange([...meta.parameters, param]);
+    return param.id;
+  }
+
+  /** Replaces the parameter @p id; a new id is carried over to bound widgets. */
+  function updateParameter(id: string, next: AetherParameter) {
+    const meta = projectMeta.value;
+    if (!meta || !meta.parameters.some((p) => p.id === id)) return;
+    const parameters = meta.parameters.map((p) => (p.id === id ? next : p));
+    const rebind =
+      next.id === id
+        ? undefined
+        : {
+            ids: componentsBoundTo(id).map((c) => c.id),
+            from: id,
+            to: next.id,
+          };
+    executeParametersChange(parameters, rebind);
+  }
+
+  /** Removes the parameter @p id and unbinds its widgets. */
+  function removeParameter(id: string) {
+    const meta = projectMeta.value;
+    if (!meta || !meta.parameters.some((p) => p.id === id)) return;
+    executeParametersChange(
+      meta.parameters.filter((p) => p.id !== id),
+      { ids: componentsBoundTo(id).map((c) => c.id), from: id, to: undefined }
+    );
+  }
+
+  function setComponentParameter(
+    componentId: string,
+    parameterId: string | undefined
+  ) {
+    const component = components.value.find((item) => item.id === componentId);
+    if (!component || component.parameterId === parameterId) return;
+    const oldParameterId = component.parameterId;
+    executeCommand({
+      execute() {
+        setComponentsParameterId([componentId], parameterId);
+      },
+      undo() {
+        setComponentsParameterId([componentId], oldParameterId);
+      },
+    });
+  }
+
   function setSelectionGroup(ids: string[]) {
     selectionGroup.value = [...ids];
     selectedComponentId.value = ids[ids.length - 1] ?? null;
@@ -515,6 +611,11 @@ export const useUiDesignerStore = defineStore('ui-designer', () => {
     canvasWidth,
     canvasHeight,
     projectMeta,
+    addParameter,
+    updateParameter,
+    removeParameter,
+    componentsBoundTo,
+    setComponentParameter,
     setCanvasSize,
     setGridStep,
     setSnapToGridEnabled,

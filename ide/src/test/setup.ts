@@ -44,6 +44,7 @@ const mockProtoIDE = {
   fileExists: vi.fn(async () => false),
   writeFile: vi.fn(async () => ({ ok: true })),
   confirmUnsaved: vi.fn(async () => 'discard' as const),
+  confirmAction: vi.fn(async () => true),
   confirmQuit: vi.fn(async () => true),
   cancelQuit: vi.fn(async () => true),
 };
