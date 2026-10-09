@@ -48,6 +48,26 @@
 
 ## Сборка
 
-`CMakeLists.txt` нового проекта собирает `MODULE`-библиотеку из `<Name>Processor.cpp` и
-`<Name>.cpp`. Проекты, созданные до B3, нужно поправить вручную по шаблону
-`ide/src/domains/templates/assets/CMakeLists.txt.template`.
+`CMakeLists.txt` нового проекта (шаблон
+`ide/src/domains/templates/assets/CMakeLists.txt.template`):
+
+- подключает фреймворк через `FetchContent` с `GIT_TAG v<версия IDE>` и
+  `SOURCE_SUBDIR framework`, проверяет `AETHER_VERSION` не ниже нужной;
+- собирает `MODULE`-библиотеку из `<Name>Processor.cpp` и `<Name>.cpp`;
+- добавляет ctest `<Name>_loads` и `<Name>_renders`: плагин грузится в `aether_host` и
+  обрабатывает звук.
+
+IDE при сборке передаёт `-DFETCHCONTENT_SOURCE_DIR_AETHER=<корень репозитория AetherIDE>`:
+сеть не нужна, используется фреймворк, с которым запущена IDE. Путь должен вести в корень
+репозитория, а не в `framework/` — `SOURCE_SUBDIR` применяется и к нему; при ошибке
+configure сообщает об этом.
+
+Без IDE проект скачивает фреймворк по тегу. Версия фреймворка — `project(Aether VERSION)`
+в `framework/CMakeLists.txt` и `AETHER_FRAMEWORK_VERSION` в
+`ide/src/shared/lib/frameworkVersion.ts` (тест следит, чтобы они совпадали).
+
+Новый проект из мастера стартует с параметром `gain` (0–2) и `processBlock`, который его
+применяет. `samples/GainPlugin` совпадает с таким проектом; CI собирает его и в монорепо,
+и как отдельный проект.
+
+Проекты, созданные до B4, нужно поправить вручную по шаблону.
