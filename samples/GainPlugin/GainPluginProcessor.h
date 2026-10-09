@@ -5,7 +5,7 @@
 #include "aether/PluginFactory.h"
 
 // --- USER CODE BEGIN: Includes ---
-
+#include "aether/SmoothedValue.h"
 // --- USER CODE END: Includes ---
 
 class GainPluginProcessor final : public aether::PluginProcessor {
@@ -27,6 +27,7 @@ private:
     aether::AudioProcessorParameter* gainParameter_ = nullptr;
 
     // --- USER CODE BEGIN: PrivateMembers ---
-
+    // Ramps gain changes to avoid clicks.
+    aether::SmoothedValue gain_;
     // --- USER CODE END: PrivateMembers ---
 };

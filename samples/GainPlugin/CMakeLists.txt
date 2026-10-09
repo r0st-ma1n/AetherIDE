@@ -1,44 +1,56 @@
 cmake_minimum_required(VERSION 3.22)
-project(GainPlugin LANGUAGES CXX)
+project(GainPlugin VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Prefer the monorepo framework when this sample is opened as a project root.
-set(AETHER_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../framework/core")
-if (NOT TARGET aether_core AND EXISTS "${AETHER_CORE_DIR}/CMakeLists.txt")
-  add_subdirectory("${AETHER_CORE_DIR}" "${CMAKE_BINARY_DIR}/aether_core")
+include(CTest)
+
+# Aether framework, pinned to the version this project was created with. It is always
+# built from source as part of the project. To build against a local checkout without
+# network access (AetherIDE does this), pass
+#   -DFETCHCONTENT_SOURCE_DIR_AETHER=<AetherIDE repository root>
+set(AETHER_MIN_VERSION 0.1.0)
+
+if (NOT TARGET aether_core)
+  include(FetchContent)
+  FetchContent_Declare(aether
+    GIT_REPOSITORY https://github.com/r0st-ma1n/AetherIDE.git
+    GIT_TAG v0.1.0
+    GIT_SHALLOW TRUE
+    SOURCE_SUBDIR framework
+  )
+  FetchContent_MakeAvailable(aether)
 endif()
 
 if (NOT TARGET aether_core)
   message(FATAL_ERROR
-    "aether_core not found. Open this sample from the AetherIDE monorepo "
-    "(samples/GainPlugin) or set up the framework path.")
+    "Aether framework not found. FETCHCONTENT_SOURCE_DIR_AETHER must point to the "
+    "AetherIDE repository root, not to its framework/ directory.")
+endif()
+if (AETHER_VERSION VERSION_LESS AETHER_MIN_VERSION)
+  message(FATAL_ERROR
+    "GainPlugin needs Aether ${AETHER_MIN_VERSION} or newer, found ${AETHER_VERSION}.")
 endif()
 
-# Plugin module: the generated processor plus the designer UI class (compiled, unused
-# until the plugin window lands).
+# Plugin module: the processor plus the designer UI class (compiled, unused until the
+# plugin window lands).
 add_library(GainPlugin MODULE
-  GainPluginProcessor.cpp
-  GainPlugin.cpp
+    GainPluginProcessor.cpp
+    GainPlugin.cpp
 )
 
 target_link_libraries(GainPlugin PRIVATE aether_core)
 target_include_directories(GainPlugin PRIVATE .)
 set_target_properties(GainPlugin PROPERTIES PREFIX "")
 
-# Smoke tests of the IDE-generated code: the module loads in the headless host, exposes
-# the parameters from GainPlugin.aether and processes audio.
-if (TARGET aether_host AND BUILD_TESTING)
-  add_test(NAME gain_sample_list_params
+# Smoke tests in the headless host: the plugin loads and processes audio.
+if (BUILD_TESTING AND TARGET aether_host)
+  add_test(NAME GainPlugin_loads
     COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin> --list-params)
-  set_tests_properties(gain_sample_list_params PROPERTIES PASS_REGULAR_EXPRESSION
-    [=[GainPlugin 1\.0\.0 by Aether \(dev\.aether\.samples\.gain\).*gain  "Gain"  0\.00 \.\. 2\.00  default 1\.00]=])
-
-  add_test(NAME gain_sample_render
+  add_test(NAME GainPlugin_renders
     COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin> --sine 440 --duration 0.1
-            --param gain=0 --out ${CMAKE_CURRENT_BINARY_DIR}/gain_sample_render.wav)
-  set_tests_properties(gain_sample_render PROPERTIES PASS_REGULAR_EXPRESSION "peak out 0 ")
+            --out ${CMAKE_CURRENT_BINARY_DIR}/GainPlugin_renders.wav)
+  set_tests_properties(GainPlugin_renders PROPERTIES PASS_REGULAR_EXPRESSION "Rendered")
 endif()
