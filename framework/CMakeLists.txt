@@ -1,0 +1,27 @@
+# Aether framework. Plugin projects pull it with
+#   FetchContent_Declare(aether GIT_REPOSITORY ... GIT_TAG v<version> SOURCE_SUBDIR framework)
+# The monorepo root adds it with add_subdirectory().
+cmake_minimum_required(VERSION 3.22)
+
+project(Aether VERSION 0.1.0 LANGUAGES CXX)
+
+# Read by plugin projects after FetchContent_MakeAvailable to check the minimum version.
+# Keep in sync with AETHER_FRAMEWORK_VERSION in ide/src/shared/lib/frameworkVersion.ts.
+set(AETHER_VERSION ${PROJECT_VERSION} CACHE INTERNAL "Aether framework version")
+
+# Tests and examples are for framework development, not for plugin projects.
+option(AETHER_BUILD_TESTS "Build the Aether framework tests and examples" ${PROJECT_IS_TOP_LEVEL})
+
+if (PROJECT_IS_TOP_LEVEL)
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+  include(CTest)
+endif()
+
+add_subdirectory(core)
+add_subdirectory(host)
+
+if (AETHER_BUILD_TESTS)
+  add_subdirectory(core/examples/gain)
+endif()

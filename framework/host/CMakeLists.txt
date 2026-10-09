@@ -14,10 +14,12 @@ target_link_libraries(aether_hosting PUBLIC aether_core PRIVATE ${CMAKE_DL_LIBS}
 add_executable(aether_host tools/aether_host.cpp)
 target_link_libraries(aether_host PRIVATE aether_hosting)
 
-add_executable(wav_file_test tests/wav_file_test.cpp)
-target_link_libraries(wav_file_test PRIVATE aether_hosting aether_test_support)
-add_test(NAME wav_file_test COMMAND wav_file_test)
+if (AETHER_BUILD_TESTS)
+  add_executable(wav_file_test tests/wav_file_test.cpp)
+  target_link_libraries(wav_file_test PRIVATE aether_hosting aether_test_support)
+  add_test(NAME wav_file_test COMMAND wav_file_test)
 
-add_executable(offline_renderer_test tests/offline_renderer_test.cpp)
-target_link_libraries(offline_renderer_test PRIVATE aether_hosting aether_test_support)
-add_test(NAME offline_renderer_test COMMAND offline_renderer_test)
+  add_executable(offline_renderer_test tests/offline_renderer_test.cpp)
+  target_link_libraries(offline_renderer_test PRIVATE aether_hosting aether_test_support)
+  add_test(NAME offline_renderer_test COMMAND offline_renderer_test)
+endif()
