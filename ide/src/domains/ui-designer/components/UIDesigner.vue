@@ -646,7 +646,7 @@ function stopPointerInteraction() {
 }
 
 watch(
-  () => designerStore.components,
+  () => [designerStore.components, designerStore.projectMeta],
   () => {
     if (workspaceStore.activeTabId === props.tab.id) {
       workspaceStore.markDirty(props.tab.id, true);

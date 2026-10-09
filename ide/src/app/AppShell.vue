@@ -13,6 +13,7 @@
     </main>
 
     <aside class="ide-shell__right">
+      <ParametersPanel />
       <PropertiesPanel />
     </aside>
 
@@ -87,6 +88,7 @@ import FileExplorer from '@/domains/files/components/FileExplorer.vue';
 import BuildPanel from '@/domains/build/components/BuildPanel.vue';
 import NewProjectWizard from '@/domains/templates/components/NewProjectWizard.vue';
 import ComponentPalette from '@/domains/ui-designer/components/ComponentPalette.vue';
+import ParametersPanel from '@/domains/ui-designer/components/ParametersPanel.vue';
 import PropertiesPanel from '@/domains/ui-designer/components/PropertiesPanel.vue';
 import WorkspaceView from '@/domains/workspace/components/WorkspaceView.vue';
 import { useBuildStore } from '@/domains/build/stores/buildStore';

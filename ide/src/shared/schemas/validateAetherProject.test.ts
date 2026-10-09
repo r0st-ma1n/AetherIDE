@@ -557,3 +557,64 @@ describe('validateAetherProject — parameters', () => {
     );
   });
 });
+
+// ─── widget bindings ──────────────────────────────────────────────────────────
+
+describe('validateAetherProject — widget parameterId', () => {
+  const gain = {
+    id: 'gain',
+    name: 'Gain',
+    type: 'float' as const,
+    min: 0,
+    max: 1,
+    default: 0,
+  };
+
+  function withBinding(parameterId: unknown) {
+    return {
+      ...base,
+      parameters: [gain],
+      components: [{ ...validComponent, properties: { parameterId } }],
+    };
+  }
+
+  it('accepts a binding to an existing parameter', () => {
+    expect(validateAetherProject(withBinding('gain'))).toEqual({
+      valid: true,
+    });
+  });
+
+  it('rejects a binding to an unknown parameter', () => {
+    const result = validateAetherProject(withBinding('volume'));
+    expect(result).toEqual({
+      valid: false,
+      errors: [
+        '/components/0/properties/parameterId: unknown parameter "volume"',
+      ],
+    });
+  });
+
+  it('rejects a non-string binding', () => {
+    const result = validateAetherProject(withBinding(1));
+    expect(result.valid).toBe(false);
+  });
+
+  it('round-trips parameterId through toAetherProject / fromAetherProject', () => {
+    const components: UISpecComponent[] = [
+      {
+        id: 'knob1',
+        type: 'Knob',
+        position: { x: 0, y: 0 },
+        size: { width: 80, height: 80 },
+        parameterId: 'gain',
+      },
+    ];
+    const project = toAetherProject(components, {
+      ...meta,
+      parameters: [gain],
+    });
+    expect(project.components[0]?.properties).toEqual({ parameterId: 'gain' });
+    expect(validateAetherProject(project)).toEqual({ valid: true });
+    expect(fromAetherProject(project).components).toEqual(components);
+  });
+});

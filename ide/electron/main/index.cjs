@@ -523,6 +523,25 @@ function registerIpcHandlers() {
     return 'cancel';
   });
 
+  ipcMain.handle('dialog:confirm-action', async (_event, payload = {}) => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return false;
+    }
+
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: [payload.confirmLabel || 'OK', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+      title: payload.title || 'Confirm',
+      message: payload.message || 'Are you sure?',
+      detail: payload.detail || '',
+    });
+
+    return result.response === 0;
+  });
+
   ipcMain.handle('app:confirm-quit', async () => {
     quittingConfirmed = true;
     if (mainWindow && !mainWindow.isDestroyed()) {

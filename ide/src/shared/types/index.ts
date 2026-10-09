@@ -47,6 +47,8 @@ export interface UISpecComponent {
   size: { width: number; height: number };
   params?: UiComponentParams;
   color?: string;
+  /** Id of the plugin parameter this widget controls (`parameters[].id`). */
+  parameterId?: string;
 }
 
 /**
