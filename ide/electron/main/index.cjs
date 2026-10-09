@@ -12,7 +12,7 @@ const {
   sanitizeRecentProjects,
   touchRecentProjects,
 } = require('./recentProjects.cjs');
-const { BuildRunner } = require('./buildRunner.cjs');
+const { BuildRunner, findFrameworkSourceDir } = require('./buildRunner.cjs');
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const ALLOWED_EXTENSIONS = new Set([
@@ -43,6 +43,8 @@ let activeProjectRoot = null;
 let recentProjects = [];
 
 const buildRunner = new BuildRunner();
+// v1: the IDE runs from the AetherIDE checkout and builds projects against its framework.
+const frameworkSourceDir = findFrameworkSourceDir(__dirname);
 
 /** @type {import('fs').FSWatcher | null} */
 let fileWatcher = null;
@@ -441,18 +443,22 @@ function registerIpcHandlers() {
       return payload;
     }
 
-    return buildRunner.run(activeProjectRoot, {
-      onLog: (chunk) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('build:log', chunk);
-        }
+    return buildRunner.run(
+      activeProjectRoot,
+      {
+        onLog: (chunk) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('build:log', chunk);
+          }
+        },
+        onStatus: (payload) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('build:status', payload);
+          }
+        },
       },
-      onStatus: (payload) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('build:status', payload);
-        }
-      },
-    });
+      { frameworkSourceDir }
+    );
   });
 
   ipcMain.handle('build:stop', async () => buildRunner.stop());

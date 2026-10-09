@@ -8,6 +8,8 @@ aether::PluginInfo EmptyProcessor::pluginInfo() {
         .vendor = "My Company",
         .id = "com.mycompany.empty",
         .version = {1, 0, 0},
+        .url = "",
+        .email = "",
         .category = aether::PluginCategory::Effect,
     };
 }

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildScaffoldFiles,
+  DEFAULT_PARAMETER,
+  GAIN_USER_CODE,
   isValidPluginName,
   validatePluginName,
 } from './scaffoldProject';
+import { AETHER_FRAMEWORK_VERSION } from '@/shared/lib/frameworkVersion';
 import type { TemplateData } from '@/domains/templates/stores/templateStore';
 import { parseUIFromCpp } from '@/domains/ui-designer/lib/codeParser';
 import { validateAetherProject } from '@/shared/schemas/validateAetherProject';
@@ -66,7 +69,7 @@ describe('buildScaffoldFiles', () => {
       id: 'com.mycompany.demoeffect',
       category: 'Effect',
     });
-    expect(aether.parameters).toEqual([]);
+    expect(aether.parameters).toEqual([DEFAULT_PARAMETER]);
     expect(aether.components).toEqual([]);
 
     expect(files['CMakeLists.txt']).toContain('project(DemoEffect');
@@ -85,5 +88,52 @@ describe('buildScaffoldFiles', () => {
     expect(JSON.parse(files['DemoSynth.aether']!).plugin.category).toBe(
       'Instrument'
     );
+  });
+
+  it('uses the vendor for the plugin metadata and id', () => {
+    const files = buildScaffoldFiles({
+      className: 'Verb',
+      pluginType: 'Effect',
+      vendor: '  Acme Audio ',
+      templates,
+    });
+    const aether = JSON.parse(files['Verb.aether']!);
+    expect(aether.plugin).toMatchObject({
+      vendor: 'Acme Audio',
+      id: 'com.acmeaudio.verb',
+    });
+    expect(files['VerbProcessor.cpp']).toContain('.vendor = "Acme Audio"');
+  });
+
+  it('starts with a smoothed gain parameter that processBlock applies', () => {
+    const files = buildScaffoldFiles({
+      className: 'Verb',
+      pluginType: 'Effect',
+      templates,
+    });
+    const cpp = files['VerbProcessor.cpp']!;
+    expect(cpp).toContain(
+      'gainParameter_ = &parameters_.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);'
+    );
+    const header = files['VerbProcessor.h']!;
+    for (const body of Object.values(GAIN_USER_CODE)) {
+      expect(header + cpp).toContain(body);
+    }
+  });
+
+  it('pulls the framework with FetchContent pinned to the IDE version', () => {
+    const cmake = buildScaffoldFiles({
+      className: 'Verb',
+      pluginType: 'Effect',
+      templates,
+    })['CMakeLists.txt']!;
+    expect(cmake).toContain('FetchContent_Declare(aether');
+    expect(cmake).toContain(`GIT_TAG v${AETHER_FRAMEWORK_VERSION}`);
+    expect(cmake).toContain('SOURCE_SUBDIR framework');
+    expect(cmake).toContain(
+      `set(AETHER_MIN_VERSION ${AETHER_FRAMEWORK_VERSION})`
+    );
+    expect(cmake).not.toContain('../framework');
+    expect(cmake).not.toMatch(/\{\{\s*\w+\s*\}\}/);
   });
 });
