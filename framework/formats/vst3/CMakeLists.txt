@@ -86,9 +86,25 @@ aether_vst3_sdk_library(aether_vst3_sdk
 )
 target_link_libraries(aether_vst3_sdk PUBLIC aether_vst3_sdk_common)
 
+# The adapter: one aether::PluginProcessor as a VST3 SingleComponentEffect.
+add_library(aether_vst3
+    src/Vst3Effect.cpp
+)
+target_include_directories(aether_vst3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(aether_vst3 PUBLIC aether_core aether_vst3_sdk)
+set_target_properties(aether_vst3 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 if (AETHER_BUILD_TESTS)
   # Builds and links a minimal SingleComponentEffect against the vendored SDK.
   add_executable(vst3_sdk_test tests/vst3_sdk_test.cpp)
   target_link_libraries(vst3_sdk_test PRIVATE aether_vst3_sdk aether_test_support)
   add_test(NAME vst3_sdk_test COMMAND vst3_sdk_test)
+
+  # Drives the adapter like a host; ParameterChanges is the SDK's host-side implementation.
+  add_executable(vst3_effect_test
+      tests/vst3_effect_test.cpp
+      ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/parameterchanges.cpp
+  )
+  target_link_libraries(vst3_effect_test PRIVATE aether_vst3 aether_test_support)
+  add_test(NAME vst3_effect_test COMMAND vst3_effect_test)
 endif()
