@@ -86,11 +86,19 @@ function checkParameter(
   }
 }
 
+/** Id of the bypass switch every generated processor adds (addBypassParameter()). */
+export const RESERVED_PARAMETER_IDS: readonly string[] = ['bypass'];
+
 function checkSemantics(project: AetherProject): string[] {
   const errors: string[] = [];
   const seen = new Set<string>();
   project.parameters.forEach((param, index) => {
     const path = `/parameters/${index}`;
+    if (RESERVED_PARAMETER_IDS.includes(param.id)) {
+      errors.push(
+        `${path}/id: "${param.id}" is reserved for the plugin's bypass switch`
+      );
+    }
     if (seen.has(param.id)) {
       errors.push(`${path}/id: duplicate parameter id "${param.id}"`);
     }

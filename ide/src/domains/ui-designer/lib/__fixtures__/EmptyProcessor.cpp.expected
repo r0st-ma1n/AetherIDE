@@ -15,6 +15,9 @@ aether::PluginInfo EmptyProcessor::pluginInfo() {
 }
 
 EmptyProcessor::EmptyProcessor() {
+    // Standard bypass switch: hosts use it to bypass the plugin.
+    addBypassParameter();
+
     // --- USER CODE BEGIN: Constructor ---
 
     // --- USER CODE END: Constructor ---

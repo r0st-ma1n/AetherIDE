@@ -17,6 +17,9 @@ aether::PluginInfo GainPluginProcessor::pluginInfo() {
 GainPluginProcessor::GainPluginProcessor() {
     gainParameter_ = &parameters_.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);
 
+    // Standard bypass switch: hosts use it to bypass the plugin.
+    addBypassParameter();
+
     // --- USER CODE BEGIN: Constructor ---
 
     // --- USER CODE END: Constructor ---
