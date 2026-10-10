@@ -4,7 +4,8 @@ BUILD_DIR ?= build
 IDE_DIR := ide
 BUILD_CONFIG ?= Release
 CLANG_FORMAT ?= clang-format
-CPP_SOURCES = $(shell git ls-files "*.cpp" "*.h")
+# The vendored VST3 SDK keeps its upstream formatting.
+CPP_SOURCES = $(shell git ls-files "*.cpp" "*.h" ":!:framework/formats/vst3/sdk/")
 
 help:
 	@echo Available targets:
