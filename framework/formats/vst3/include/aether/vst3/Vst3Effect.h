@@ -17,6 +17,9 @@ namespace aether::vst3 {
  * processor's parameters. The processor's parameters are the only copy of the values: the
  * controller side reads and writes them too, so the host always sees what the DSP uses.
  *
+ * State: the component state is the processor's getState() bytes (parameters plus custom
+ * data, see PluginState.h); after setState the host is told to re-read parameter values.
+ *
  * v1: one main audio bus in and out, mono or stereo (whichever the processor supports),
  * 32-bit samples only, no events, no custom editor.
  */
@@ -36,9 +39,15 @@ public:
 
     // IComponent
     Steinberg::tresult PLUGIN_API setActive(Steinberg::TBool state) override;
+    Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream* state) override;
+    Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream* state) override;
 
     // IAudioProcessor
     Steinberg::tresult PLUGIN_API setupProcessing(Steinberg::Vst::ProcessSetup& setup) override;
+    Steinberg::tresult PLUGIN_API setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs,
+                                                     Steinberg::int32 numIns,
+                                                     Steinberg::Vst::SpeakerArrangement* outputs,
+                                                     Steinberg::int32 numOuts) override;
     Steinberg::tresult PLUGIN_API
     canProcessSampleSize(Steinberg::int32 symbolicSampleSize) override;
     Steinberg::uint32 PLUGIN_API getLatencySamples() override;

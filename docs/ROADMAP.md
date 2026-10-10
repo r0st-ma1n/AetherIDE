@@ -315,9 +315,9 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### C3. Состояние и шины · M
 
-- [ ] `getState` / `setState` через A4
-- [ ] `setBusArrangements`: mono и stereo, остальное — отказ
-- [ ] Синхронизация контроллера после `setState` (DAW показывает правильные значения)
+- [x] `getState` / `setState` через A4
+- [x] `setBusArrangements`: mono и stereo, остальное — отказ
+- [x] Синхронизация контроллера после `setState` (DAW показывает правильные значения)
 
 ### C4. CMake-функция и бандл · M
 

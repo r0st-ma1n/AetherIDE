@@ -41,10 +41,29 @@
 - Bypass обрабатывает базовый `PluginProcessor::process()`: вход копируется в выход.
 - `process` адаптера не выделяет память (проверяет `vst3_effect_test`).
 
-## Тест
+## Состояние
 
-`vst3_effect_test` ведёт себя как хост: `initialize`, `setupProcessing`, `setActive`,
-`process` с `ParameterChanges` из SDK, bypass, отказ при чужой раскладке, `terminate`.
+- `getState` пишет в поток хоста байты `PluginProcessor::getState()` (параметры и
+  пользовательские данные, формат — `PluginState.h`); `setState` читает поток до конца и
+  передаёт в `setState()` процессора.
+- Битое состояние или состояние из более новой версии формата — `kResultFalse`, ничего не
+  меняется.
+- После успешного `setState` адаптер вызывает `restartComponent(kParamValuesChanged)`:
+  хост перечитывает значения и показывает правильные (контроллер и так читает их из
+  процессора).
 
-Пока не сделано: состояние и `setBusArrangements` (C3), фабрика модуля, FUID и бандл (C4),
-`validator` (C5).
+## Шины
+
+`setBusArrangements` принимает ровно одну входную и одну выходную шину, mono или stereo, и
+только раскладки, которые поддерживает процессор (по умолчанию mono → mono и
+stereo → stereo); остальное, в том числе sidechain и смену раскладки при активном плагине,
+отклоняет. Процессор, умеющий только mono, стартует с mono-шиной.
+
+## Тесты
+
+- `vst3_effect_test` ведёт себя как хост: `initialize`, `setupProcessing`, `setActive`,
+  `process` с `ParameterChanges` из SDK, bypass, отказ при чужой раскладке, `terminate`.
+- `vst3_state_test`: состояние туда и обратно (с пользовательскими данными), уведомление
+  хоста, битое состояние, согласование mono / stereo.
+
+Пока не сделано: фабрика модуля, FUID и бандл (C4), `validator` (C5).

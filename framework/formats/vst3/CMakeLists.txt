@@ -107,4 +107,12 @@ if (AETHER_BUILD_TESTS)
   )
   target_link_libraries(vst3_effect_test PRIVATE aether_vst3 aether_test_support)
   add_test(NAME vst3_effect_test COMMAND vst3_effect_test)
+
+  # State and bus arrangements; MemoryStream stands in for the host's stream.
+  add_executable(vst3_state_test
+      tests/vst3_state_test.cpp
+      ${VST3_SDK_DIR}/public.sdk/source/common/memorystream.cpp
+  )
+  target_link_libraries(vst3_state_test PRIVATE aether_vst3 aether_test_support)
+  add_test(NAME vst3_state_test COMMAND vst3_state_test)
 endif()

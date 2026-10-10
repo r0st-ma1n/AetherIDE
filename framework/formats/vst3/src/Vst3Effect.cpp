@@ -1,5 +1,6 @@
 #include "aether/vst3/Vst3Effect.h"
 
+#include "pluginterfaces/base/ibstream.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "public.sdk/source/vst/utility/stringconvert.h"
 #include "public.sdk/source/vst/vstparameters.h"
@@ -8,6 +9,7 @@
 #include <cmath>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace aether::vst3 {
 
@@ -129,6 +131,66 @@ tresult PLUGIN_API Vst3Effect::setActive(TBool state) {
         processor_->release();
     }
     return SingleComponentEffect::setActive(state);
+}
+
+tresult PLUGIN_API Vst3Effect::getState(IBStream* state) {
+    if (state == nullptr) {
+        return kInvalidArgument;
+    }
+    const PluginState bytes = processor_->getState();
+    int32 written = 0;
+    if (state->write(const_cast<std::uint8_t*>(bytes.data()), static_cast<int32>(bytes.size()),
+                     &written) != kResultOk ||
+        written != static_cast<int32>(bytes.size())) {
+        return kResultFalse;
+    }
+    return kResultOk;
+}
+
+tresult PLUGIN_API Vst3Effect::setState(IBStream* state) {
+    if (state == nullptr) {
+        return kInvalidArgument;
+    }
+    // The host's stream holds exactly what getState() wrote; read it to the end.
+    std::vector<std::uint8_t> bytes;
+    std::uint8_t chunk[4096];
+    for (;;) {
+        int32 read = 0;
+        if (state->read(chunk, static_cast<int32>(sizeof(chunk)), &read) != kResultOk ||
+            read <= 0) {
+            break;
+        }
+        bytes.insert(bytes.end(), chunk, chunk + read);
+    }
+    if (!processor_->setState(bytes)) {
+        return kResultFalse;
+    }
+    // Values changed behind the host's back: make it re-read them (and refresh its UI).
+    if (componentHandler) {
+        componentHandler->restartComponent(kParamValuesChanged);
+    }
+    return kResultOk;
+}
+
+tresult PLUGIN_API Vst3Effect::setBusArrangements(SpeakerArrangement* inputs, int32 numIns,
+                                                  SpeakerArrangement* outputs, int32 numOuts) {
+    // v1: exactly one main bus each way, mono or stereo, and only layouts the processor
+    // supports (by default mono -> mono and stereo -> stereo).
+    if (numIns != 1 || numOuts != 1 || inputs == nullptr || outputs == nullptr) {
+        return kResultFalse;
+    }
+    const auto isMonoOrStereo = [](SpeakerArrangement arrangement) {
+        return arrangement == SpeakerArr::kMono || arrangement == SpeakerArr::kStereo;
+    };
+    if (!isMonoOrStereo(inputs[0]) || !isMonoOrStereo(outputs[0])) {
+        return kResultFalse;
+    }
+    const BusLayout layout{SpeakerArr::getChannelCount(inputs[0]),
+                           SpeakerArr::getChannelCount(outputs[0])};
+    if (processor_->isPrepared() || !processor_->isBusLayoutSupported(layout)) {
+        return kResultFalse;
+    }
+    return SingleComponentEffect::setBusArrangements(inputs, numIns, outputs, numOuts);
 }
 
 tresult PLUGIN_API Vst3Effect::setupProcessing(Vst::ProcessSetup& setup) {
