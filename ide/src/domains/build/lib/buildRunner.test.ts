@@ -1,16 +1,33 @@
 import { createRequire } from 'node:module';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { buildIsConfigured, getBuildDir, projectHasCMakeLists } =
-  require('../../../../electron/main/buildRunner.cjs') as {
-    buildIsConfigured: (buildDir: string) => boolean;
-    getBuildDir: (projectRoot: string) => string;
-    projectHasCMakeLists: (projectRoot: string) => boolean;
-  };
+const {
+  buildIsConfigured,
+  configureArgs,
+  findFrameworkSourceDir,
+  getBuildDir,
+  projectHasCMakeLists,
+} = require('../../../../electron/main/buildRunner.cjs') as {
+  buildIsConfigured: (buildDir: string) => boolean;
+  configureArgs: (
+    projectRoot: string,
+    buildDir: string,
+    frameworkSourceDir: string | null | undefined
+  ) => string[];
+  findFrameworkSourceDir: (startDir: string) => string | null;
+  getBuildDir: (projectRoot: string) => string;
+  projectHasCMakeLists: (projectRoot: string) => boolean;
+};
 
 const tempDirs: string[] = [];
 
@@ -37,5 +54,43 @@ describe('buildRunner helpers', () => {
     mkdirSync(buildDir);
     writeFileSync(join(buildDir, 'CMakeCache.txt'), '');
     expect(buildIsConfigured(buildDir)).toBe(true);
+  });
+});
+
+describe('framework source for project builds', () => {
+  it('passes the IDE checkout to FetchContent when there is one', () => {
+    expect(configureArgs('/p', '/p/build', '/repo')).toEqual([
+      '-S',
+      '/p',
+      '-B',
+      '/p/build',
+      '-DFETCHCONTENT_SOURCE_DIR_AETHER=/repo',
+    ]);
+    expect(configureArgs('/p', '/p/build', null)).toEqual([
+      '-S',
+      '/p',
+      '-B',
+      '/p/build',
+    ]);
+  });
+
+  it('finds the repository root above a directory', () => {
+    const root = mkdtempSync(join(tmpdir(), 'aether-repo-'));
+    tempDirs.push(root);
+    const deep = join(root, 'ide', 'electron', 'main');
+    mkdirSync(deep, { recursive: true });
+    expect(findFrameworkSourceDir(deep)).toBeNull();
+
+    mkdirSync(join(root, 'framework'));
+    writeFileSync(join(root, 'framework', 'CMakeLists.txt'), '');
+    expect(findFrameworkSourceDir(deep)).toBe(root);
+  });
+
+  it('finds this repository from the Electron main directory', () => {
+    const repo = findFrameworkSourceDir(
+      join(__dirname, '../../../../electron/main')
+    );
+    expect(repo).not.toBeNull();
+    expect(existsSync(join(repo!, 'framework', 'CMakeLists.txt'))).toBe(true);
   });
 });

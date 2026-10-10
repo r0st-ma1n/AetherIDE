@@ -5,25 +5,33 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Optional: when the project lives inside/near the monorepo, reuse aether_core.
+include(CTest)
+
+# Aether framework, pinned to the version this project was created with. It is always
+# built from source as part of the project. To build against a local checkout without
+# network access (AetherIDE does this), pass
+#   -DFETCHCONTENT_SOURCE_DIR_AETHER=<AetherIDE repository root>
+set(AETHER_MIN_VERSION {{aetherVersion}})
+
 if (NOT TARGET aether_core)
-  set(_aether_candidates
-    "${CMAKE_CURRENT_SOURCE_DIR}/../framework/core"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../framework/core"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../../framework/core"
+  include(FetchContent)
+  FetchContent_Declare(aether
+    GIT_REPOSITORY {{aetherRepository}}
+    GIT_TAG v{{aetherVersion}}
+    GIT_SHALLOW TRUE
+    SOURCE_SUBDIR framework
   )
-  foreach(_candidate IN LISTS _aether_candidates)
-    if (EXISTS "${_candidate}/CMakeLists.txt")
-      add_subdirectory("${_candidate}" "${CMAKE_BINARY_DIR}/aether_core")
-      break()
-    endif()
-  endforeach()
+  FetchContent_MakeAvailable(aether)
 endif()
 
 if (NOT TARGET aether_core)
   message(FATAL_ERROR
-    "aether_core not found. Place this project near the AetherIDE monorepo "
-    "or add aether_core before including this CMakeLists.txt.")
+    "Aether framework not found. FETCHCONTENT_SOURCE_DIR_AETHER must point to the "
+    "AetherIDE repository root, not to its framework/ directory.")
+endif()
+if (AETHER_VERSION VERSION_LESS AETHER_MIN_VERSION)
+  message(FATAL_ERROR
+    "{{className}} needs Aether ${AETHER_MIN_VERSION} or newer, found ${AETHER_VERSION}.")
 endif()
 
 # Plugin module: the processor plus the designer UI class (compiled, unused until the
@@ -36,3 +44,13 @@ add_library({{className}} MODULE
 target_link_libraries({{className}} PRIVATE aether_core)
 target_include_directories({{className}} PRIVATE .)
 set_target_properties({{className}} PROPERTIES PREFIX "")
+
+# Smoke tests in the headless host: the plugin loads and processes audio.
+if (BUILD_TESTING AND TARGET aether_host)
+  add_test(NAME {{className}}_loads
+    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}> --list-params)
+  add_test(NAME {{className}}_renders
+    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}> --sine 440 --duration 0.1
+            --out ${CMAKE_CURRENT_BINARY_DIR}/{{className}}_renders.wav)
+  set_tests_properties({{className}}_renders PROPERTIES PASS_REGULAR_EXPRESSION "Rendered")
+endif()

@@ -82,8 +82,9 @@ function pluginInfoFields(plugin: AetherPluginInfo): string {
     `.vendor = ${cppString(plugin.vendor)}`,
     `.id = ${cppString(plugin.id)}`,
     `.version = ${parseVersion(plugin.version)}`,
-    ...(plugin.url ? [`.url = ${cppString(plugin.url)}`] : []),
-    ...(plugin.email ? [`.email = ${cppString(plugin.email)}`] : []),
+    // Always listed: GCC's -Wmissing-field-initializers flags omitted std::string members.
+    `.url = ${cppString(plugin.url ?? '')}`,
+    `.email = ${cppString(plugin.email ?? '')}`,
     // Only effects exist in the framework for v1; Instrument fails the build below.
     `.category = aether::PluginCategory::Effect`,
   ];
@@ -130,6 +131,8 @@ export interface ProcessorSourcesInput {
   meta: AetherProjectMeta;
   existingHeader?: string;
   existingCpp?: string;
+  /** Bodies for USER CODE regions missing from the existing files (new projects). */
+  userCodeDefaults?: Partial<Record<string, string>>;
 }
 
 /**
@@ -147,7 +150,10 @@ export function generateProcessorCode(input: ProcessorSourcesInput): {
     ...extractUserCode(input.existingHeader ?? ''),
     ...extractUserCode(input.existingCpp ?? ''),
   };
-  const user = (block: string) => userCode[block] ?? USER_CODE_DEFAULTS[block]!;
+  const user = (block: string) =>
+    userCode[block] ??
+    input.userCodeDefaults?.[block] ??
+    USER_CODE_DEFAULTS[block]!;
 
   const parameterMembers = parameters
     .map(

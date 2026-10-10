@@ -23,13 +23,14 @@ export function pluginNameFromPath(filePath: string): string {
 /** Metadata for a new project or for a file migrated from schema v1. */
 export function defaultProjectMeta(
   name = DEFAULT_PLUGIN_NAME,
-  category: AetherPluginCategory = 'Effect'
+  category: AetherPluginCategory = 'Effect',
+  vendor = DEFAULT_PLUGIN_VENDOR
 ): AetherProjectMeta {
   return {
     plugin: {
       name,
-      vendor: DEFAULT_PLUGIN_VENDOR,
-      id: defaultPluginId(DEFAULT_PLUGIN_VENDOR, name),
+      vendor,
+      id: defaultPluginId(vendor, name),
       version: DEFAULT_PLUGIN_VERSION,
       category,
     },

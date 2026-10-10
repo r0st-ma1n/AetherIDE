@@ -26,10 +26,23 @@
         </label>
 
         <label class="wizard__field">
+          <span>Vendor</span>
+          <input
+            v-model="vendor"
+            type="text"
+            placeholder="My Company"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+        <p v-if="pluginId" class="wizard__preview">
+          Plugin ID <code>{{ pluginId }}</code>
+        </p>
+        <label class="wizard__field">
           <span>Type</span>
           <select v-model="pluginType">
             <option value="Effect">Effect</option>
-            <option value="Instrument">Instrument</option>
+            <option value="Instrument" disabled>Instrument (after v1)</option>
           </select>
         </label>
 
@@ -79,6 +92,10 @@ import {
   useTemplateStore,
   type PluginType,
 } from '@/domains/templates/stores/templateStore';
+import {
+  DEFAULT_PLUGIN_VENDOR,
+  defaultPluginId,
+} from '@/shared/lib/projectMeta';
 
 const props = defineProps<{
   open: boolean;
@@ -92,10 +109,18 @@ const emit = defineEmits<{
 const templateStore = useTemplateStore();
 
 const name = ref('MyPlugin');
+const vendor = ref(DEFAULT_PLUGIN_VENDOR);
 const pluginType = ref<PluginType>('Effect');
 const location = ref('');
 const error = ref<string | null>(null);
 const busy = ref(false);
+
+/** Reverse-DNS id the project gets; editable later in the .aether file. */
+const pluginId = computed(() =>
+  name.value.trim()
+    ? defaultPluginId(vendor.value.trim() || DEFAULT_PLUGIN_VENDOR, name.value)
+    : ''
+);
 
 const previewPath = computed(() => {
   if (!location.value || !name.value.trim()) {
@@ -110,6 +135,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       name.value = 'MyPlugin';
+      vendor.value = DEFAULT_PLUGIN_VENDOR;
       pluginType.value = 'Effect';
       location.value = '';
       error.value = null;
@@ -156,6 +182,7 @@ async function submit() {
     const files = buildScaffoldFiles({
       className,
       pluginType: pluginType.value,
+      vendor: vendor.value,
       templates,
     });
 

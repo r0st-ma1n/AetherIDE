@@ -85,3 +85,14 @@ jobs:
 
       - name: Run CTest
         run: ctest --test-dir build -C Release --output-on-failure
+
+      # The sample as a standalone project: FetchContent takes the framework from this
+      # checkout, the way the IDE builds user projects.
+      - name: Configure GainPlugin sample standalone
+        run: cmake -S samples/GainPlugin -B build-sample "-DFETCHCONTENT_SOURCE_DIR_AETHER=${{ github.workspace }}"
+
+      - name: Build GainPlugin sample standalone
+        run: cmake --build build-sample --config Release
+
+      - name: Test GainPlugin sample standalone
+        run: ctest --test-dir build-sample -C Release --output-on-failure

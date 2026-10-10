@@ -38,6 +38,42 @@ function buildIsConfigured(buildDir) {
   );
 }
 
+/**
+ * Root of the AetherIDE checkout the IDE runs from: the first directory at or above
+ * @p startDir that contains framework/CMakeLists.txt. Null for a packaged IDE.
+ * @param {string} startDir
+ * @returns {string | null}
+ */
+function findFrameworkSourceDir(startDir) {
+  let dir = path.resolve(startDir);
+  for (;;) {
+    if (fs.existsSync(path.join(dir, 'framework', 'CMakeLists.txt'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+    dir = parent;
+  }
+}
+
+/**
+ * Arguments of the configure step. With @p frameworkSourceDir, the project's
+ * FetchContent uses that checkout instead of downloading the framework.
+ * @param {string} projectRoot
+ * @param {string} buildDir
+ * @param {string | null | undefined} frameworkSourceDir
+ * @returns {string[]}
+ */
+function configureArgs(projectRoot, buildDir, frameworkSourceDir) {
+  const args = ['-S', projectRoot, '-B', buildDir];
+  if (frameworkSourceDir) {
+    args.push(`-DFETCHCONTENT_SOURCE_DIR_AETHER=${frameworkSourceDir}`);
+  }
+  return args;
+}
+
 class BuildRunner {
   constructor() {
     /** @type {import('child_process').ChildProcess | null} */
@@ -53,9 +89,10 @@ class BuildRunner {
   /**
    * @param {string} projectRoot
    * @param {BuildRunnerCallbacks} callbacks
+   * @param {{ frameworkSourceDir?: string | null }} [options]
    * @returns {Promise<{ status: BuildStatus, exitCode: number | null }>}
    */
-  async run(projectRoot, callbacks) {
+  async run(projectRoot, callbacks, options = {}) {
     if (this.child) {
       const message = 'A build is already running.';
       callbacks.onStatus({ status: 'failed', exitCode: null, message });
@@ -82,12 +119,17 @@ class BuildRunner {
 
     try {
       if (!buildIsConfigured(buildDir)) {
+        const args = configureArgs(
+          projectRoot,
+          buildDir,
+          options.frameworkSourceDir
+        );
         callbacks.onLog(
-          `Configuring: cmake -S "${projectRoot}" -B "${buildDir}"\n`
+          `Configuring: cmake ${args.map((arg) => `"${arg}"`).join(' ')}\n`
         );
         const configureCode = await this.spawnCommand(
           'cmake',
-          ['-S', projectRoot, '-B', buildDir],
+          args,
           projectRoot,
           callbacks
         );
@@ -194,6 +236,8 @@ class BuildRunner {
 module.exports = {
   BuildRunner,
   buildIsConfigured,
+  configureArgs,
+  findFrameworkSourceDir,
   getBuildDir,
   projectHasCMakeLists,
 };

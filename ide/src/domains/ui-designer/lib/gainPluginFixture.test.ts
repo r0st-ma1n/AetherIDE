@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import {
+  GAIN_USER_CODE,
+  renderProjectCMake,
+} from '@/domains/templates/lib/scaffoldProject';
 import { generateCppFromUI } from '@/domains/ui-designer/lib/codeGenerator';
 import { parseUIFromCpp } from '@/domains/ui-designer/lib/codeParser';
 import {
@@ -84,5 +88,22 @@ describe('GainPlugin fixture regression', () => {
     const aether = parseAetherDocument(readFileSync(sampleAetherPath, 'utf-8'));
     const fromCpp = parseUIFromCpp(readFileSync(sampleCppPath, 'utf-8'));
     expect(fromCpp.components).toEqual(aether.components);
+  });
+});
+
+describe('GainPlugin sample matches a new project', () => {
+  it('uses the CMakeLists.txt of the project template', () => {
+    expect(readFileSync(join(samplesDir, 'CMakeLists.txt'), 'utf-8')).toBe(
+      renderProjectCMake('GainPlugin')
+    );
+  });
+
+  it('runs the gain code that new projects start with', () => {
+    const code =
+      readFileSync(join(samplesDir, 'GainPluginProcessor.h'), 'utf-8') +
+      readFileSync(join(samplesDir, 'GainPluginProcessor.cpp'), 'utf-8');
+    for (const body of Object.values(GAIN_USER_CODE)) {
+      expect(code).toContain(body);
+    }
   });
 });
