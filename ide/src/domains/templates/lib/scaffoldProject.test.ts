@@ -60,7 +60,9 @@ describe('buildScaffoldFiles', () => {
     );
     expect(files['DemoEffectProcessor.cpp']).toContain('.name = "DemoEffect"');
     expect(files['CMakeLists.txt']).toContain('DemoEffectProcessor.cpp');
-    expect(files['CMakeLists.txt']).toContain('MODULE');
+    expect(files['CMakeLists.txt']).toContain(
+      'aether_add_plugin(DemoEffect FORMATS VST3 HOST)'
+    );
 
     const aether = JSON.parse(files['DemoEffect.aether']!);
     expect(validateAetherProject(aether)).toEqual({ valid: true });

@@ -4,7 +4,7 @@
  * Keep in sync with `project(Aether VERSION ...)` in framework/CMakeLists.txt
  * (checked by frameworkVersion.test.ts).
  */
-export const AETHER_FRAMEWORK_VERSION = '0.1.0';
+export const AETHER_FRAMEWORK_VERSION = '0.2.0';
 
 /** Repository that new projects fetch the framework from (`SOURCE_SUBDIR framework`). */
 export const AETHER_FRAMEWORK_REPOSITORY =
