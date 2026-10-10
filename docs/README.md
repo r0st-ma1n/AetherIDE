@@ -14,5 +14,6 @@
 - [framework/plugin-contract.md](./framework/plugin-contract.md) — контракт плагина и адаптера формата: вызовы, потоки, запреты в аудиопотоке
 - [framework/headless-host.md](./framework/headless-host.md) — `aether_host`: рендер плагина без DAW
 - [framework/vst3-sdk.md](./framework/vst3-sdk.md) — VST3 SDK во фреймворке: лицензия, что вендорено, обновление
+- [framework/vst3-adapter.md](./framework/vst3-adapter.md) — VST3-адаптер: как вызовы хоста переводятся в контракт
 - [ide/aether-format.md](./ide/aether-format.md) — формат проекта `.aether`: метаданные, параметры, миграция версий
 - [ide/codegen.md](./ide/codegen.md) — что IDE генерирует из `.aether`: процессор, UI, регионы USER CODE

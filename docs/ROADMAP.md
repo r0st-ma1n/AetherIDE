@@ -305,13 +305,13 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### C2. Обработка звука и параметры · L
 
-- [ ] Класс на базе `SingleComponentEffect`, создаёт процессор через фабрику из A5
-- [ ] `setupProcessing` / `setActive` → `prepareToPlay` / `releaseResources`
-- [ ] `process`: передача буферов через A1 без копирования
-- [ ] Изменения параметров из `IParameterChanges` (v1: последнее значение в блоке + сглаживание A3)
-- [ ] Регистрация параметров у контроллера: имя, единицы, шаги, флаги, текст из A2
-- [ ] Bypass, latency, tail
-- [ ] Поддержка 32-bit float; 64-bit — отказ через `canProcessSampleSize`
+- [x] Класс на базе `SingleComponentEffect`, работает с процессором из фабрики A5 (вызов фабрики в модуле — C4)
+- [x] `setupProcessing` / `setActive` → `prepareToPlay` / `releaseResources`
+- [x] `process`: передача буферов через A1 без копирования
+- [x] Изменения параметров из `IParameterChanges` (v1: последнее значение в блоке + сглаживание A3)
+- [x] Регистрация параметров у контроллера: имя, единицы, шаги, флаги, текст из A2
+- [x] Bypass, latency, tail
+- [x] Поддержка 32-bit float; 64-bit — отказ через `canProcessSampleSize`
 
 ### C3. Состояние и шины · M
 
