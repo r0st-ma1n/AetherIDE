@@ -102,5 +102,5 @@ aether_add_plugin(MyPlugin FORMATS VST3 HOST)        # позже: CLAP, AU
 - `<Name>_vst3_validator` — `validator` из SDK (цель `aether_vst3_validator`) на собранном
   бандле: тест-набор Steinberg (обработка, состояние, шины, параметры, потоки).
   `aether_add_plugin` добавляет его каждому VST3-плагину при включённом CTest.
-  `GainPlugin.vst3`: 47 тестов, 0 ошибок. Валидатор предупреждает, если у плагина нет
-  bypass-параметра (`addBypassParameter()`); это не ошибка.
+  `GainPlugin.vst3`: 47 тестов, 0 ошибок. Сгенерированные процессоры добавляют
+  bypass-параметр, поэтому предупреждения «No bypass parameter found» нет.

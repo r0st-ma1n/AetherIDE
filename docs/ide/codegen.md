@@ -21,6 +21,9 @@
 - конструктор — по параметру на запись `parameters`: `addFloat` / `addBool` / `addChoice`,
   указатель сохраняется в поле `<id>Parameter_` (`mix.a` → `mix_aParameter_`; при
   совпадении имён — `mix_a2Parameter_`);
+- `addBypassParameter()` — стандартный переключатель bypass (id `bypass`): по нему хост
+  обходит плагин, а `PluginProcessor::process()` копирует вход в выход. Без него валидатор
+  VST3 выдаёт предупреждение;
 - `AETHER_PLUGIN(<Name>Processor)`.
 
 Свой код пишется только внутри регионов `USER CODE`, остальное перезаписывается:
