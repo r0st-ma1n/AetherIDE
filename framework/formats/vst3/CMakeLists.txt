@@ -113,6 +113,9 @@ else()
       ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/module_linux.cpp)
 endif()
 target_link_libraries(aether_vst3_hosting PUBLIC aether_vst3_sdk_common)
+# The SDK's host code is C++17: in C++20 path::u8string() returns std::u8string, which
+# module_win32.cpp does not expect (MSVC fails to compile it).
+set_target_properties(aether_vst3_hosting PROPERTIES CXX_STANDARD 17)
 
 # Writes Contents/Resources/moduleinfo.json into a built .vst3 bundle.
 add_executable(aether_vst3_moduleinfotool
@@ -121,6 +124,7 @@ add_executable(aether_vst3_moduleinfotool
     ${VST3_SDK_DIR}/public.sdk/source/vst/moduleinfo/moduleinfoparser.cpp
 )
 target_link_libraries(aether_vst3_moduleinfotool PRIVATE aether_vst3_hosting)
+set_target_properties(aether_vst3_moduleinfotool PROPERTIES CXX_STANDARD 17)
 if (MINGW)
   # The tool's Windows entry point is wmain().
   target_link_options(aether_vst3_moduleinfotool PRIVATE -municode)
