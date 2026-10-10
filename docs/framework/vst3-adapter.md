@@ -99,4 +99,8 @@ aether_add_plugin(MyPlugin FORMATS VST3 HOST)        # позже: CLAP, AU
 - `GainPlugin_vst3_moduleinfo`: бандл sample собран, `moduleinfo.json` записан загрузкой
   модуля, CID не изменился.
 
-Пока не сделано: `validator` (C5).
+- `<Name>_vst3_validator` — `validator` из SDK (цель `aether_vst3_validator`) на собранном
+  бандле: тест-набор Steinberg (обработка, состояние, шины, параметры, потоки).
+  `aether_add_plugin` добавляет его каждому VST3-плагину при включённом CTest.
+  `GainPlugin.vst3`: 47 тестов, 0 ошибок. Валидатор предупреждает, если у плагина нет
+  bypass-параметра (`addBypassParameter()`); это не ошибка.

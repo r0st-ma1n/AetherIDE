@@ -130,6 +130,66 @@ if (MINGW)
   target_link_options(aether_vst3_moduleinfotool PRIVATE -municode)
 endif()
 
+# Steinberg's validator: runs the SDK test suite against a built .vst3 (sources as in the
+# SDK's samples/vst-hosting/validator/CMakeLists.txt).
+add_executable(aether_vst3_validator
+    ${VST3_SDK_DIR}/public.sdk/source/common/memorystream.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/main/moduleinit.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/moduleinfo/moduleinfoparser.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/connectionproxytest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/eventlisttest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/hostclassestest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/miditovsttest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/parameterchangestest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/pluginterfacesupporttest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/test/processdatatest.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/plugprovider.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/busactivation.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/busconsistency.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/businvalidindex.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/checkaudiobusarrangement.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/scanbusses.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/bus/sidechainarrangement.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/editorclasses.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/midilearn.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/midimapping.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/plugcompat.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/scanparameters.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/suspendresume.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/general/terminit.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/noteexpression/keyswitch.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/noteexpression/noteexpression.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/automation.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/process.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/processcontextrequirements.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/processformat.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/processinputoverwriting.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/processtail.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/processthreaded.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/silenceflags.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/silenceprocessing.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/speakerarrangement.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/processing/variableblocksize.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/state/bypasspersistence.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/state/invalidstatetransition.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/state/repeatidenticalstatetransition.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/state/validstatetransition.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/testbase.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/unit/checkunitstructure.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/unit/scanprograms.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/unit/scanunits.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/testsuite/vsttestsuite.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/utility/testing.cpp
+    ${VST3_SDK_DIR}/public.sdk/samples/vst-hosting/validator/source/main.cpp
+    ${VST3_SDK_DIR}/public.sdk/samples/vst-hosting/validator/source/usediids.cpp
+    ${VST3_SDK_DIR}/public.sdk/samples/vst-hosting/validator/source/validator.cpp
+)
+target_link_libraries(aether_vst3_validator PRIVATE aether_vst3_hosting)
+set_target_properties(aether_vst3_validator PROPERTIES CXX_STANDARD 17)
+if (MINGW)
+  target_link_options(aether_vst3_validator PRIVATE -municode)
+endif()
+
 # The adapter: one aether::PluginProcessor as a VST3 SingleComponentEffect.
 add_library(aether_vst3
     src/Vst3Effect.cpp

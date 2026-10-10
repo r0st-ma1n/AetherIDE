@@ -33,6 +33,10 @@ rm -rf "$DEST/public.sdk/source/vst/"{aaxwrapper,auv3wrapper,auwrapper,basewrapp
 
 mkdir -p "$DEST/public.sdk/samples/vst-hosting" "$DEST/public.sdk/samples/vst-utilities"
 cp -R "$SRC/public.sdk/samples/vst-hosting/validator" "$DEST/public.sdk/samples/vst-hosting/"
+# The validator's MIDI test includes this header from the audiohost example.
+mkdir -p "$DEST/public.sdk/samples/vst-hosting/audiohost/source/media"
+cp "$SRC/public.sdk/samples/vst-hosting/audiohost/source/media/miditovst.h" \
+    "$DEST/public.sdk/samples/vst-hosting/audiohost/source/media/"
 cp -R "$SRC/public.sdk/samples/vst-utilities/moduleinfotool" \
     "$DEST/public.sdk/samples/vst-utilities/"
 

@@ -47,6 +47,11 @@ Inter-App Audio.
 - нет `vsteditcontroller.cpp`, зато есть `vstsinglecomponenteffect.cpp`: он включает
   `vsteditcontroller.cpp` сам, переименовав `setState` / `getState`.
 
+Кроме библиотек плагина собираются инструменты: `aether_vst3_moduleinfotool` (пишет
+`moduleinfo.json`) и `aether_vst3_validator` поверх `aether_vst3_hosting`. Хост-код SDK
+компилируется как C++17 (в C++20 MSVC не собирает `module_win32.cpp`). Для теста MIDI
+валидатора вендорен один заголовок из примера audiohost (`miditovst.h`).
+
 Опция `AETHER_BUILD_VST3` (по умолчанию `ON`) отключает поддержку VST3 целиком.
 Тест `vst3_sdk_test` проверяет, что минимальный `SingleComponentEffect` собирается и
 проходит инициализацию.
