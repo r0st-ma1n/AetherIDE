@@ -1,7 +1,8 @@
 # aether_add_plugin(<target> FORMATS <format>... [VERSION <x.y.z>])
 #
 # Builds the plugin code in <target> as plugin binaries, one per format:
-#   VST3  <target>_VST3: bundle <build>/VST3/<target>.vst3 with moduleinfo.json
+#   VST3  <target>_VST3: bundle <build>/VST3/<target>.vst3 with moduleinfo.json, and with
+#         CTest enabled the test <target>_vst3_validator (Steinberg's validator)
 #   HOST  <target>_Host: module for aether_host (headless rendering and tests)
 #
 # <target> must be an OBJECT library with the processor (and AETHER_PLUGIN), so its code is
@@ -103,4 +104,9 @@ function(_aether_add_vst3 target version)
             -output "${bundle}/Contents/Resources/moduleinfo.json"
     VERBATIM
   )
+
+  # Steinberg's validator: the SDK test suite (processing, state, buses, parameters...).
+  if (BUILD_TESTING AND TARGET aether_vst3_validator)
+    add_test(NAME ${target}_vst3_validator COMMAND aether_vst3_validator "${bundle}")
+  endif()
 endfunction()
