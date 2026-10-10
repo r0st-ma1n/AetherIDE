@@ -298,10 +298,10 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### C1. Подключение VST3 SDK · S
 
-- [ ] Перепроверить лицензию SDK, записать вывод в `docs/`
-- [ ] Если лицензия позволяет — SDK внутри фреймворка (`framework/formats/vst3/sdk`, только нужные
+- [x] Перепроверить лицензию SDK, записать вывод в `docs/`
+- [x] Если лицензия позволяет — SDK внутри фреймворка (`framework/formats/vst3/sdk`, только нужные
       части); иначе `FetchContent` с закреплённым тегом. Отключить сборку примеров и hosting
-- [ ] Опция CMake `AETHER_BUILD_VST3` (по умолчанию ON)
+- [x] Опция CMake `AETHER_BUILD_VST3` (по умолчанию ON)
 
 ### C2. Обработка звука и параметры · L
 

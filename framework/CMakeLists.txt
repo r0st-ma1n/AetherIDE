@@ -12,6 +12,9 @@ set(AETHER_VERSION ${PROJECT_VERSION} CACHE INTERNAL "Aether framework version")
 # Tests and examples are for framework development, not for plugin projects.
 option(AETHER_BUILD_TESTS "Build the Aether framework tests and examples" ${PROJECT_IS_TOP_LEVEL})
 
+# Format adapters. VST3 is the only format of v1.
+option(AETHER_BUILD_VST3 "Build the VST3 format support" ON)
+
 if (PROJECT_IS_TOP_LEVEL)
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,6 +24,10 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(host)
+
+if (AETHER_BUILD_VST3)
+  add_subdirectory(formats/vst3)
+endif()
 
 if (AETHER_BUILD_TESTS)
   add_subdirectory(core/examples/gain)
