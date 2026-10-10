@@ -3,7 +3,7 @@
 # The monorepo root adds it with add_subdirectory().
 cmake_minimum_required(VERSION 3.22)
 
-project(Aether VERSION 0.1.0 LANGUAGES CXX)
+project(Aether VERSION 0.2.0 LANGUAGES CXX)
 
 # Read by plugin projects after FetchContent_MakeAvailable to check the minimum version.
 # Keep in sync with AETHER_FRAMEWORK_VERSION in ide/src/shared/lib/frameworkVersion.ts.
@@ -28,6 +28,10 @@ add_subdirectory(host)
 if (AETHER_BUILD_VST3)
   add_subdirectory(formats/vst3)
 endif()
+
+# aether_add_plugin(): plugin binaries per format. Functions are global, so plugin
+# projects can call it after FetchContent_MakeAvailable(aether).
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AetherAddPlugin.cmake)
 
 if (AETHER_BUILD_TESTS)
   add_subdirectory(core/examples/gain)

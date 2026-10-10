@@ -34,23 +34,23 @@ if (AETHER_VERSION VERSION_LESS AETHER_MIN_VERSION)
     "{{className}} needs Aether ${AETHER_MIN_VERSION} or newer, found ${AETHER_VERSION}.")
 endif()
 
-# Plugin module: the processor plus the designer UI class (compiled, unused until the
+# Plugin code: the processor plus the designer UI class (compiled, unused until the
 # plugin window lands).
-add_library({{className}} MODULE
+add_library({{className}} OBJECT
     {{className}}Processor.cpp
     {{className}}.cpp
 )
-
-target_link_libraries({{className}} PRIVATE aether_core)
 target_include_directories({{className}} PRIVATE .)
-set_target_properties({{className}} PROPERTIES PREFIX "")
+
+# {{className}}_VST3 -> build/VST3/{{className}}.vst3, {{className}}_Host -> module for aether_host.
+aether_add_plugin({{className}} FORMATS VST3 HOST)
 
 # Smoke tests in the headless host: the plugin loads and processes audio.
 if (BUILD_TESTING AND TARGET aether_host)
   add_test(NAME {{className}}_loads
-    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}> --list-params)
+    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}_Host> --list-params)
   add_test(NAME {{className}}_renders
-    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}> --sine 440 --duration 0.1
+    COMMAND aether_host --plugin $<TARGET_FILE:{{className}}_Host> --sine 440 --duration 0.1
             --out ${CMAKE_CURRENT_BINARY_DIR}/{{className}}_renders.wav)
   set_tests_properties({{className}}_renders PROPERTIES PASS_REGULAR_EXPRESSION "Rendered")
 endif()

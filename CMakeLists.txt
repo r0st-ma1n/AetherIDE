@@ -20,6 +20,14 @@ add_subdirectory(samples/GainPlugin)
 # The gain parameter of the sample changes the sound (the template's own tests only check
 # that the plugin loads and renders).
 add_test(NAME GainPlugin_gain_mutes
-  COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin> --sine 440 --duration 0.1
+  COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin_Host> --sine 440 --duration 0.1
           --param gain=0 --out ${CMAKE_CURRENT_BINARY_DIR}/GainPlugin_gain_mutes.wav)
 set_tests_properties(GainPlugin_gain_mutes PROPERTIES PASS_REGULAR_EXPRESSION "peak out 0 ")
+
+# The sample's VST3 bundle: moduleinfo.json was written by loading the module, and the class
+# ID is pinned (DAW projects find the plugin by it).
+add_test(NAME GainPlugin_vst3_moduleinfo
+  COMMAND ${CMAKE_COMMAND} -E cat
+          ${CMAKE_BINARY_DIR}/VST3/GainPlugin.vst3/Contents/Resources/moduleinfo.json)
+set_tests_properties(GainPlugin_vst3_moduleinfo PROPERTIES PASS_REGULAR_EXPRESSION
+  [=["CID": "BCC130815E62CF65BFF16092149A65BB".*"Category": "Audio Module Class".*"Fx"]=])

@@ -6,7 +6,7 @@
 [vst3-sdk.md](./vst3-sdk.md).
 
 Экземпляр процессора адаптер получает в конструкторе; в модуле плагина его создаёт
-`aether::pluginFactory().create()` (фабрика модуля и бандл — задача C4).
+`aether::pluginFactory().create()` (см. «Модуль и бандл»).
 
 ## Что во что переводится
 
@@ -59,6 +59,35 @@
 stereo → stereo); остальное, в том числе sidechain и смену раскладки при активном плагине,
 отклоняет. Процессор, умеющий только mono, стартует с mono-шиной.
 
+## Модуль и бандл
+
+Проект плагина подключает форматы одной функцией (`framework/cmake/AetherAddPlugin.cmake`):
+
+```cmake
+add_library(MyPlugin OBJECT MyPluginProcessor.cpp)   # код плагина с AETHER_PLUGIN
+aether_add_plugin(MyPlugin FORMATS VST3 HOST)        # позже: CLAP, AU
+```
+
+- Цель плагина — `OBJECT`-библиотека: её код целиком попадает в каждый бинарник формата.
+- `VST3` → цель `<Name>_VST3`, бандл `build/VST3/<Name>.vst3/Contents/x86_64-win/<Name>.vst3`
+  (на Linux — `x86_64-linux/<Name>.so`). В модуль компилируется
+  `formats/vst3/module/Vst3Module.cpp`: `GetPluginFactory` отдаёт фабрику с одним классом
+  `Audio Module Class` / `Fx`, имя, вендор, url, email и версия — из `PluginInfo`.
+  Экземпляр — `Vst3Effect` с процессором из `aether::pluginFactory().create()`; исключения в
+  хост не уходят.
+- После сборки `moduleinfotool` из SDK загружает модуль и пишет
+  `Contents/Resources/moduleinfo.json` (версия — `VERSION` функции или `PROJECT_VERSION`).
+- `HOST` → `<Name>_Host`, модуль для `aether_host`.
+- MinGW: рантайм линкуется статически (`-static`) — у DAW нет DLL MinGW.
+
+### ID класса
+
+`componentClassId()`: FNV-1a 128 от `"aether.vst3/" + PluginInfo::id`. FUID строится из
+четырёх big-endian слов хеша, поэтому строка CID одинакова на всех платформах — это hex
+хеша. Пример: `dev.aether.samples.gain` → `BCC130815E62CF65BFF16092149A65BB`; значение
+закреплено в `vst3_ids_test` и `GainPlugin_vst3_moduleinfo`. Смена `PluginInfo::id` даёт
+другой плагин для DAW.
+
 ## Тесты
 
 - `vst3_effect_test` ведёт себя как хост: `initialize`, `setupProcessing`, `setActive`,
@@ -66,4 +95,8 @@ stereo → stereo); остальное, в том числе sidechain и сме
 - `vst3_state_test`: состояние туда и обратно (с пользовательскими данными), уведомление
   хоста, битое состояние, согласование mono / stereo.
 
-Пока не сделано: фабрика модуля, FUID и бандл (C4), `validator` (C5).
+- `vst3_ids_test`: тест-векторы FNV-1a 128 и закреплённый CID sample.
+- `GainPlugin_vst3_moduleinfo`: бандл sample собран, `moduleinfo.json` записан загрузкой
+  модуля, CID не изменился.
+
+Пока не сделано: `validator` (C5).

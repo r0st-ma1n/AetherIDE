@@ -3,6 +3,11 @@
 # the SDK's cmake/modules/SMTG_VST3_SDK.cmake, without its examples, hosting and VSTGUI.
 
 set(VST3_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
+# For aether_add_plugin (framework/cmake/AetherAddPlugin.cmake), which runs in the plugin
+# project's scope.
+set(AETHER_VST3_SDK_DIR ${VST3_SDK_DIR} CACHE INTERNAL "Vendored VST3 SDK")
+set(AETHER_VST3_MODULE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/module/Vst3Module.cpp
+    CACHE INTERNAL "VST3 entry point compiled into each plugin")
 
 # Settings every SDK target and every consumer of the SDK headers needs.
 add_library(aether_vst3_sdk_config INTERFACE)
@@ -86,9 +91,49 @@ aether_vst3_sdk_library(aether_vst3_sdk
 )
 target_link_libraries(aether_vst3_sdk PUBLIC aether_vst3_sdk_common)
 
+# Host side of the SDK, for the build tools below (and the validator).
+aether_vst3_sdk_library(aether_vst3_hosting
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/connectionproxy.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/eventlist.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/hostclasses.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/module.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/parameterchanges.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/pluginterfacesupport.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/processdata.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/utility/stringconvert.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/vstinitiids.cpp
+)
+if (WIN32)
+  target_sources(aether_vst3_hosting PRIVATE
+      ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/module_win32.cpp)
+elseif (APPLE)
+  message(FATAL_ERROR "VST3 on macOS is not supported yet (roadmap block H).")
+else()
+  target_sources(aether_vst3_hosting PRIVATE
+      ${VST3_SDK_DIR}/public.sdk/source/vst/hosting/module_linux.cpp)
+endif()
+target_link_libraries(aether_vst3_hosting PUBLIC aether_vst3_sdk_common)
+# The SDK's host code is C++17: in C++20 path::u8string() returns std::u8string, which
+# module_win32.cpp does not expect (MSVC fails to compile it).
+set_target_properties(aether_vst3_hosting PROPERTIES CXX_STANDARD 17)
+
+# Writes Contents/Resources/moduleinfo.json into a built .vst3 bundle.
+add_executable(aether_vst3_moduleinfotool
+    ${VST3_SDK_DIR}/public.sdk/samples/vst-utilities/moduleinfotool/source/main.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/moduleinfo/moduleinfocreator.cpp
+    ${VST3_SDK_DIR}/public.sdk/source/vst/moduleinfo/moduleinfoparser.cpp
+)
+target_link_libraries(aether_vst3_moduleinfotool PRIVATE aether_vst3_hosting)
+set_target_properties(aether_vst3_moduleinfotool PROPERTIES CXX_STANDARD 17)
+if (MINGW)
+  # The tool's Windows entry point is wmain().
+  target_link_options(aether_vst3_moduleinfotool PRIVATE -municode)
+endif()
+
 # The adapter: one aether::PluginProcessor as a VST3 SingleComponentEffect.
 add_library(aether_vst3
     src/Vst3Effect.cpp
+    src/Vst3Ids.cpp
 )
 target_include_directories(aether_vst3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(aether_vst3 PUBLIC aether_core aether_vst3_sdk)
@@ -115,4 +160,8 @@ if (AETHER_BUILD_TESTS)
   )
   target_link_libraries(vst3_state_test PRIVATE aether_vst3 aether_test_support)
   add_test(NAME vst3_state_test COMMAND vst3_state_test)
+
+  add_executable(vst3_ids_test tests/vst3_ids_test.cpp)
+  target_link_libraries(vst3_ids_test PRIVATE aether_vst3 aether_test_support)
+  add_test(NAME vst3_ids_test COMMAND vst3_ids_test)
 endif()

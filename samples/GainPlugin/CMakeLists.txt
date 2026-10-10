@@ -11,13 +11,13 @@ include(CTest)
 # built from source as part of the project. To build against a local checkout without
 # network access (AetherIDE does this), pass
 #   -DFETCHCONTENT_SOURCE_DIR_AETHER=<AetherIDE repository root>
-set(AETHER_MIN_VERSION 0.1.0)
+set(AETHER_MIN_VERSION 0.2.0)
 
 if (NOT TARGET aether_core)
   include(FetchContent)
   FetchContent_Declare(aether
     GIT_REPOSITORY https://github.com/r0st-ma1n/AetherIDE.git
-    GIT_TAG v0.1.0
+    GIT_TAG v0.2.0
     GIT_SHALLOW TRUE
     SOURCE_SUBDIR framework
   )
@@ -34,23 +34,23 @@ if (AETHER_VERSION VERSION_LESS AETHER_MIN_VERSION)
     "GainPlugin needs Aether ${AETHER_MIN_VERSION} or newer, found ${AETHER_VERSION}.")
 endif()
 
-# Plugin module: the processor plus the designer UI class (compiled, unused until the
+# Plugin code: the processor plus the designer UI class (compiled, unused until the
 # plugin window lands).
-add_library(GainPlugin MODULE
+add_library(GainPlugin OBJECT
     GainPluginProcessor.cpp
     GainPlugin.cpp
 )
-
-target_link_libraries(GainPlugin PRIVATE aether_core)
 target_include_directories(GainPlugin PRIVATE .)
-set_target_properties(GainPlugin PROPERTIES PREFIX "")
+
+# GainPlugin_VST3 -> build/VST3/GainPlugin.vst3, GainPlugin_Host -> module for aether_host.
+aether_add_plugin(GainPlugin FORMATS VST3 HOST)
 
 # Smoke tests in the headless host: the plugin loads and processes audio.
 if (BUILD_TESTING AND TARGET aether_host)
   add_test(NAME GainPlugin_loads
-    COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin> --list-params)
+    COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin_Host> --list-params)
   add_test(NAME GainPlugin_renders
-    COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin> --sine 440 --duration 0.1
+    COMMAND aether_host --plugin $<TARGET_FILE:GainPlugin_Host> --sine 440 --duration 0.1
             --out ${CMAKE_CURRENT_BINARY_DIR}/GainPlugin_renders.wav)
   set_tests_properties(GainPlugin_renders PROPERTIES PASS_REGULAR_EXPRESSION "Rendered")
 endif()

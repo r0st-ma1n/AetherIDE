@@ -321,11 +321,11 @@ Issue: [#41](https://github.com/r0st-ma1n/AetherIDE/issues/41).
 
 ### C4. CMake-функция и бандл · M
 
-- [ ] `aether_add_plugin(<target> FORMATS VST3)` — один вызов в CMakeLists проекта;
+- [x] `aether_add_plugin(<target> FORMATS VST3)` — один вызов в CMakeLists проекта;
       `FORMATS` — список, чтобы позже добавить `CLAP` и `AU` без изменения проектов
-- [ ] Бандл `<Name>.vst3/Contents/x86_64-win/<Name>.vst3` + `moduleinfo.json`
-- [ ] Уникальные FUID из `PluginInfo` (детерминированно из ID плагина)
-- [ ] Переключить шаблон `CMakeLists.txt.template` и `samples/GainPlugin` на функцию
+- [x] Бандл `<Name>.vst3/Contents/x86_64-win/<Name>.vst3` + `moduleinfo.json`
+- [x] Уникальные FUID из `PluginInfo` (детерминированно из ID плагина)
+- [x] Переключить шаблон `CMakeLists.txt.template` и `samples/GainPlugin` на функцию
 
 ### C5. Валидатор в тестах · S
 
