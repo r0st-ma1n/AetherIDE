@@ -9,8 +9,8 @@
 | `<Name>Processor.h/.cpp` | Класс `<Name>Processor` — наследник `aether::PluginProcessor` |
 | `<Name>.h/.cpp`          | Класс `<Name>UI` с виджетами дизайнера                        |
 
-Пример — `samples/GainPlugin/`: его собирает CI, а `gain_sample_*` в ctest грузят модуль
-через `aether_host`. Тест `processorGenerator.test.ts` проверяет, что sample совпадает с
+Пример — `samples/GainPlugin/`: его собирает CI, а `GainPlugin_*` в ctest грузят модуль
+через `aether_host` и проверяют VST3-бандл. Тест `processorGenerator.test.ts` проверяет, что sample совпадает с
 тем, что выдаёт генератор.
 
 ## Процессор
@@ -53,7 +53,10 @@
 
 - подключает фреймворк через `FetchContent` с `GIT_TAG v<версия IDE>` и
   `SOURCE_SUBDIR framework`, проверяет `AETHER_VERSION` не ниже нужной;
-- собирает `MODULE`-библиотеку из `<Name>Processor.cpp` и `<Name>.cpp`;
+- собирает код плагина (`<Name>Processor.cpp`, `<Name>.cpp`) в `OBJECT`-библиотеку и
+  вызывает `aether_add_plugin(<Name> FORMATS VST3 HOST)`: `<Name>_VST3` — бандл
+  `build/VST3/<Name>.vst3`, `<Name>_Host` — модуль для `aether_host` (см.
+  [vst3-adapter.md](../framework/vst3-adapter.md));
 - добавляет ctest `<Name>_loads` и `<Name>_renders`: плагин грузится в `aether_host` и
   обрабатывает звук.
 
