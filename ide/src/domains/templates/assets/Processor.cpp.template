@@ -9,7 +9,10 @@ aether::PluginInfo {{processorClass}}::pluginInfo() {
 }
 
 {{processorClass}}::{{processorClass}}() {
-{{parameterSetup}}    // --- USER CODE BEGIN: Constructor ---
+{{parameterSetup}}    // Standard bypass switch: hosts use it to bypass the plugin.
+    addBypassParameter();
+
+    // --- USER CODE BEGIN: Constructor ---
 {{constructor}}
     // --- USER CODE END: Constructor ---
 }

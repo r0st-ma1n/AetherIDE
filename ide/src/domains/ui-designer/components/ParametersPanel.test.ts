@@ -39,7 +39,7 @@ function loadDocument() {
           max: 1,
           default: 0.5,
         },
-        { id: 'bypass', name: 'Bypass', type: 'bool', default: false },
+        { id: 'mute', name: 'Mute', type: 'bool', default: false },
       ],
     },
   });
@@ -76,7 +76,7 @@ describe('ParametersPanel', () => {
     const items = wrapper.findAll('.param-list__item');
     expect(items.map((item) => item.find('.param-list__meta').text())).toEqual([
       'gain · float',
-      'bypass · bool',
+      'mute · bool',
     ]);
     expect(items[0]?.classes()).toContain('param-list__item--active');
     expect(wrapper.text()).toContain('Widgets: 1');
@@ -88,7 +88,7 @@ describe('ParametersPanel', () => {
     await wrapper.find('.panel__add').trigger('click');
     expect(store.projectMeta?.parameters.map((p) => p.id)).toEqual([
       'gain',
-      'bypass',
+      'mute',
       'param3',
     ]);
     expect(wrapper.find('.param-list__item--active').text()).toContain(
@@ -189,7 +189,7 @@ describe('ParametersPanel', () => {
     expect(confirmAction().mock.calls[0]?.[0].detail).toContain(
       '1 widget is bound'
     );
-    expect(store.projectMeta?.parameters.map((p) => p.id)).toEqual(['bypass']);
+    expect(store.projectMeta?.parameters.map((p) => p.id)).toEqual(['mute']);
     expect(store.components[0]).not.toHaveProperty('parameterId');
   });
 
@@ -240,7 +240,7 @@ describe('PropertiesPanel — parameter binding', () => {
     store.selectComponent('button1');
     const wrapper = mount(PropertiesPanel);
     const options = parameterSelect(wrapper).findAll('option');
-    expect(options.map((o) => o.attributes('value'))).toEqual(['', 'bypass']);
+    expect(options.map((o) => o.attributes('value'))).toEqual(['', 'mute']);
   });
 
   it('binds a widget and hides its own range', async () => {

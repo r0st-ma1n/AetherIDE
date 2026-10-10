@@ -21,6 +21,9 @@ HeavyProcessor::HeavyProcessor() {
     onParameter_ = &parameters_.addBool("on", "On", true);
     modeParameter_ = &parameters_.addChoice("mode", "Mode", {"Soft", "Hard \"x\"", "Clip"}, 2);
 
+    // Standard bypass switch: hosts use it to bypass the plugin.
+    addBypassParameter();
+
     // --- USER CODE BEGIN: Constructor ---
 
     // --- USER CODE END: Constructor ---

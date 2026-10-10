@@ -410,7 +410,7 @@ describe('validateAetherProject — parameters', () => {
     step: 0.5,
     unit: 'dB',
   };
-  const bypass = { id: 'bypass', name: 'Bypass', type: 'bool', default: false };
+  const bypass = { id: 'mute', name: 'Mute', type: 'bool', default: false };
   const mode = {
     id: 'mode',
     name: 'Mode',
@@ -616,5 +616,23 @@ describe('validateAetherProject — widget parameterId', () => {
     expect(project.components[0]?.properties).toEqual({ parameterId: 'gain' });
     expect(validateAetherProject(project)).toEqual({ valid: true });
     expect(fromAetherProject(project).components).toEqual(components);
+  });
+});
+
+describe('validateAetherProject — reserved parameter ids', () => {
+  it('rejects "bypass", which every generated processor adds itself', () => {
+    const result = validateAetherProject({
+      ...base,
+      parameters: [
+        { id: 'bypass', name: 'Bypass', type: 'bool', default: false },
+      ],
+      components: [],
+    });
+    expect(result).toEqual({
+      valid: false,
+      errors: [
+        `/parameters/0/id: "bypass" is reserved for the plugin's bypass switch`,
+      ],
+    });
   });
 });
