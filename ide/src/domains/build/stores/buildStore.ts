@@ -8,7 +8,20 @@ export type BuildStatus =
   | 'failed'
   | 'cancelled';
 
+export type BuildConfig = 'Debug' | 'Release';
+
 const MAX_LOG_CHARS = 200_000;
+const CONFIG_STORAGE_KEY = 'aether.build.config';
+
+function readStoredConfig(): BuildConfig {
+  try {
+    return localStorage.getItem(CONFIG_STORAGE_KEY) === 'Debug'
+      ? 'Debug'
+      : 'Release';
+  } catch {
+    return 'Release';
+  }
+}
 
 export const useBuildStore = defineStore('build', () => {
   const status = ref<BuildStatus>('idle');
@@ -16,6 +29,10 @@ export const useBuildStore = defineStore('build', () => {
   const exitCode = ref<number | null>(null);
   const lastMessage = ref<string | null>(null);
   const isCollapsed = ref(false);
+  /** Configuration of the next build; remembered per user. */
+  const config = ref<BuildConfig>(readStoredConfig());
+  /** Plugin bundles (.vst3) of the last successful build. */
+  const artifacts = ref<string[]>([]);
   let removeLogListener: (() => void) | null = null;
   let removeStatusListener: (() => void) | null = null;
 
@@ -48,15 +65,28 @@ export const useBuildStore = defineStore('build', () => {
     lastMessage.value = null;
   }
 
+  function setConfig(next: BuildConfig) {
+    config.value = next;
+    try {
+      localStorage.setItem(CONFIG_STORAGE_KEY, next);
+    } catch {
+      // Storage unavailable: the choice lasts for this session only.
+    }
+  }
+
   function applyStatus(payload: {
     status: BuildStatus;
     exitCode: number | null;
     message?: string;
+    artifacts?: string[];
   }) {
     status.value = payload.status;
     exitCode.value = payload.exitCode;
     if (payload.message) {
       lastMessage.value = payload.message;
+    }
+    if (payload.artifacts) {
+      artifacts.value = [...payload.artifacts];
     }
   }
 
@@ -80,9 +110,12 @@ export const useBuildStore = defineStore('build', () => {
     status.value = 'building';
     lastMessage.value = null;
     exitCode.value = null;
+    artifacts.value = [];
 
     try {
-      const result = await window.prototypeIDE.buildProject();
+      const result = await window.prototypeIDE.buildProject({
+        config: config.value,
+      });
       applyStatus(result);
       return result;
     } catch (error) {
@@ -96,6 +129,12 @@ export const useBuildStore = defineStore('build', () => {
 
   async function stopBuild() {
     return window.prototypeIDE.stopBuild();
+  }
+
+  /** Shows the first built bundle in the system file manager. */
+  async function revealArtifact() {
+    const bundle = artifacts.value[0];
+    return bundle ? window.prototypeIDE.showInFolder(bundle) : false;
   }
 
   function toggleCollapsed() {
@@ -112,7 +151,9 @@ export const useBuildStore = defineStore('build', () => {
   return {
     appendLog,
     applyStatus,
+    artifacts,
     clearLog,
+    config,
     disposeListeners,
     ensureListeners,
     exitCode,
@@ -120,6 +161,8 @@ export const useBuildStore = defineStore('build', () => {
     isCollapsed,
     lastMessage,
     logText,
+    revealArtifact,
+    setConfig,
     startBuild,
     status,
     statusLabel,

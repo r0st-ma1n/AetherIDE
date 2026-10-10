@@ -39,6 +39,7 @@ const mockProtoIDE = {
     message: 'Build succeeded.',
   })),
   stopBuild: vi.fn(async () => true),
+  showInFolder: vi.fn(async () => true),
   listProjectFiles: vi.fn(async () => []),
   readFile: vi.fn(async () => ''),
   fileExists: vi.fn(async () => false),

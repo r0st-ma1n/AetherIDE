@@ -17,3 +17,4 @@
 - [framework/vst3-adapter.md](./framework/vst3-adapter.md) — VST3-адаптер: как вызовы хоста переводятся в контракт
 - [ide/aether-format.md](./ide/aether-format.md) — формат проекта `.aether`: метаданные, параметры, миграция версий
 - [ide/codegen.md](./ide/codegen.md) — что IDE генерирует из `.aether`: процессор, UI, регионы USER CODE
+- [ide/build.md](./ide/build.md) — сборка из IDE: инструменты, конфигурации, результат, ошибки

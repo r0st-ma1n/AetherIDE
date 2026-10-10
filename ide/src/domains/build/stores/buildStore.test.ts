@@ -54,3 +54,63 @@ describe('buildStore', () => {
     expect(store.logText).toContain('cmake missing');
   });
 });
+
+describe('buildStore — configuration and artifacts', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it('builds Release by default and passes the chosen configuration', async () => {
+    vi.mocked(window.prototypeIDE.buildProject).mockResolvedValue({
+      status: 'success',
+      exitCode: 0,
+    });
+    const store = useBuildStore();
+    expect(store.config).toBe('Release');
+
+    store.setConfig('Debug');
+    await store.startBuild();
+    expect(window.prototypeIDE.buildProject).toHaveBeenLastCalledWith({
+      config: 'Debug',
+    });
+  });
+
+  it('remembers the configuration', () => {
+    useBuildStore().setConfig('Debug');
+    setActivePinia(createPinia());
+    expect(useBuildStore().config).toBe('Debug');
+  });
+
+  it('keeps the built bundles and reveals the first one', async () => {
+    vi.mocked(window.prototypeIDE.buildProject).mockResolvedValue({
+      status: 'success',
+      exitCode: 0,
+      artifacts: ['C:/p/build/VST3/Gain.vst3'],
+    });
+    const store = useBuildStore();
+    await store.startBuild();
+    expect(store.artifacts).toEqual(['C:/p/build/VST3/Gain.vst3']);
+
+    await store.revealArtifact();
+    expect(window.prototypeIDE.showInFolder).toHaveBeenCalledWith(
+      'C:/p/build/VST3/Gain.vst3'
+    );
+  });
+
+  it('forgets the bundles of the previous build when a new one starts', async () => {
+    const store = useBuildStore();
+    store.applyStatus({
+      status: 'success',
+      exitCode: 0,
+      artifacts: ['C:/p/build/VST3/Gain.vst3'],
+    });
+    vi.mocked(window.prototypeIDE.buildProject).mockResolvedValue({
+      status: 'failed',
+      exitCode: 1,
+    });
+    await store.startBuild();
+    expect(store.artifacts).toEqual([]);
+    expect(await store.revealArtifact()).toBe(false);
+  });
+});
