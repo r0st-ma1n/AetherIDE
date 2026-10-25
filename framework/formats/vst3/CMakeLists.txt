@@ -3,6 +3,35 @@
 # the SDK's cmake/modules/SMTG_VST3_SDK.cmake, without its examples, hosting and VSTGUI.
 
 set(VST3_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
+
+# Windows build tools fail on paths of 260 characters or more (MAX_PATH), with errors that do
+# not mention the path length. The longest paths are the validator's: its object files, which
+# CMake shortens past CMAKE_OBJECT_PATH_MAX to
+#   <this binary dir>/CMakeFiles/aether_vst3_validator.dir/<32-char hash>/<source>.obj.d
+# where the longest source name is repeatidenticalstatetransition.cpp (111 characters after
+# the binary dir), and the SDK's deepest source, public.sdk/source/vst/testsuite/processing/
+# processcontextrequirements.cpp (74 characters after the SDK dir). Fail early instead.
+if (WIN32)
+  string(LENGTH "${CMAKE_CURRENT_BINARY_DIR}" binaryDirLength)
+  string(LENGTH "${VST3_SDK_DIR}" sdkDirLength)
+  math(EXPR objectExcess "${binaryDirLength} + 111 - 259")
+  math(EXPR sourceExcess "${sdkDirLength} + 74 - 259")
+  if (sourceExcess GREATER objectExcess)
+    set(pathExcess ${sourceExcess})
+  else()
+    set(pathExcess ${objectExcess})
+  endif()
+  if (pathExcess GREATER 0)
+    string(LENGTH "${CMAKE_BINARY_DIR}" buildDirLength)
+    math(EXPR maxBuildDirLength "${buildDirLength} - ${pathExcess}")
+    message(FATAL_ERROR
+      "The build directory is too deep for Windows: building the VST3 support would create "
+      "paths longer than 259 characters, which Windows build tools cannot open.\n"
+      "Build directory (${buildDirLength} characters): ${CMAKE_BINARY_DIR}\n"
+      "Use a build directory of at most ${maxBuildDirLength} characters, e.g. C:/build/<project>, "
+      "or move the project to a shorter path.")
+  endif()
+endif()
 # For aether_add_plugin (framework/cmake/AetherAddPlugin.cmake), which runs in the plugin
 # project's scope.
 set(AETHER_VST3_SDK_DIR ${VST3_SDK_DIR} CACHE INTERNAL "Vendored VST3 SDK")

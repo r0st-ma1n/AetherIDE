@@ -26,7 +26,8 @@ add_subdirectory(core)
 add_subdirectory(host)
 
 if (AETHER_BUILD_VST3)
-  add_subdirectory(formats/vst3)
+  # Short binary directory: the VST3 SDK's object paths are long (see the path check there).
+  add_subdirectory(formats/vst3 vst3)
 endif()
 
 # aether_add_plugin(): plugin binaries per format. Functions are global, so plugin
