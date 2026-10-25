@@ -39,6 +39,11 @@ const mockProtoIDE = {
     message: 'Build succeeded.',
   })),
   stopBuild: vi.fn(async () => true),
+  installPlugin: vi.fn(async () => ({
+    ok: true as const,
+    installedPath: 'C:/VST3/Demo.vst3',
+    replaced: false,
+  })),
   showInFolder: vi.fn(async () => true),
   listProjectFiles: vi.fn(async () => []),
   readFile: vi.fn(async () => ''),

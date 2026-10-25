@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BuildPanel from './BuildPanel.vue';
 import { useBuildStore } from '@/domains/build/stores/buildStore';
 import { useProjectStore } from '@/domains/workspace/stores/projectStore';
+import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 
 describe('BuildPanel', () => {
   beforeEach(() => {
@@ -49,5 +50,31 @@ describe('BuildPanel', () => {
     expect(window.prototypeIDE.showInFolder).toHaveBeenCalledWith(
       'C:/p/build/VST3/Gain.vst3'
     );
+  });
+
+  it('installs the built plugin and reports a busy one', async () => {
+    vi.mocked(window.prototypeIDE.installPlugin).mockResolvedValueOnce({
+      ok: false,
+      reason: 'busy',
+      message: 'Gain.vst3 is in use',
+    });
+    const wrapper = mountWithProject();
+    useBuildStore().applyStatus({
+      status: 'success',
+      exitCode: 0,
+      artifacts: ['C:/p/build/VST3/Gain.vst3'],
+    });
+    await flushPromises();
+
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Install')!
+      .trigger('click');
+    await flushPromises();
+
+    expect(window.prototypeIDE.installPlugin).toHaveBeenCalledWith(
+      'C:/p/build/VST3/Gain.vst3'
+    );
+    expect(useWorkspaceStore().toastMessage).toBe('Gain.vst3 is in use');
   });
 });

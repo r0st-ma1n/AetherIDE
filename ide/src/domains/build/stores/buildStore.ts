@@ -13,6 +13,12 @@ export type BuildConfig = 'Debug' | 'Release';
 const MAX_LOG_CHARS = 200_000;
 const CONFIG_STORAGE_KEY = 'aether.build.config';
 
+/** Not every DAW scans the per-user VST3 folder; logged after each install. */
+const INSTALL_HINT =
+  'Not every DAW scans this folder. If the plugin does not show up, add the folder to ' +
+  "the DAW's VST3 search paths and rescan, or copy the bundle to " +
+  'C:\\Program Files\\Common Files\\VST3 (needs administrator rights).\n';
+
 function readStoredConfig(): BuildConfig {
   try {
     return localStorage.getItem(CONFIG_STORAGE_KEY) === 'Debug'
@@ -33,6 +39,7 @@ export const useBuildStore = defineStore('build', () => {
   const config = ref<BuildConfig>(readStoredConfig());
   /** Plugin bundles (.vst3) of the last successful build. */
   const artifacts = ref<string[]>([]);
+  const isInstalling = ref(false);
   let removeLogListener: (() => void) | null = null;
   let removeStatusListener: (() => void) | null = null;
 
@@ -137,6 +144,31 @@ export const useBuildStore = defineStore('build', () => {
     return bundle ? window.prototypeIDE.showInFolder(bundle) : false;
   }
 
+  /** Installs the first built bundle into the per-user VST3 folder. */
+  async function installArtifact() {
+    const bundle = artifacts.value[0];
+    if (!bundle || isInstalling.value) {
+      return null;
+    }
+    isInstalling.value = true;
+    try {
+      const result = await window.prototypeIDE.installPlugin(bundle);
+      if (result.ok) {
+        appendLog(`Installed: ${result.installedPath}\n${INSTALL_HINT}`);
+      } else {
+        appendLog(`${result.message}\n`);
+      }
+      return result;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Install failed.';
+      appendLog(`${message}\n`);
+      return { ok: false as const, reason: 'error' as const, message };
+    } finally {
+      isInstalling.value = false;
+    }
+  }
+
   function toggleCollapsed() {
     isCollapsed.value = !isCollapsed.value;
   }
@@ -157,8 +189,10 @@ export const useBuildStore = defineStore('build', () => {
     disposeListeners,
     ensureListeners,
     exitCode,
+    installArtifact,
     isBuilding,
     isCollapsed,
+    isInstalling,
     lastMessage,
     logText,
     revealArtifact,

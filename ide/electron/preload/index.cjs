@@ -122,6 +122,8 @@ contextBridge.exposeInMainWorld('prototypeIDE', {
   showInFolder: (targetPath) =>
     ipcRenderer.invoke('shell:show-in-folder', targetPath),
   stopBuild: () => ipcRenderer.invoke('build:stop'),
+  installPlugin: (bundlePath) =>
+    ipcRenderer.invoke('plugin:install', bundlePath),
   listProjectFiles: () => ipcRenderer.invoke('project:list-files'),
   readFile: (path) => ipcRenderer.invoke('file:read', path),
   fileExists: (path) => ipcRenderer.invoke('file:exists', path),

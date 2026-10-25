@@ -75,6 +75,12 @@ declare global {
       /** Reveals a file or folder inside the open project in the system file manager. */
       showInFolder: (targetPath: string) => Promise<boolean>;
       stopBuild: () => Promise<boolean>;
+      installPlugin: (
+        bundlePath: string
+      ) => Promise<
+        | { ok: true; installedPath: string; replaced: boolean }
+        | { ok: false; reason: 'busy' | 'error'; message: string }
+      >;
       listProjectFiles: () => Promise<ProjectFileEntry[]>;
       readFile: (path: string) => Promise<string>;
       fileExists: (path: string) => Promise<boolean>;
