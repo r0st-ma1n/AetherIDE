@@ -20,6 +20,10 @@ const {
   touchRecentProjects,
 } = require('./recentProjects.cjs');
 const { BuildRunner, findFrameworkSourceDir } = require('./buildRunner.cjs');
+const {
+  defaultVst3InstallDir,
+  installVst3Bundle,
+} = require('./pluginInstaller.cjs');
 
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const ALLOWED_EXTENSIONS = new Set([
@@ -479,6 +483,37 @@ function registerIpcHandlers() {
     }
     shell.showItemInFolder(path.resolve(targetPath));
     return true;
+  });
+
+  // Installs a built .vst3 bundle of the open project into the per-user VST3 folder.
+  ipcMain.handle('plugin:install', async (_event, bundlePath) => {
+    if (!activeProjectRoot || typeof bundlePath !== 'string') {
+      return { ok: false, reason: 'error', message: 'No project is open.' };
+    }
+    const relative = path.relative(activeProjectRoot, path.resolve(bundlePath));
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return {
+        ok: false,
+        reason: 'error',
+        message: 'Only plugins built from the open project can be installed.',
+      };
+    }
+    if (buildRunner.isBusy()) {
+      return {
+        ok: false,
+        reason: 'error',
+        message: 'Wait for the build to finish.',
+      };
+    }
+    const targetDir = defaultVst3InstallDir();
+    if (!targetDir) {
+      return {
+        ok: false,
+        reason: 'error',
+        message: 'Installing plugins is supported on Windows only.',
+      };
+    }
+    return installVst3Bundle(path.resolve(bundlePath), targetDir);
   });
 
   ipcMain.handle('build:stop', async () => buildRunner.stop());

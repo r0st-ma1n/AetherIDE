@@ -48,6 +48,16 @@
           Open folder
         </button>
         <button
+          v-if="store.artifacts.length > 0"
+          class="build-panel__button"
+          type="button"
+          title="Copy the plugin to the user VST3 folder"
+          :disabled="store.isBuilding || store.isInstalling"
+          @click="onInstall"
+        >
+          Install
+        </button>
+        <button
           class="build-panel__button"
           type="button"
           :disabled="!store.isBuilding"
@@ -114,6 +124,15 @@ async function onBuild() {
     workspaceStore.showToast(result.message ?? 'Build failed.');
   } else if (result.status === 'cancelled') {
     workspaceStore.showToast('Build cancelled.');
+  }
+}
+
+async function onInstall() {
+  const result = await store.installArtifact();
+  if (result) {
+    workspaceStore.showToast(
+      result.ok ? 'Plugin installed. See the build log.' : result.message
+    );
   }
 }
 

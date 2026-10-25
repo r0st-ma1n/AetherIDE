@@ -114,3 +114,58 @@ describe('buildStore — configuration and artifacts', () => {
     expect(await store.revealArtifact()).toBe(false);
   });
 });
+
+describe('buildStore — install', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  function storeWithBundle() {
+    const store = useBuildStore();
+    store.applyStatus({
+      status: 'success',
+      exitCode: 0,
+      artifacts: ['C:/p/build/VST3/Gain.vst3'],
+    });
+    return store;
+  }
+
+  it('installs the first bundle and logs where, with the DAW hint', async () => {
+    vi.mocked(window.prototypeIDE.installPlugin).mockResolvedValueOnce({
+      ok: true,
+      installedPath: 'C:/VST3/Gain.vst3',
+      replaced: true,
+    });
+    const store = storeWithBundle();
+
+    const result = await store.installArtifact();
+
+    expect(window.prototypeIDE.installPlugin).toHaveBeenCalledWith(
+      'C:/p/build/VST3/Gain.vst3'
+    );
+    expect(result).toMatchObject({ ok: true });
+    expect(store.logText).toContain('Installed: C:/VST3/Gain.vst3');
+    expect(store.logText).toContain('Common Files');
+    expect(store.isInstalling).toBe(false);
+  });
+
+  it('logs why the install failed', async () => {
+    vi.mocked(window.prototypeIDE.installPlugin).mockResolvedValueOnce({
+      ok: false,
+      reason: 'busy',
+      message: 'Gain.vst3 is in use',
+    });
+    const store = storeWithBundle();
+
+    const result = await store.installArtifact();
+
+    expect(result).toMatchObject({ ok: false, reason: 'busy' });
+    expect(store.logText).toContain('Gain.vst3 is in use');
+  });
+
+  it('does nothing without a built bundle', async () => {
+    vi.mocked(window.prototypeIDE.installPlugin).mockClear();
+    expect(await useBuildStore().installArtifact()).toBeNull();
+    expect(window.prototypeIDE.installPlugin).not.toHaveBeenCalled();
+  });
+});
