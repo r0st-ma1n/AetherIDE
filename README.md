@@ -1,99 +1,155 @@
 # AetherIDE
 
-Визуальная IDE для разработки аудио-плагинов. Позволяет собирать интерфейс плагина через drag-and-drop и автоматически генерирует синхронизированный C++ код.
+[![CI](https://github.com/r0st-ma1n/AetherIDE/actions/workflows/CI.yml/badge.svg)](https://github.com/r0st-ma1n/AetherIDE/actions/workflows/CI.yml)
 
-> Проприетарное программное обеспечение. Не предназначено для публичного распространения или использования третьими лицами.
+**English** · [Русский](README.ru.md)
 
-## Что это
+A desktop IDE for building audio plugins. You lay out the plugin UI in a visual designer,
+declare parameters, write DSP in `processBlock`, and the IDE generates the C++ project around
+it on top of Aether, its own C++20 plugin framework. The end goal is to build VST3, CLAP and
+AU from one project. VST3 on Windows comes first.
 
-AetherIDE — desktop-приложение на Electron с визуальным дизайнером UI, встроенным редактором кода (Monaco) и собственным C++ фреймворком для аудио-плагинов (Aether).
+<!-- Screenshot: docs/images/ide.png — designer + code editor with GainPlugin open -->
 
-Ключевые возможности:
+## Highlights
 
-- Drag-and-drop редактор компонентов (Knob, Slider, Button) на canvas
-- Выделение нескольких компонентов, выравнивание и распределение группой
-- Clipboard (Copy / Paste / Cut) и выделение рамкой (Ctrl+A)
-- Undo / Redo (Command Pattern, стек до 100 шагов)
-- Двусторонняя синхронизация: изменения в дизайнере генерируют C++ код и наоборот
-- Встроенный Monaco Editor с подсветкой синтаксиса C++
-- Файловый проводник с live-обновлением
-- Валидация проектных файлов `.aether` по JSON Schema (AJV)
-- Собственный C++ фреймворк Aether для написания аудио-плагинов
+- **Visual UI designer.** Drag-and-drop widgets (Knob, Slider, Button), multi-select,
+  align/distribute, rubber-band selection, clipboard, undo/redo (Command pattern, 100 steps).
+- **Two-way designer ↔ code sync.** The designer writes C++ and parses edited C++ back into
+  the layout. Generated files keep user code inside `USER CODE` regions across regeneration.
+- **Code generation from a project file.** `.aether` (JSON, validated with JSON Schema/AJV)
+  describes plugin metadata, parameters and UI. The IDE produces the processor class,
+  parameter fields, a standard bypass parameter and the CMake project.
+- **Format-agnostic C++20 framework.** The core defines the plugin contract (processor,
+  parameters, state, buses, `PluginInfo`) and knows nothing about plugin formats or OS APIs.
+  Each format is a thin adapter.
+- **VST3 adapter.** It maps VST3 calls onto the contract with zero-copy host buffers, stable
+  parameter IDs (FNV-1a of the string id, so DAW automation survives reordering) and state
+  save/restore. `aether_add_plugin(MyPlugin FORMATS VST3)` builds the `.vst3` bundle, which
+  is checked with Steinberg's validator in tests.
+- **Real-time safety.** The audio-thread path is covered by tests that fail on any heap
+  allocation. Parameters are atomic, and `SmoothedValue` handles smoothing.
+- **Headless host.** `aether_host` loads a plugin module and renders audio offline (sine or
+  WAV in, WAV out), so plugins can be tested without a DAW.
+- **Versioned framework dependency.** A generated project pulls the framework through CMake
+  `FetchContent` pinned to a tag, so it builds on its own. The IDE points it at the local
+  checkout, so it builds offline and framework edits show up right away.
 
-## Стек
+## Architecture
 
-| Слой | Технологии |
-|---|---|
-| IDE UI | Vue 3, TypeScript, Pinia, Vite, Monaco Editor |
-| Desktop | Electron 42 |
-| C++ native | CMake, C++20 |
-| Audio framework | Aether (собственный) |
+```
+ IDE project (.aether: metadata, parameters, UI)
+                  │ code generation — format-agnostic
+                  ▼
+ Plugin code: Processor + UI on the Aether API
+                  │
+ framework/core     DSP contract, parameters, state, buses, PluginInfo
+ framework/host     headless offline host (aether_host)
+ framework/formats  format adapters: vst3 (now) · clap · au (planned)
+                  │
+ aether_add_plugin(MyPlugin FORMATS VST3)
+```
 
-## Требования
+| Part                | Stack                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| IDE                 | Electron 42, Vue 3, TypeScript, Pinia, Vite, Monaco Editor  |
+| Framework           | C++20, CMake 3.22+, VST3 SDK 3.8 (MIT)                      |
+| Quality             | Vitest, CTest, ESLint, vue-tsc, Prettier, clang-format      |
+| CI (GitHub Actions) | lint, typecheck, unit tests, frontend build, C++ build/test |
 
-- Node.js 18+
-- npm 9+
-- CMake 3.22+
-- C++20 компилятор (MSVC, GCC, Clang)
+## What plugin code looks like
 
-## Установка и запуск
+The generated processor for [samples/GainPlugin](samples/GainPlugin/). Everything outside
+`USER CODE` regions comes from `GainPlugin.aether`:
+
+```cpp
+GainPluginProcessor::GainPluginProcessor() {
+    gainParameter_ = &parameters_.addFloat("gain", "Gain", 0.0f, 2.0f, 1.0f);
+    addBypassParameter();
+}
+
+void GainPluginProcessor::processBlock(aether::ProcessContext& context) {
+    // --- USER CODE BEGIN: ProcessBlock ---
+    gain_.setTarget(gainParameter_->value());
+    auto& output = context.output;
+    for (int i = 0; i < output.numSamples(); ++i) {
+        const float gain = gain_.next();
+        for (int ch = 0; ch < output.numChannels(); ++ch) {
+            const float in = ch < context.input.numChannels() ? context.input.channel(ch)[i] : 0.0f;
+            output.channel(ch)[i] = in * gain;
+        }
+    }
+    // --- USER CODE END: ProcessBlock ---
+}
+
+AETHER_PLUGIN(GainPluginProcessor)
+```
+
+## Status
+
+Development follows [docs/ROADMAP.md](docs/ROADMAP.md). Tagged versions: `v0.1.0`, `v0.2.0`.
+
+| Block | Scope                                        | Status      |
+| ----- | -------------------------------------------- | ----------- |
+| 0     | Automated code-standard checks, CI           | done        |
+| A     | Framework core ready for a real host         | done        |
+| B     | Parameters in the project, processor codegen | done        |
+| C     | VST3 adapter and bundle build                | done        |
+| D     | Building VST3 from the IDE                   | in progress |
+| E     | DAW verification, v1 release                 | planned     |
+| F–H   | Custom plugin window, CLAP, macOS + AU       | after v1    |
+
+v1 is an effect plugin built from the IDE that loads, plays, automates and saves in a DAW.
+It uses the host's generic parameter UI. Windows x64 only for now.
+
+## Getting started
+
+Requirements: Node.js 20.19+, npm 9+, CMake 3.22+, a C++20 compiler (MSVC, GCC or Clang).
 
 ```bash
-# Установить зависимости
-make ide-install
+make ide-install   # install IDE dependencies
+make ide-dev       # run the IDE (Electron + Vite HMR)
 
-# Запустить в режиме разработки (Electron + Vite HMR)
-make ide-dev
+make cmake-configure && make cmake-build   # build the framework, host and samples
+make test          # full check: C++ build and tests, formatting, lint, typecheck, IDE tests
 ```
 
-Остальные команды:
+Render audio through the sample plugin without a DAW:
 
 ```bash
-make ide-build          # собрать frontend
-make ide-start          # запустить Electron без dev-сервера
-make cmake-configure    # сконфигурировать C++ часть
-make cmake-build        # собрать C++ часть
-make run-all            # собрать всё и запустить
-make test               # полная проверка проекта
+aether_host --plugin <path>/gain_plugin.dll --sine 440 --duration 1 --param gain=0.25 --out out.wav
 ```
 
-## Структура проекта
+## Repository layout
 
 ```
-AetherIDE/
-├── framework/
-│   └── core/               # C++ Aether framework
-│       ├── include/aether/ # публичный API
-│       ├── src/
-│       └── examples/gain/  # пример плагина
-├── ide/
-│   ├── electron/           # Electron main process и preload
-│   ├── src/
-│   │   ├── app/            # shell верхнего уровня
-│   │   ├── domains/        # фичи по доменам:
-│   │   │   ├── editor/     #   Monaco Editor
-│   │   │   ├── files/      #   файловый проводник
-│   │   │   ├── templates/  #   шаблоны проектов
-│   │   │   └── ui-designer/#   визуальный дизайнер
-│   │   └── shared/         # общие типы, утилиты, схемы
-│   └── ...конфиги
-├── samples/
-│   └── GainPlugin/         # пример проекта для IDE
-├── docs/                   # стандарты и правила разработки
-├── CMakeLists.txt
-└── Makefile
+framework/
+  core/        plugin contract, parameters, state, widgets; tests
+  formats/vst3 VST3 adapter, bundled SDK, tests
+  host/        headless host aether_host
+  cmake/       aether_add_plugin()
+ide/
+  electron/    main process and preload
+  src/domains/ ui-designer, editor, files, workspace, templates, build
+samples/       GainPlugin — example project opened in the IDE and built in CI
+docs/          roadmap, standards, framework and IDE docs
 ```
 
-## Документация
+## Documentation
 
-- [docs/ROADMAP.md](docs/ROADMAP.md) — план разработки
-- [docs/GIT_CONVENTIONS.md](docs/GIT_CONVENTIONS.md) — ветки, коммиты, PR
-- [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) — общие правила по коду
-- [docs/standards/architecture.md](docs/standards/architecture.md) — границы модулей
-- [docs/standards/javascript-electron.md](docs/standards/javascript-electron.md) — стандарты для Vue/Electron части
-- [docs/standards/cpp-cmake.md](docs/standards/cpp-cmake.md) — стандарты для C++/CMake части
-- [CONTRIBUTING.md](CONTRIBUTING.md) — как вносить изменения
+The detailed docs are in Russian.
 
-## Лицензия
+- [Roadmap](docs/ROADMAP.md)
+- Framework: [plugin contract](docs/framework/plugin-contract.md),
+  [VST3 adapter](docs/framework/vst3-adapter.md),
+  [headless host](docs/framework/headless-host.md)
+- IDE: [`.aether` format](docs/ide/aether-format.md), [code generation](docs/ide/codegen.md)
+- Process: [git conventions](docs/GIT_CONVENTIONS.md),
+  [coding standards](docs/CODING_STANDARDS.md), [contributing](CONTRIBUTING.md)
 
-Copyright © 2026 r0st. Все права защищены. Исходный код является коммерческой тайной и не подлежит распространению.
+## License
+
+Source-available, all rights reserved. You may view and study the code, but you may not
+use, copy, modify or redistribute it without permission. See [LICENSE](LICENSE).
+Third-party components, such as the VST3 SDK (MIT), keep their own licenses.
+VST is a trademark of Steinberg Media Technologies GmbH.
