@@ -424,7 +424,7 @@ Linux, AUv3, Live Preview и hot-reload в IDE, Designer 2.0, темы, шабл
 
 ## Сделано
 
-Краткая история; подробности — в git log и архиве `docs/roadmap/archive/`.
+Краткая история; подробности — в git log.
 
 - **Foundation** — UI Designer MVP, Electron shell + workspace, минимальный Aether API.
 - **Product Shell** — жизненный цикл проекта (Open/Save/Recent, dirty-guards),
