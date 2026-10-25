@@ -118,7 +118,9 @@ contextBridge.exposeInMainWorld('prototypeIDE', {
   chooseDirectory: (payload) =>
     ipcRenderer.invoke('dialog:choose-directory', payload),
   scaffoldProject: (payload) => ipcRenderer.invoke('project:scaffold', payload),
-  buildProject: () => ipcRenderer.invoke('build:run'),
+  buildProject: (payload) => ipcRenderer.invoke('build:run', payload),
+  showInFolder: (targetPath) =>
+    ipcRenderer.invoke('shell:show-in-folder', targetPath),
   stopBuild: () => ipcRenderer.invoke('build:stop'),
   listProjectFiles: () => ipcRenderer.invoke('project:list-files'),
   readFile: (path) => ipcRenderer.invoke('file:read', path),

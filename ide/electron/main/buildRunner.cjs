@@ -1,17 +1,32 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { detectToolchain } = require('./toolchain.cjs');
 
 /**
  * @typedef {'idle' | 'building' | 'success' | 'failed' | 'cancelled'} BuildStatus
  */
 
+/** @typedef {'Debug' | 'Release'} BuildConfig */
+
+/**
+ * @typedef {{
+ *   status: BuildStatus,
+ *   exitCode: number | null,
+ *   message?: string,
+ *   artifacts?: string[],
+ * }} BuildResult
+ * `artifacts`: absolute paths of the built plugin bundles (`.vst3`).
+ */
+
 /**
  * @typedef {{
  *   onLog: (chunk: string) => void,
- *   onStatus: (payload: { status: BuildStatus, exitCode: number | null, message?: string }) => void,
+ *   onStatus: (payload: BuildResult) => void,
  * }} BuildRunnerCallbacks
  */
+
+const BUILD_CONFIGS = /** @type {const} */ (['Debug', 'Release']);
 
 /**
  * @param {string} projectRoot
@@ -59,19 +74,61 @@ function findFrameworkSourceDir(startDir) {
 }
 
 /**
- * Arguments of the configure step. With @p frameworkSourceDir, the project's
- * FetchContent uses that checkout instead of downloading the framework.
+ * Arguments of the configure step, which runs before every build: cheap when nothing
+ * changed, and it applies a new configuration to single-config generators (Ninja,
+ * Makefiles). `generator` is used only for a new build directory: CMake keeps the
+ * generator of an existing one. With `frameworkSourceDir`, the project's FetchContent uses
+ * that checkout instead of downloading the framework.
  * @param {string} projectRoot
  * @param {string} buildDir
- * @param {string | null | undefined} frameworkSourceDir
+ * @param {{ config?: BuildConfig, generator?: string | null, frameworkSourceDir?: string | null }} [options]
  * @returns {string[]}
  */
-function configureArgs(projectRoot, buildDir, frameworkSourceDir) {
+function configureArgs(projectRoot, buildDir, options = {}) {
   const args = ['-S', projectRoot, '-B', buildDir];
-  if (frameworkSourceDir) {
-    args.push(`-DFETCHCONTENT_SOURCE_DIR_AETHER=${frameworkSourceDir}`);
+  if (options.generator) {
+    args.push('-G', options.generator);
+  }
+  args.push(`-DCMAKE_BUILD_TYPE=${options.config ?? 'Release'}`);
+  if (options.frameworkSourceDir) {
+    args.push(`-DFETCHCONTENT_SOURCE_DIR_AETHER=${options.frameworkSourceDir}`);
   }
   return args;
+}
+
+/**
+ * Arguments of the build step; `--config` selects the configuration of multi-config
+ * generators (Visual Studio) and is ignored by the others.
+ * @param {string} buildDir
+ * @param {BuildConfig} [config]
+ * @returns {string[]}
+ */
+function buildArgs(buildDir, config = 'Release') {
+  return ['--build', buildDir, '--config', config];
+}
+
+/**
+ * Plugin bundles produced by aether_add_plugin(... FORMATS VST3): <build>/VST3/*.vst3.
+ * @param {string} buildDir
+ * @returns {string[]}
+ */
+function findVst3Bundles(buildDir) {
+  const dir = path.join(buildDir, 'VST3');
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name.endsWith('.vst3'))
+    .map((entry) => path.join(dir, entry.name))
+    .sort();
+}
+
+/**
+ * @param {string} arg
+ */
+function quoteForLog(arg) {
+  return /\s/.test(arg) ? `"${arg}"` : arg;
 }
 
 class BuildRunner {
@@ -89,98 +146,140 @@ class BuildRunner {
   /**
    * @param {string} projectRoot
    * @param {BuildRunnerCallbacks} callbacks
-   * @param {{ frameworkSourceDir?: string | null }} [options]
-   * @returns {Promise<{ status: BuildStatus, exitCode: number | null }>}
+   * @param {{
+   *   frameworkSourceDir?: string | null,
+   *   config?: BuildConfig,
+   *   detectToolchain?: typeof detectToolchain,
+   * }} [options]
+   * @returns {Promise<BuildResult>}
    */
   async run(projectRoot, callbacks, options = {}) {
+    /** @param {BuildResult} result */
+    const finish = (result) => {
+      callbacks.onStatus(result);
+      return result;
+    };
+
     if (this.child) {
-      const message = 'A build is already running.';
-      callbacks.onStatus({ status: 'failed', exitCode: null, message });
-      return { status: 'failed', exitCode: null };
+      return finish({
+        status: 'failed',
+        exitCode: null,
+        message: 'A build is already running.',
+      });
     }
 
     if (!projectRoot) {
-      const message = 'No project is open.';
-      callbacks.onStatus({ status: 'failed', exitCode: null, message });
-      return { status: 'failed', exitCode: null };
+      return finish({
+        status: 'failed',
+        exitCode: null,
+        message: 'No project is open.',
+      });
     }
 
     if (!projectHasCMakeLists(projectRoot)) {
       const message =
         'No CMakeLists.txt found in the project root. Add one or create a project from the New Project wizard.';
       callbacks.onLog(`${message}\n`);
-      callbacks.onStatus({ status: 'failed', exitCode: null, message });
-      return { status: 'failed', exitCode: null };
+      return finish({ status: 'failed', exitCode: null, message });
     }
 
+    const config = BUILD_CONFIGS.includes(options.config ?? 'Release')
+      ? (options.config ?? 'Release')
+      : 'Release';
     const buildDir = getBuildDir(projectRoot);
     this.stopping = false;
     callbacks.onStatus({ status: 'building', exitCode: null });
 
     try {
-      if (!buildIsConfigured(buildDir)) {
-        const args = configureArgs(
-          projectRoot,
-          buildDir,
-          options.frameworkSourceDir
-        );
-        callbacks.onLog(
-          `Configuring: cmake ${args.map((arg) => `"${arg}"`).join(' ')}\n`
-        );
-        const configureCode = await this.spawnCommand(
-          'cmake',
-          args,
-          projectRoot,
-          callbacks
-        );
-        if (this.stopping) {
-          callbacks.onStatus({ status: 'cancelled', exitCode: null });
-          return { status: 'cancelled', exitCode: null };
-        }
-        if (configureCode !== 0) {
-          callbacks.onStatus({
-            status: 'failed',
-            exitCode: configureCode,
-            message: 'CMake configure failed.',
-          });
-          return { status: 'failed', exitCode: configureCode };
-        }
+      const toolchain = await (options.detectToolchain ?? detectToolchain)();
+      if (!toolchain.ok) {
+        callbacks.onLog(`${toolchain.message}\n`);
+        return finish({
+          status: 'failed',
+          exitCode: null,
+          message: toolchain.message,
+        });
       }
 
-      callbacks.onLog(`Building: cmake --build "${buildDir}"\n`);
+      const configured = buildIsConfigured(buildDir);
+      if (!configured) {
+        callbacks.onLog(`Toolchain: ${toolchain.description}\n`);
+      }
+      if (!options.frameworkSourceDir) {
+        callbacks.onLog(
+          'No local Aether framework found: CMake downloads the version the project pins.\n'
+        );
+      }
+
+      const args = configureArgs(projectRoot, buildDir, {
+        config,
+        generator: configured ? null : toolchain.generator,
+        frameworkSourceDir: options.frameworkSourceDir,
+      });
+      callbacks.onLog(
+        `Configuring: cmake ${args.map(quoteForLog).join(' ')}\n`
+      );
+      const configureCode = await this.spawnCommand(
+        'cmake',
+        args,
+        projectRoot,
+        callbacks
+      );
+      if (this.stopping) {
+        return finish({ status: 'cancelled', exitCode: null });
+      }
+      if (configureCode !== 0) {
+        if (!options.frameworkSourceDir) {
+          callbacks.onLog(
+            'If the Aether framework could not be downloaded, check the network connection ' +
+              'and that the tag pinned in CMakeLists.txt (GIT_TAG) exists.\n'
+          );
+        }
+        return finish({
+          status: 'failed',
+          exitCode: configureCode,
+          message: 'CMake configure failed. See the build log.',
+        });
+      }
+
+      const build = buildArgs(buildDir, config);
+      callbacks.onLog(
+        `Building (${config}): cmake ${build.map(quoteForLog).join(' ')}\n`
+      );
       const buildCode = await this.spawnCommand(
         'cmake',
-        ['--build', buildDir],
+        build,
         projectRoot,
         callbacks
       );
 
       if (this.stopping) {
-        callbacks.onStatus({ status: 'cancelled', exitCode: null });
-        return { status: 'cancelled', exitCode: null };
+        return finish({ status: 'cancelled', exitCode: null });
       }
 
-      if (buildCode === 0) {
-        callbacks.onStatus({
-          status: 'success',
-          exitCode: 0,
-          message: 'Build succeeded.',
+      if (buildCode !== 0) {
+        return finish({
+          status: 'failed',
+          exitCode: buildCode,
+          message: 'Build failed. See the build log.',
         });
-        return { status: 'success', exitCode: 0 };
       }
 
-      callbacks.onStatus({
-        status: 'failed',
-        exitCode: buildCode,
-        message: 'Build failed.',
+      const artifacts = findVst3Bundles(buildDir);
+      for (const bundle of artifacts) {
+        callbacks.onLog(`VST3 plugin: ${bundle}\n`);
+      }
+      return finish({
+        status: 'success',
+        exitCode: 0,
+        message: 'Build succeeded.',
+        artifacts,
       });
-      return { status: 'failed', exitCode: buildCode };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to start cmake.';
       callbacks.onLog(`${message}\n`);
-      callbacks.onStatus({ status: 'failed', exitCode: null, message });
-      return { status: 'failed', exitCode: null };
+      return finish({ status: 'failed', exitCode: null, message });
     } finally {
       this.child = null;
       this.stopping = false;
@@ -208,10 +307,12 @@ class BuildRunner {
    */
   spawnCommand(command, args, cwd, callbacks) {
     return new Promise((resolve, reject) => {
+      // No shell: arguments with spaces (project paths) reach CMake intact, and stop()
+      // kills CMake itself rather than a cmd.exe wrapper. cmake.exe is found through PATH.
       const child = spawn(command, args, {
         cwd,
-        shell: process.platform === 'win32',
         env: process.env,
+        windowsHide: true,
       });
       this.child = child;
 
@@ -234,10 +335,13 @@ class BuildRunner {
 }
 
 module.exports = {
+  BUILD_CONFIGS,
   BuildRunner,
+  buildArgs,
   buildIsConfigured,
   configureArgs,
   findFrameworkSourceDir,
+  findVst3Bundles,
   getBuildDir,
   projectHasCMakeLists,
 };

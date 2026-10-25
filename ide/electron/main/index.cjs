@@ -1,4 +1,11 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  shell,
+} = require('electron');
 const fs = require('fs/promises');
 const fsSync = require('fs');
 const path = require('path');
@@ -418,7 +425,7 @@ function registerIpcHandlers() {
     return recentProjects;
   });
 
-  ipcMain.handle('build:run', async () => {
+  ipcMain.handle('build:run', async (_event, payload = {}) => {
     if (!activeProjectRoot) {
       const payload = {
         status: 'failed',
@@ -457,8 +464,21 @@ function registerIpcHandlers() {
           }
         },
       },
-      { frameworkSourceDir }
+      { frameworkSourceDir, config: payload.config }
     );
+  });
+
+  // Reveals a build artifact (e.g. a .vst3 bundle); only paths inside the open project.
+  ipcMain.handle('shell:show-in-folder', async (_event, targetPath) => {
+    if (!activeProjectRoot || typeof targetPath !== 'string') {
+      return false;
+    }
+    const relative = path.relative(activeProjectRoot, path.resolve(targetPath));
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return false;
+    }
+    shell.showItemInFolder(path.resolve(targetPath));
+    return true;
   });
 
   ipcMain.handle('build:stop', async () => buildRunner.stop());

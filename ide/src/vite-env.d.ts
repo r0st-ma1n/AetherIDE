@@ -65,11 +65,15 @@ declare global {
         folderName: string;
         files: Record<string, string>;
       }) => Promise<string>;
-      buildProject: () => Promise<{
+      buildProject: (payload?: { config?: 'Debug' | 'Release' }) => Promise<{
         status: 'idle' | 'building' | 'success' | 'failed' | 'cancelled';
         exitCode: number | null;
         message?: string;
+        /** Absolute paths of built plugin bundles (.vst3). */
+        artifacts?: string[];
       }>;
+      /** Reveals a file or folder inside the open project in the system file manager. */
+      showInFolder: (targetPath: string) => Promise<boolean>;
       stopBuild: () => Promise<boolean>;
       listProjectFiles: () => Promise<ProjectFileEntry[]>;
       readFile: (path: string) => Promise<string>;

@@ -20,6 +20,16 @@
       </span>
 
       <div class="build-panel__actions">
+        <select
+          class="build-panel__config"
+          aria-label="Build configuration"
+          :value="store.config"
+          :disabled="store.isBuilding"
+          @change="onConfigChange"
+        >
+          <option value="Release">Release</option>
+          <option value="Debug">Debug</option>
+        </select>
         <button
           class="build-panel__button"
           type="button"
@@ -27,6 +37,15 @@
           @click="onBuild"
         >
           Build
+        </button>
+        <button
+          v-if="store.artifacts.length > 0"
+          class="build-panel__button"
+          type="button"
+          :title="store.artifacts[0]"
+          @click="store.revealArtifact()"
+        >
+          Open folder
         </button>
         <button
           class="build-panel__button"
@@ -55,7 +74,10 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useBuildStore } from '@/domains/build/stores/buildStore';
+import {
+  useBuildStore,
+  type BuildConfig,
+} from '@/domains/build/stores/buildStore';
 import { useProjectStore } from '@/domains/workspace/stores/projectStore';
 import { useWorkspaceStore } from '@/domains/workspace/stores/workspaceStore';
 
@@ -78,10 +100,16 @@ watch(
   }
 );
 
+function onConfigChange(event: Event) {
+  store.setConfig((event.target as HTMLSelectElement).value as BuildConfig);
+}
+
 async function onBuild() {
   const result = await store.startBuild();
   if (result.status === 'success') {
-    workspaceStore.showToast('Build succeeded.');
+    workspaceStore.showToast(
+      result.artifacts?.length ? 'Plugin built.' : 'Build succeeded.'
+    );
   } else if (result.status === 'failed') {
     workspaceStore.showToast(result.message ?? 'Build failed.');
   } else if (result.status === 'cancelled') {
@@ -171,6 +199,15 @@ onBeforeUnmount(() => {
   margin-left: auto;
   display: flex;
   gap: 6px;
+}
+
+.build-panel__config {
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 3px;
+  color: #e0e0e0;
+  font-size: 12px;
+  padding: 2px 6px;
 }
 
 .build-panel__button {
